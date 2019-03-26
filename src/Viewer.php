@@ -63,7 +63,7 @@
 */
 namespace Radion;
 
-use RLis\Rade\RadeView as Rade;
+use RLis\RadeView as Rade;
 use Radion\SharerManager as Sharer;
 
 /**

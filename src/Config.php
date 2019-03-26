@@ -1,66 +1,66 @@
 <?php
- /*
-        This code is under MIT License
+/*
+This code is under MIT License
 
-        +--------------------------------+
-        |   DO NOT MODIFY THIS HEADERS   |
-        +--------------------------------+-----------------+
-        |   Created by BiuStudio                           |
-        |   Email: support@biuhub.net                      |
-        |   Link: https://www.biurad.ml                    |
-        |   Source: https://github.com/biustudios/         |
-        |   Real Name: Divine Niiquaye - Ghana             |
-        |   Copyright Copyright (c) 2018-2019 BiuStudio    |
-        |   License: https://biurad.ml/LICENSE.md          |
-        +--------------------------------------------------+
++--------------------------------+
+|   DO NOT MODIFY THIS HEADERS   |
++--------------------------------+-----------------+
+|   Created by BiuStudio                           |
+|   Email: support@biuhub.net                      |
+|   Link: https://www.biurad.ml                    |
+|   Source: https://github.com/biustudios/         |
+|   Real Name: Divine Niiquaye - Ghana             |
+|   Copyright Copyright (c) 2018-2019 BiuStudio    |
+|   License: https://biurad.ml/LICENSE.md          |
++--------------------------------------------------+
 
-        +--------------------------------------------------------------------------------+
-        |   Version: 0.0.1.1, Relased at 18/02/2019 13:13 (GMT + 1.00)                       |
-        +--------------------------------------------------------------------------------+
++--------------------------------------------------------------------------------+
+|   Version: 0.0.1.1, Relased at 18/02/2019 13:13 (GMT + 1.00)                       |
++--------------------------------------------------------------------------------+
 
-        +----------------+
-        |   Tested on    |
-        +----------------+-----+
-        |  APACHE => 2.0.55    |
-        |     PHP => 5.4       |
-        +----------------------+
++----------------+
+|   Tested on    |
++----------------+-----+
+|  APACHE => 2.0.55    |
+|     PHP => 5.4       |
++----------------------+
 
-        +---------------------+
-        |  How to report bug  |
-        +---------------------+-----------------------------------------------------------------+
-        |   You can e-mail me using the email addres written above. That email is also my msn   |
-        |   contact, so you can use it for contact me on MSN.                                   |
-        +---------------------------------------------------------------------------------------+
++---------------------+
+|  How to report bug  |
++---------------------+-----------------------------------------------------------------+
+|   You can e-mail me using the email addres written above. That email is also my msn   |
+|   contact, so you can use it for contact me on MSN.                                   |
++---------------------------------------------------------------------------------------+
 
-        +-----------+
-        |  Notes    |
-        +-----------+------------------------------------------------------------------------------------------------+
-        |   - BiuRad's simple-as-possible architecture was inspired by several conference talks, slides              |
-        |     and articles about php frameworks that - surprisingly and intentionally -                              |
-        |     go back to the basics of programming, using procedural programming, static classes,                    |
-        |     extremely simple constructs, not-totally-DRY code etc. while keeping the code extremely readable.      |
-        |   - Features of Biuraad Php Framework
-        |     +--> Proper security features, like CSRF blocking (via form tokens), encryption of cookie contents etc.|
-        |     +--> Built with the official PHP password hashing functions, fitting the most modern password          |
-                        hashing/salting web standards.                                                                    |
-        |     +--> Uses [Post-Redirect-Get pattern](https://en.wikipedia.org/wiki/Post/Redirect/Get)                 |
-        |     <--+ Uses URL rewriting ("beautiful URLs").                                                            |
-        |   - Masses of comments                                                                                     |                                                                              |
-        |     +--> Uses Libraries including Composer to load external dependencies.                                  |
-        |     <--+ Proper security features, like CSRF blocking (via form tokens), encryption of cookie contents etc.|
-        |   - Fits PSR-0/1/2/4 coding guideline.                                                                     |
-        +------------------------------------------------------------------------------------------------------------+
++-----------+
+|  Notes    |
++-----------+------------------------------------------------------------------------------------------------+
+|   - BiuRad's simple-as-possible architecture was inspired by several conference talks, slides              |
+|     and articles about php frameworks that - surprisingly and intentionally -                              |
+|     go back to the basics of programming, using procedural programming, static classes,                    |
+|     extremely simple constructs, not-totally-DRY code etc. while keeping the code extremely readable.      |
+|   - Features of Biuraad Php Framework
+|     +--> Proper security features, like CSRF blocking (via form tokens), encryption of cookie contents etc.|
+|     +--> Built with the official PHP password hashing functions, fitting the most modern password          |
+hashing/salting web standards.                                                                    |
+|     +--> Uses [Post-Redirect-Get pattern](https://en.wikipedia.org/wiki/Post/Redirect/Get)                 |
+|     <--+ Uses URL rewriting ("beautiful URLs").                                                            |
+|   - Masses of comments                                                                                     |                                                                              |
+|     +--> Uses Libraries including Composer to load external dependencies.                                  |
+|     <--+ Proper security features, like CSRF blocking (via form tokens), encryption of cookie contents etc.|
+|   - Fits PSR-0/1/2/4 coding guideline.                                                                     |
++------------------------------------------------------------------------------------------------------------+
 
-        +------------------+
-        |  Special Thanks  |
-        +------------------+-----------------------------------------------------------------------------------------+
-        |  I always thank the HTML FORUM COMMUNITY (http://www.html.it) for the advice about the regular expressions |
-        |  A special thanks at github.com(http://www.github.com), because they provide me the list of php libraries, |
-        |  snippets, and any more...                                                                                 |
-        |  I thanks Php.net and Sololearn.com for its guildline in PHP Programming                                   |
-        |  Finally, i thank Wikipedia for the countries's icons 20px                                                 |
-        +------------------------------------------------------------------------------------------------------------+
-*/
++------------------+
+|  Special Thanks  |
++------------------+-----------------------------------------------------------------------------------------+
+|  I always thank the HTML FORUM COMMUNITY (http://www.html.it) for the advice about the regular expressions |
+|  A special thanks at github.com(http://www.github.com), because they provide me the list of php libraries, |
+|  snippets, and any more...                                                                                 |
+|  I thanks Php.net and Sololearn.com for its guildline in PHP Programming                                   |
+|  Finally, i thank Wikipedia for the countries's icons 20px                                                 |
++------------------------------------------------------------------------------------------------------------+
+ */
 namespace Radion;
 
 /**
@@ -121,7 +121,7 @@ class ConfigManager
     public static function _get($file, $key = null)
     {
         if (isset(self::$hive[$file]) === false) {
-            self::$hive[$file] = include_once BR_PATH.'Config/'.$file . '.phtml ' ;
+            self::$hive[$file] = include_once BR_PATH . 'Config/' . $file . '.phtml ';
         }
 
         if ($key === null) {
@@ -149,15 +149,15 @@ class ConfigManager
         switch (count($namespaces)) {
             case 3:
                 return isset(self::$vars[$namespaces[0]][$namespaces[1]][$namespaces[2]]) ?
-                    self::$vars[$namespaces[0]][$namespaces[1]][$namespaces[2]] : null;
+                self::$vars[$namespaces[0]][$namespaces[1]][$namespaces[2]] : null;
             case 2:
                 return isset(self::$vars[$namespaces[0]][$namespaces[1]]) ?
-                    self::$vars[$namespaces[0]][$namespaces[1]] : null;
+                self::$vars[$namespaces[0]][$namespaces[1]] : null;
             case 1:
                 return isset(self::$vars[$namespaces[0]]) ? self::$vars[$namespaces[0]] : null;
 
             default:
-                trigger_error('Maximum of 3 arrays in Config::get(config.app.title):' . $var);
+                ExceptionManager('Maximum of 3 arrays in Config::get(config.app.title):' . $var);
         }
     }
 
@@ -179,7 +179,7 @@ class ConfigManager
      * Assign a chain of files.key.key
      *
      * @param string $var   variable of configurations
-     * @param mixed  $value 
+     * @param mixed  $value
      */
     public static function set($var, $value)
     {
@@ -195,7 +195,7 @@ class ConfigManager
                 self::$vars[$namespaces[0]] = $value;
                 break;
             default:
-                trigger_error('Maximum of 3 arrays in Config::get(config.app.title):' . $var);
+                new ExceptionManager('Maximum of 3 arrays in Config::get(config.app.title):' . $var);
         }
     }
 
@@ -219,9 +219,9 @@ class ConfigManager
 
     /**
      * Load config file
-     * 
      *
-     * @param string $file 
+     *
+     * @param string $file
      */
     private static function load($file)
     {
@@ -231,7 +231,7 @@ class ConfigManager
             return;
         }
         //  .ini
-        self::$vars[$file] = parse_ini_file( BR_PATH . 'Config/' . $file . '.ini', true);
+        self::$vars[$file] = parse_ini_file(BR_PATH . 'Config/' . $file . '.ini', true);
     }
 
     /**
@@ -245,7 +245,7 @@ class ConfigManager
     public static function setEnv()
     {
         if (self::$env === null) {
-            self::$env =  require_once(BR_PATH . 'Config/env.php');
+            self::$env = require_once BR_PATH . 'Config/env.php';
         }
 
         foreach (self::$env as $v => $a) {

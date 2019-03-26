@@ -72,7 +72,7 @@ namespace Radion;
  *
  * @category   Biurad
  */
-class LoadManager extends Bootstrap
+class LoadManager
 {
         /**
      * Module directory
@@ -129,7 +129,7 @@ class LoadManager extends Bootstrap
         if(!file_exists($this->getModulePath().'/library.json')) throw new ExceptionManager("Error : Config file not exist for this library : ".$this->getDirectory(), 1);
 
         // Parse module configuration file from JSON
-        $this->moduleConfig = json_decode(file_get_contents($this->getModulePath().'/config.json'), true);
+        $this->moduleConfig = json_decode(file_get_contents($this->getModulePath().'/library.json'), true);
 
         if(!$this->moduleConfig) throw new ExceptionManager("Error : Fail to open library config file for module : ".$this->_getDirectory(), 1);
 
