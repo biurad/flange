@@ -63,7 +63,7 @@
 */
 namespace Radion;
 
-use RLis\RadeView\RadeView as Rade;
+use Rlis\RadeView\RadeViewManager as Rade;
 use Radion\SharerManager as Sharer;
 
 /**
@@ -95,10 +95,10 @@ class Viewer
      */
     static function file($file, array $data = [])
     {
-        if (Config::_get('theme', 'Template') === 'DEFAULT') {
+        if (Config::get('theme', 'Template') === 'DEFAULT') {
             // Do you love displaying blank pages?
             if ($file === 'index' || $file === 'index.php') {
-                ExceptionManager::report(404, true);
+                Debugger::report(404, true);
             } else {
                 /**
                  * Get the path of the calling script and get it's containing Directory
@@ -106,26 +106,26 @@ class Viewer
                  */
                 $callingScriptPath = debug_backtrace()[0]['file'];
                 $callingScriptDirectory = realpath(dirname($callingScriptPath));
-                if (file_exists($callingScriptDirectory . '/' . 'Resources/Themes/' . Config::get(theme.theme_style) . '/views/' . $file)) {
-                    self::render($callingScriptDirectory . '/' . 'Resources/Themes/' . Config::get(theme.theme_style) . '/views/' . $file, $data);
-                } else if (file_exists($callingScriptDirectory . '/' . 'Resources/Themes/' . Config::get(theme.theme_style) . '/views/' . $file . '.php')) {
-                    self::render($callingScriptDirectory . '/' . 'Resources/Themes/' . Config::get(theme.theme_style) . '/views/' . $file . '.php', $data);
-                } else if (file_exists(BR_PATH . 'Resources/Themes/' . Config::get(theme.theme_style) . '/views/' . $file)) {
-                    self::render('Resources/Themes/' . Config::get(theme.theme_style) . '/views/' . $file, $data);
-                } else if (file_exists(BR_PATH . 'Resources/Themes/' . Config::get(theme.theme_style) . '/views/' . $file . '.php')) {
-                    self::render(BR_PATH . 'Resources/Themes/' . Config::get(theme.theme_style) . '/views/' . $file . '.php', $data);
+                if (file_exists($callingScriptDirectory . '/' . 'Resources/Themes/' . Config::get('theme','theme_style') . '/views/' . $file)) {
+                    self::render($callingScriptDirectory . '/' . 'Resources/Themes/' . Config::get('theme','theme_style') . '/views/' . $file, $data);
+                } else if (file_exists($callingScriptDirectory . '/' . 'Resources/Themes/' . Config::get('theme','theme_style') . '/views/' . $file . '.php')) {
+                    self::render($callingScriptDirectory . '/' . 'Resources/Themes/' . Config::get('theme','theme_style') . '/views/' . $file . '.php', $data);
+                } else if (file_exists(BR_PATH . 'Resources/Themes/' . Config::get('theme','theme_style') . '/views/' . $file)) {
+                    self::render('Resources/Themes/' . Config::get('theme','theme_style') . '/views/' . $file, $data);
+                } else if (file_exists(BR_PATH . 'Resources/Themes/' . Config::get('theme','theme_style') . '/views/' . $file . '.php')) {
+                    self::render(BR_PATH . 'Resources/Themes/' . Config::get('theme','theme_style') . '/views/' . $file . '.php', $data);
                 } else {
-                    ExceptionManager::report(404, true);
+                    Debugger::report(404, true);
                 }
             }
-        } else if (Config::get(theme.Template) === 'RADEVIEW') {
-            $views = 'Resources/Themes/' . Config::get(theme.theme_style) . '/views';
-            $compiledFolder = 'Resources/' . Config::get(theme.storage_path) . '/framework';
+        } else if (Config::get('theme','Template') === 'RADEVIEW') {
+            $views = 'Resources/Themes/' . Config::get('theme','theme_style') . '/views';
+            $compiledFolder = 'Resources/' . Config::get('theme','storage_path') . '/framework';
             $rade = new Rade($views, $compiledFolder);
             define("RADEVIEW_MODE", 0); // (optional) 1=forced (test),2=run fast (production), 0=automatic, default value.
             // Do you love displaying blank pages?
             if ($file === 'index' || $file === 'index.php') {
-                ExceptionManager::report(404, true);
+                Debugger::report(404, true);
             } else {
                 /**
                  * Get the path of the calling script and get it's containing Directory
@@ -133,7 +133,7 @@ class Viewer
                  */
                 echo $rade->run($file, $data);
             }
-        } else if (Config::get(theme.Template) === 'TPL') {
+        } else if (Config::get('theme','Template') === 'TPL') {
             /**
              * Get the path of the calling script and get it's containing Directory
              * to enable include() style of accessing files.
@@ -150,23 +150,23 @@ class Viewer
              * 5. check on the root directory
              * 6. same #5 but without .tpl.php
              */
-            if (file_exists($render_path = $calling_script_directory . '/' . 'Resources/Themes/' . Config::get(theme.theme_style) . '/views/' . $file . '.tpl.php')) {
+            if (file_exists($render_path = $calling_script_directory . '/' . 'Resources/Themes/' . Config::get('theme','theme_style') . '/views/' . $file . '.tpl.php')) {
                 self::render($render_path, $data);
-            } elseif (file_exists($render_path = $calling_script_directory . '/' . 'Resources/Themes/' . Config::get(theme.theme_style) . '/views/' . $file)) {
+            } elseif (file_exists($render_path = $calling_script_directory . '/' . 'Resources/Themes/' . Config::get('theme','theme_style') . '/views/' . $file)) {
                 self::render($render_path, $data);
-            } elseif (file_exists($render_path = BR_PATH . 'Resources/Themes/' . Config::get(theme.theme_style) . '/views/' . $file . '.tpl.php')) {
+            } elseif (file_exists($render_path = BR_PATH . 'Resources/Themes/' . Config::get('theme','theme_style') . '/views/' . $file . '.tpl.php')) {
                 self::render($render_path, $data);
-            } elseif (file_exists($render_path = BR_PATH . 'Resources/Themes/' . Config::get(theme.theme_style) . '/views/' . $file)) {
+            } elseif (file_exists($render_path = BR_PATH . 'Resources/Themes/' . Config::get('theme','theme_style') . '/views/' . $file)) {
                 self::render($render_path, $data);
-            } elseif (file_exists($render_path = BR_PATH . '/' . 'Resources/Themes/' . Config::get(theme.theme_style) . '/views/' . $file . '.tpl.php')) {
+            } elseif (file_exists($render_path = BR_PATH . '/' . 'Resources/Themes/' . Config::get('theme','theme_style') . '/views/' . $file . '.tpl.php')) {
                 self::render($render_path, $data);
-            } elseif (file_exists($render_path = BR_PATH . '/' . 'Resources/Themes/' . Config::get(theme.theme_style) . '/views/' . $file)) {
+            } elseif (file_exists($render_path = BR_PATH . '/' . 'Resources/Themes/' . Config::get('theme','theme_style') . '/views/' . $file)) {
                 self::render($render_path, $data);
             } else {
-                ExceptionManager::report(404, true);
+                Debugger::report(404, true);
             }
         } else {
-            ExceptionManager::display('simple', 'Viewer Template Note Found', "Set your preferred Viewer Template in Theme's Config File");
+            Debugger::display('simple', 'Viewer Template Note Found', "Set your preferred Viewer Template in Theme's Config File");
         }
     }
 
@@ -195,15 +195,15 @@ class Viewer
 
         ob_start();
         //if(isAjax()) {
-        //    include(sprintf('%s/%s/%s/views/%s.php', Config::get('theme', 'theme_folder'), Config::get('theme', 'theme_path'), Config::get(theme.theme_style), $file));
+        //    include(sprintf('%s/%s/%s/views/%s.php', Config::get('theme', 'theme_folder'), Config::get('theme', 'theme_path'), Config::get('theme','theme_style'), $file));
         //} else {
-        //    include(sprintf('%s/%s/%s/views/%s.php', Config::get('theme', 'theme_folder'), Config::get('theme', 'theme_path'), Config::get(theme.theme_style), $file));
+        //    include(sprintf('%s/%s/%s/views/%s.php', Config::get('theme', 'theme_folder'), Config::get('theme', 'theme_path'), Config::get('theme','theme_style'), $file));
         //}
         include($file);
         $input = ob_get_contents();
         ob_end_clean();
 
-        $output = preg_replace_callback('!\{\{(.*?)\}\}!', 'ViewerManager::replace', $input);
+        $output = preg_replace_callback('!\{\{(.*?)\}\}!', 'Viewer::replace', $input);
 
 
         echo ($output);

@@ -63,7 +63,6 @@
 */
 namespace Radion;
 
-use Exception as BaseException;
 use Whoops\Handler\PrettyPageHandler;
 use Whoops\Run;
 use Whoops\Handler\JsonResponseHandler;
@@ -225,7 +224,7 @@ static function error_handler(){
  */
 static function display($name, $message = '', $description = ''){
 	self::set_header('500', 'Internal Server Error');
-	include('Resources/'.Config::get('theme','storage_path').'/errors/html/'. $name .'.php');
+	include(BR_PATH.'Resources/'.Config::get('theme','storage_path').'/errors/html/'. $name .'.php');
 }
 
 /**
