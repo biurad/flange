@@ -1,5 +1,5 @@
 <?php
- /*
+/*
         This code is under MIT License
         
         +--------------------------------+
@@ -63,66 +63,42 @@
 */
 namespace Radion;
 
-/**
- * Class RequestManager.
- *
- */
-class RequestManager
-{
-    private static $_instance = null;
-    private $data = [];
+class Request {
 
-    /**
-     * Request constructor.
-     *
-     */
-    private function __construct()
-    {
+	private static $_instance = null;
+	private $data = [];
+
+	private function __construct(){
         // merge data with get, post and files
-        $this->data = array_merge($_GET, $_POST, $_FILES);
+		$this->data = array_merge($_GET, $_POST, $_FILES);
 
-        // start session to get flash variables
-        if (!isset($_SESSION)) {
+		// start session to get flash variables
+        if(!isset($_SESSION)){
             session_start();
         }
         // merge data with flash variables
-        if (isset($_SESSION['ss_flash_variables'])) {
+		if(isset($_SESSION['ss_flash_variables'])){
             $this->data = array_merge($_SESSION['ss_flash_variables']);
             unset($_SESSION['ss_flash_variables']);
         }
-    }
+	}
 
-    /**
-     * @param null $key
-     *
-     * @return array|mixed|null
-     *
-     */
-    public static function get($key = null)
-    {
-        if (self::$_instance === null) {
-            self::$_instance = new self();
-        }
+	static function get($key = null){
+		if (self::$_instance === null) {
+			self::$_instance = new self;
+		}
 
-        return self::$_instance->returnRequest($key);
-    }
+		return self::$_instance->returnRequest($key);
+	}
 
-    /**
-     * @param null $key
-     *
-     * @return array|mixed|null
-     *
-     */
-    public function returnRequest($key = null)
-    {
-        if ($key !== null) {
-            if (!isset($this->data[$key])) {
-                return;
-            }
-
-            return $this->data[$key];
-        } else {
-            return $this->data;
-        }
-    }
+	function returnRequest($key = null){
+		if($key !== null){
+			if(!isset($this->data[$key])){
+				return null;
+			}
+			return $this->data[$key];
+		}else{
+			return $this->data;
+		}
+	}
 }

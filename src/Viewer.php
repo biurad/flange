@@ -63,7 +63,7 @@
 */
 namespace Radion;
 
-use RLis\RadeView as Rade;
+use RLis\RadeView\RadeView as Rade;
 use Radion\SharerManager as Sharer;
 
 /**
@@ -74,7 +74,7 @@ use Radion\SharerManager as Sharer;
  * dependencies from both Container and the Radion\SharerManager
  *
  */
-class ViewerManager
+class Viewer
 {
 
     // the hive is where all data is stored, which is then usable from all template

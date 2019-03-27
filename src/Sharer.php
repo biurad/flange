@@ -1,5 +1,5 @@
 <?php
- /*
+/*
         This code is under MIT License
         
         +--------------------------------+
@@ -64,53 +64,53 @@
 namespace Radion;
 
 /**
- *  The Sharer Manager
+ *  The Sharer
  * -----------------------------------------------------------------------
  *
- * Sharer are also used for dependency injection (see Radion\Container). Sharer
- * is used to import variables directly into the current symbol table from
- * the array. It is also used for dependency injection to the template
+ * Sharer are also used for dependency injection (see Core\App). Sharer
+ * is used to import variables directly into the current symbol table from 
+ * the array. It is also used for dependency injection to the template 
  * files.
  *
- * Simply use extract(Radion\Sharer::get()); to import the variables.
+ * Simply use extract(Core\Sharer::get()); to import the variables.
  *
+ * @see Core\Sharer::share(), Core\Sharer::get(), Core\App::link()
  */
-class SharerManager
-{
-    /**
-     * The array of objects / variables. The array key is the variable name,
-     * while the array values are references to objects / variables.
-     *
-     * @var object
-     * @static
-     *
-     */
-    public static $store = null;
-
-    /**
-     * Stores references to variable or object to the static $store.
-     *
-     * @param string $key    the variable name
-     * @param mixed  &$value reference to variable / object
-     *
-     * @static
-     *
-     */
-    public static function share($key, &$value)
-    {
-        self::$store[$key] = &$value;
-    }
-
-    /**
-     * Get data stored into $store.
-     *
-     * @return array $store	the array of data
-     *
-     * @static
-     *
-     */
-    public static function get()
-    {
-        return self::$store;
-    }
+class Sharer {
+	/**
+	 * The array of objects / variables. The array key is the variable name,
+	 * while the array values are references to objects / variables.
+	 *
+	 * @var object
+	 * @access private
+	 * @static
+	 */
+	static public $store = null;
+	
+	/**
+	 * Stores references to variable or object to the static $store
+	 *
+	 * @param string	$key 		the variable name
+	 * @param mixed		&$value	reference to variable / object
+	 *
+	 * @static
+	 * @access public
+	 * @since Method available since Release 0.1.0
+	 */
+	static function share($key, &$value){
+		self::$store[$key] = &$value;
+	}
+	
+	/**
+	 * Get data stored into $store
+	 *
+	 * @return array	$store	the array of data
+	 *
+	 * @static
+	 * @access public
+	 * @since Method available since Release 0.1.0
+	 */
+	static function get(){
+		return self::$store;
+	}
 }

@@ -70,7 +70,7 @@ namespace Radion;
  *
  */
 
-class CommonManager
+class Common
 {
     // ------------------------------------------------------------------------
 
@@ -210,7 +210,7 @@ class CommonManager
             $exit_status = 1; // EXIT_ERROR
         }
 
-        $_error = new ExceptionManager;
+        $_error = new Debugger;
         echo $_error->show_error($heading, $message, 'error_general', $status_code);
         exit($exit_status);
     }
@@ -230,7 +230,7 @@ class CommonManager
      */
     public static function show_404($page = '', $log_error = TRUE)
     {
-        $_error = new ExceptionManager;
+        $_error = new Debugger;
         $_error->show_404($page, $log_error);
         exit(4); // EXIT_UNKNOWN_FILE
     }
@@ -254,7 +254,7 @@ class CommonManager
         if ($_log === NULL)
         {
             // references cannot be directly assigned to static variables, so we use an array
-            $_log[0] = new LoggerManager;
+            $_log[0] = new Logger;
         }
 
         $_log[0]->write_log($level, $message);
@@ -399,7 +399,7 @@ class CommonManager
             return;
         }
 
-        $_error = new ExceptionManager;
+        $_error = new Debugger;
         $_error->log_exception($severity, $message, $filepath, $line);
 
         // Should we display the error?
@@ -431,7 +431,7 @@ class CommonManager
      */
     static function _exception_handler($exception)
     {
-        $_error = new ExceptionManager;
+        $_error = new Debugger;
         $_error->log_exception('error', 'Exception: '.$exception->getMessage(), $exception->getFile(), $exception->getLine());
 
         self::is_cli() OR self::set_status_header(500);
@@ -449,8 +449,8 @@ class CommonManager
     /**
      * Shutdown Handler
      *
-     * This is the shutdown handler that is declared at the top
-     * of CodeIgniter.php. The main reason we use this is to simulate
+     * This is the shutdown handler that is declared
+     * The main reason we use this is to simulate
      * a complete custom exception handler.
      *
      * E_STRICT is purposively neglected because such events may have

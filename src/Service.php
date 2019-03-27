@@ -1,5 +1,5 @@
 <?php
- /*
+/*
         This code is under MIT License
         
         +--------------------------------+
@@ -64,21 +64,16 @@
 namespace Radion;
 
 /**
- * Class Service Manager
+ * Class Service
  * Service is where all the applications written by user resides, for both
- * input and output processing.
- *
- *
+ * input and output processing
+ * @package Core
  */
-class ServiceManager
-{
+class Service extends Service\ServiceContainer {
     /**
-     * Contains the object of instantiation of the Service class.
-     *
+     * Contains the object of instantiation of the Service class
      * @static
-     *
      * @var object
-     *
      */
     private static $serviceObject;
 
@@ -89,14 +84,12 @@ class ServiceManager
 
     /**
      * @static
-     *
-     * @return ServiceManager|object
-     *
+     * @return Service|object
      */
     public static function loadServices()
     {
-        if (isset(self::$serviceObject) === false) {
-            self::$serviceObject = new self();
+        if(isset(self::$serviceObject) === false){
+            self::$serviceObject = new self;
         }
 
         self::$serviceObject->prepare();
@@ -105,42 +98,15 @@ class ServiceManager
     }
 
     /**
-     * Object preparer.
-     *
+     * Object preparer
      */
-    private function prepare()
-    {
-        if (isset($config) === false) {
-            $this->config = ConfigManager::_get('services');
+    private function prepare(){
+        if(isset($config) === false){
+            $this->config = Config::get('services');
         }
 
-        foreach ($this->config as $className => $varName) {
-            $this->$varName = new $className();
+        foreach($this->config as $className => $varName){
+           $this->$varName = new $className;
         }
-    }
-}
-
-
-/**
- * Class ServiceContainer.
- *
- */
-class ServiceContainer
-{
-    /**
-     * @return ServiceContainer|object
-     *
-     */
-    public function getThis()
-    {
-        return $this;
-    }
-
-    /**
-     * 
-     */
-    public function dumpThis()
-    {
-        dd($this);
     }
 }

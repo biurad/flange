@@ -1,12 +1,73 @@
 <?php
-
-use Radion\ConfigManager;
+/*
+        This code is under MIT License
+        
+        +--------------------------------+
+        |   DO NOT MODIFY THIS HEADERS   |
+        +--------------------------------+-----------------+
+        |   Created by BiuStudio                           |
+        |   Email: support@biuhub.net                      |
+        |   Link: https://www.biurad.tk                    |
+        |   Source: https://github.com/biustudios/biurad   |
+        |   Real Name: Divine Niiquaye - Ghana             |
+        |   Copyright Copyright (c) 2018-2019 BiuStudio    |
+        |   License: https://biurad.tk/LICENSE.md          |
+        +--------------------------------------------------+
+        
+        +--------------------------------------------------------------------------------+
+        |   Version: 0.0.1.1, Relased at 18/02/2019 13:13 (GMT + 1.00)                       |
+        +--------------------------------------------------------------------------------+
+        
+        +----------------+
+        |   Tested on    |
+        +----------------+-----+
+        |  APACHE => 2.0.55    |
+        |     PHP => 5.4       |
+        +----------------------+
+        
+        +---------------------+
+        |  How to report bug  |
+        +---------------------+-----------------------------------------------------------------+
+        |   You can e-mail me using the email addres written above. That email is also my msn   |
+        |   contact, so you can use it for contact me on MSN.                                   |
+        +---------------------------------------------------------------------------------------+
+        
+        +-----------+
+        |  Notes    |
+        +-----------+------------------------------------------------------------------------------------------------+
+        |   - BiuRad's simple-as-possible architecture was inspired by several conference talks, slides              |
+        |     and articles about php frameworks that - surprisingly and intentionally -                              |
+        |     go back to the basics of programming, using procedural programming, static classes,                    |
+        |     extremely simple constructs, not-totally-DRY code etc. while keeping the code extremely readable.      |
+        |   - Features of Biuraad Php Framework
+        |     +--> Proper security features, like CSRF blocking (via form tokens), encryption of cookie contents etc.|
+        |     +--> Built with the official PHP password hashing functions, fitting the most modern password          |
+                   hashing/salting web standards.                                                                    |
+        |     +--> Uses [Post-Redirect-Get pattern](https://en.wikipedia.org/wiki/Post/Redirect/Get)                 |
+        |     <--+ Uses URL rewriting ("beautiful URLs").                                                            |
+        |   - Masses of comments                                                                                     |                                                                              |
+        |     +--> Uses Libraries including Composer to load external dependencies.                                  |
+        |     <--+ Proper security features, like CSRF blocking (via form tokens), encryption of cookie contents etc.|
+        |   - Fits PSR-0/1/2/4 coding guideline.                                                                     |
+        +------------------------------------------------------------------------------------------------------------+
+        
+        +------------------+
+        |  Special Thanks  |
+        +------------------+-----------------------------------------------------------------------------------------+
+        |  I always thank the HTML FORUM COMMUNITY (http://www.html.it) for the advice about the regular expressions |
+        |  A special thanks at github.com(http://www.github.com), because they provide me the list of php libraries, |
+        |  snippets, and any more...                                                                                 |
+        |  I thanks Php.net and Sololearn.com for its guildline in PHP Programming                                   |
+        |  Finally, i thank Wikipedia for the countries's icons 20px                                                 |
+        +------------------------------------------------------------------------------------------------------------+
+*/
+namespace Radion;
 
 /**
  * Class TimeTrackr
- * Manage everything related to Date and Time.
+ * Manage everything related to Date and Time
  *
- *
+ * @package Core
  */
 class TimeTrackr extends \DateTime
 {
@@ -64,11 +125,12 @@ class TimeTrackr extends \DateTime
      *
      * @static
      *
+     * @since 0.5.0
      */
     private static function loadConfig()
     {
         if (is_null(self::$config)) {
-            self::$config = ConfigManager::_get('timetrackr');
+            self::$config = Config::get('timetrackr');
         }
     }
 
@@ -77,8 +139,9 @@ class TimeTrackr extends \DateTime
      *
      * @static
      *
+     * @since 0.5.0
      */
-    public static function applyConfig()
+    public static function init()
     {
         self::loadConfig();
         self::setDefaultTimeZoneFromConfigFile();
@@ -89,6 +152,7 @@ class TimeTrackr extends \DateTime
      *
      * @return bool
      *
+     * @since 0.5.0
      */
     private static function setDefaultTimeZoneFromConfigFile()
     {
@@ -102,6 +166,7 @@ class TimeTrackr extends \DateTime
      *
      * @return static
      *
+     * @since 0.5.0
      */
     public static function now($timezone = null)
     {
@@ -117,6 +182,7 @@ class TimeTrackr extends \DateTime
      *
      * @return static
      *
+     * @since 0.5.0
      */
     public static function on($format, $time, $timezone = null)
     {
@@ -135,8 +201,9 @@ class TimeTrackr extends \DateTime
      * @param null          $time
      * @param \DateTimeZone $timezone
      *
-     * @throws \ExceptionManager
+     * @throws \Exception
      *
+     * @since 0.5.0
      */
     public function __construct($time, $timezone)
     {
@@ -179,6 +246,7 @@ class TimeTrackr extends \DateTime
      *
      * @return TimeTrackr $this
      *
+     * @since 0.5.0
      */
     public function addSecond()
     {
@@ -194,6 +262,7 @@ class TimeTrackr extends \DateTime
      *
      * @return TimeTrackr $this
      *
+     * @since 0.5.0
      */
     public function addSeconds($seconds)
     {
@@ -207,6 +276,7 @@ class TimeTrackr extends \DateTime
      *
      * @return TimeTrackr $this
      *
+     * @since 0.5.0
      */
     public function addMinute()
     {
@@ -222,6 +292,7 @@ class TimeTrackr extends \DateTime
      *
      * @return TimeTrackr $this
      *
+     * @since 0.5.0
      */
     public function addMinutes($minutes)
     {
@@ -235,6 +306,7 @@ class TimeTrackr extends \DateTime
      *
      * @return TimeTrackr $this
      *
+     * @since 0.5.0
      */
     public function addHour()
     {
@@ -250,6 +322,7 @@ class TimeTrackr extends \DateTime
      *
      * @return TimeTrackr $this
      *
+     * @since 0.5.0
      */
     public function addHours($hours)
     {
@@ -263,6 +336,7 @@ class TimeTrackr extends \DateTime
      *
      * @return TimeTrackr $this
      *
+     * @since 0.5.0
      */
     public function addDay()
     {
@@ -278,6 +352,7 @@ class TimeTrackr extends \DateTime
      *
      * @return TimeTrackr $this
      *
+     * @since 0.5.0
      */
     public function addDays($days)
     {
@@ -291,6 +366,7 @@ class TimeTrackr extends \DateTime
      *
      * @return TimeTrackr $this
      *
+     * @since 0.5.0
      */
     public function addWeek()
     {
@@ -306,6 +382,7 @@ class TimeTrackr extends \DateTime
      *
      * @return TimeTrackr $this
      *
+     * @since 0.5.0
      */
     public function addWeeks($weeks)
     {
@@ -319,6 +396,7 @@ class TimeTrackr extends \DateTime
      *
      * @return TimeTrackr $this
      *
+     * @since 0.5.0
      */
     public function addYear()
     {
@@ -334,6 +412,7 @@ class TimeTrackr extends \DateTime
      *
      * @return TimeTrackr $this
      *
+     * @since 0.5.0
      */
     public function addYears($years)
     {
@@ -347,6 +426,7 @@ class TimeTrackr extends \DateTime
      *
      * @return TimeTrackr $this
      *
+     * @since 0.5.0
      */
     public function addDecade()
     {
@@ -362,6 +442,7 @@ class TimeTrackr extends \DateTime
      *
      * @return TimeTrackr $this
      *
+     * @since 0.5.0
      */
     public function addDecades($decades)
     {
@@ -376,6 +457,7 @@ class TimeTrackr extends \DateTime
      *
      * @return TimeTrackr $this
      *
+     * @since 0.5.0
      */
     public function addCentury()
     {
@@ -391,6 +473,7 @@ class TimeTrackr extends \DateTime
      *
      * @return TimeTrackr $this
      *
+     * @since 0.5.0
      */
     public function addCenturies($centuries)
     {
@@ -405,6 +488,7 @@ class TimeTrackr extends \DateTime
      *
      * @return TimeTrackr $this
      *
+     * @since 0.5.0
      */
     public function addMillennium()
     {
@@ -418,6 +502,7 @@ class TimeTrackr extends \DateTime
      *
      * @return array
      *
+     * @since 0.5.0
      */
     public function toArray()
     {
@@ -435,6 +520,7 @@ class TimeTrackr extends \DateTime
      *
      * @return string
      *
+     * @since 0.5.0
      */
     public function __toString()
     {
@@ -454,6 +540,7 @@ class TimeTrackr extends \DateTime
      *
      * @return $this
      *
+     * @since 0.5.0
      */
     public function compareWith($format, $time, $timezone = null)
     {
@@ -477,6 +564,7 @@ class TimeTrackr extends \DateTime
      *
      * @return null|string
      *
+     * @since 0.5.0
      */
     public function diffInHuman($justNowSeconds = 5, $justNowText = 'just now')
     {
@@ -573,6 +661,7 @@ class TimeTrackr extends \DateTime
      *
      * @return mixed Interval
      *
+     * @since 0.5.0
      */
     public function getInterval()
     {
@@ -590,6 +679,7 @@ class TimeTrackr extends \DateTime
      *
      * @return string
      *
+     * @since 0.5.0
      */
     public static function translateSymbol($symbol, $singular = true)
     {

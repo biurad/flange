@@ -61,60 +61,23 @@
         |  Finally, i thank Wikipedia for the countries's icons 20px                                                 |
         +------------------------------------------------------------------------------------------------------------+
 */
-namespace Radion;
+namespace Radion\Service;
 
-/**
- * The Singleton
- * -----------------------------------------------------------------------
- *
- * Simply extends this Singleton class if you wish to use the Singleton
- * pattern of programming in your project
- *
- */
-class Singleton {
-	private static $instances = array();
+class ServiceContainer {
 
-	/**
-	 * Constructor method
-	 *
-	 * @access protected
-	 * @since Method available since Release 0.1.1
-	 */
-	protected function __construct() {
-		//
-	}
+  /**
+   * @return ServiceContainer|object
+   */
+  public function getThis()
+  {
+    return $this;
+  }
 
-	/**
-	 * Avoid cloning
-	 *
-	 * @access protected
-	 * @since Method available since Release 0.1.1
-	 */
-	protected function __clone() {
-		//
-	}
-
-	/**
-	 * Avoid unserialization
-	 *
-	 * @access public
-	 * @since Method available since Release 0.1.1
-	 */
-	public function __wakeup(){
-		throw new Exception("Cannot unserialize singleton");
-	}
-
-	/**
-	 * Get the instance of desired class
-	 *
-	 * @access public
-	 * @since Method available since Release 0.1.1
-	 */
-	public static function getInstance(){
-		$class = get_called_class(); // late-static-bound class name
-		if (!isset(self::$instances[$class])) {
-			self::$instances[$class] = new static;
-		}
-		return self::$instances[$class];
-	}
+  /**
+   * @return ServiceContainer|object
+   */
+  public function dumpThis()
+  {
+    dd($this);
+  }
 }

@@ -70,7 +70,7 @@ namespace Radion;
  * between them. Memory consumption can also be displayed.
  *
  */
-class BenchmarkManager
+class Benchmark
 {
 
     /**

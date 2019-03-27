@@ -64,9 +64,8 @@ hashing/salting web standards.                                                  
 namespace Radion;
 
 use eftec\DocumentStoreOne\DocumentStoreOne as DocumentDB;
-use Radion\ConfigManager as Config;
 
-class DatabaseManager extends IlluminateDatabaseFactory
+class Database extends IlluminateDatabaseFactory
 {
     private static $config = null;
 
@@ -77,7 +76,7 @@ class DatabaseManager extends IlluminateDatabaseFactory
     public static function loadConfig($replace = false)
     {
         if (self::$config === null || $replace == true) {
-            self::$config = Config::_get('database');
+            self::$config = Config::get('database');
         }
     }
 

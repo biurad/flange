@@ -71,7 +71,7 @@ namespace Radion;
  * is started.
  *
  */
-class AliasManager
+class Alias
 {
     private static $config = null;
 
@@ -82,10 +82,10 @@ class AliasManager
      * @static
      *
      */
-    public static function loadAliases()
+    public static function init()
     {
         if (self::$config === null) {
-            self::$config = ConfigManager::_get('aliases');
+            self::$config = Config::get('aliases');
         }
 
         foreach (self::$config as $class => $alias) {

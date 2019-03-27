@@ -1,5 +1,5 @@
 <?php
- /*
+/*
         This code is under MIT License
         
         +--------------------------------+
@@ -63,15 +63,15 @@
 */
 namespace Radion;
 
-use Radion\ConfigManager as Config;
-use Radion\ExceptionManager as Debugger;
-use Radion\ViewerManager as Viewer;
+use Radion\Config;
+use Radion\Debugger;
+use Radion\Viewer;
 
 /**
- * Class RouterManager.
+ * Class Router.
  *
  */
-class RouterManager
+class Router
 {
     private static $mimeTypes;
     private static $config = null;
@@ -124,7 +124,7 @@ class RouterManager
         } else {
             // remove leading slash which may cause problems in Linux servers
             $params[0] = trim($params[0], '/');
-            $uri = dirname($_SERVER['SCRIPT_NAME']) . '/' . $params[0];
+            $uri = dirname($_SERVER['SCRIPT_NAME']).'/'.$params[0];
             $callback = $params[1];
             array_push(self::$routes, $uri);
             array_push(self::$methods, strtoupper($method));
@@ -140,12 +140,12 @@ class RouterManager
     public static function start()
     {
         if (self::$config === null) {
-            self::$config = Config::_get('routes');
-            self::$mimeTypes = Config::_get('mimetypes');
+            self::$config = Config::get('routes');
+            self::$mimeTypes = Config::get('mimetypes');
         }
 
         foreach (self::$config['routes'] as $route) {
-            include self::$config['path'] . $route . '.php';
+            include self::$config['path'].$route.'.php';
         }
     }
 
@@ -179,7 +179,7 @@ class RouterManager
     public static function redirect($url, $permanent = false)
     {
         if (headers_sent() === false) {
-            header('Location: ' . $url, true, ($permanent === true) ? 301 : 302);
+            header('Location: '.$url, true, ($permanent === true) ? 301 : 302);
         }
         exit();
     }
@@ -193,8 +193,8 @@ class RouterManager
     public static function getMimeType($file_name)
     {
         $ext = pathinfo($file_name, PATHINFO_EXTENSION);
-        if (isset(static::$mimeTypes['.' . $ext])) {
-            return static::$mimeTypes['.' . $ext];
+        if (isset(static::$mimeTypes['.'.$ext])) {
+            return static::$mimeTypes['.'.$ext];
         } else {
             return 'text/plain';
         }
@@ -228,6 +228,7 @@ class RouterManager
      *
      * @return array|bool
      *
+
      */
     public static function findOverlap($str1, $str2)
     {
@@ -254,6 +255,7 @@ class RouterManager
     /**
      * Runs the callback for the given request.
      *
+
      */
     private static function runDispatcher()
     {
@@ -340,7 +342,7 @@ class RouterManager
                     $route = str_replace($searches, $replaces, $route);
                 }
 
-                if (preg_match('#^' . $route . '$#', $uri, $matched)) {
+                if (preg_match('#^'.$route.'$#', $uri, $matched)) {
                     if (self::$methods[$pos] === $method || self::$methods[$pos] === 'ANY') {
                         self::haltOnMatch();
                         $found_route = true;

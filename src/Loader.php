@@ -92,7 +92,7 @@ class LoadManager
      */
     public function __construct($moduleDirectory = null){
 
-        if(is_null($moduleDirectory)) throw new ExceptionManager("Error : Fail to load library (Directory is null)", 1);
+        if(is_null($moduleDirectory)) throw new Exception("Error : Fail to load library (Directory is null)", 1);
         $this->moduleDirectory = $moduleDirectory;
 
         // Load module
@@ -104,7 +104,7 @@ class LoadManager
      * @return String Module directory
      */
     public function getDirectory(){
-        if(is_null($this->moduleDirectory)) throw new ExceptionManager("Error : Radion Library directory is empty", 1);
+        if(is_null($this->moduleDirectory)) throw new Exception("Error : Radion Library directory is empty", 1);
         return $this->moduleDirectory;
     }
 
@@ -126,12 +126,12 @@ class LoadManager
     private function loadModule(){
 
         // Load module configuration file
-        if(!file_exists($this->getModulePath().'/library.json')) throw new ExceptionManager("Error : Config file not exist for this library : ".$this->getDirectory(), 1);
+        if(!file_exists($this->getModulePath().'/library.json')) throw new Exception("Error : Config file not exist for this library : ".$this->getDirectory(), 1);
 
         // Parse module configuration file from JSON
-        $this->moduleConfig = json_decode(file_get_contents($this->getModulePath().'/library.json'), true);
+        //$this->moduleConfig = json_decode(file_get_contents($this->getModulePath().'/library.json'), true);
 
-        if(!$this->moduleConfig) throw new ExceptionManager("Error : Fail to open library config file for module : ".$this->_getDirectory(), 1);
+        //if(!$this->moduleConfig) throw new Exception("Error : Fail to open library config file for module : ".$this->_getDirectory(), 1);
 
     }
 
@@ -180,7 +180,7 @@ class LoadManager
      * This initializes the libraries function
      *
      * @param string $libs load all libraries
-     * @throw BiuradExceptionManager
+     * @throw BiuradException
      */
     public static function libraries($libs)
     {
@@ -196,12 +196,12 @@ class LoadManager
      * The Core Libraries
      *
      * @param string $libs 
-     * @throw ExceptionManagerManager
+     * @throw Exception
      */
     public static function coreLibraries($libs)
     {
         if (!include BR_PATH . "Libraries/$libs/$libs.php") {
-            throw new ExceptionManagerManager("Library: \"$lib\" not found");
+            throw new Exception("Library: \"$lib\" not found");
         }
     }
 }

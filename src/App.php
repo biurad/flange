@@ -64,57 +64,47 @@
 namespace Radion;
 
 /**
- * The Singleton
+ * The Application Container
  * -----------------------------------------------------------------------
  *
- * Simply extends this Singleton class if you wish to use the Singleton
- * pattern of programming in your project
+ * Containers are used for dependency injection, which allows us to reduce
+ * coupling. It is a rather simple piece of code, but it is powerful.
  *
  */
-class Singleton {
-	private static $instances = array();
+class App {
 
+	
 	/**
-	 * Constructor method
-	 *
-	 * @access protected
-	 * @since Method available since Release 0.1.1
-	 */
-	protected function __construct() {
-		//
-	}
+     * Link a value inside the container.
+     *
+     * @param mixed $property_name property name that we want to register
+     * @param mixed $value         the value/array/object/closure
+     *
+     */
+    public function link($property_name, $value)
+    {
+        $this->$property_name = $value;
+    }
 
-	/**
-	 * Avoid cloning
-	 *
-	 * @access protected
-	 * @since Method available since Release 0.1.1
-	 */
-	protected function __clone() {
-		//
-	}
+    /**
+     * Checks whether the container has a property.
+     *
+     * @param $property_name
+     *
+     * @return bool
+     *
+     */
+    public function has($property_name)
+    {
+        return isset($this->$property_name);
+    }
 
-	/**
-	 * Avoid unserialization
-	 *
-	 * @access public
-	 * @since Method available since Release 0.1.1
-	 */
-	public function __wakeup(){
-		throw new Exception("Cannot unserialize singleton");
-	}
-
-	/**
-	 * Get the instance of desired class
-	 *
-	 * @access public
-	 * @since Method available since Release 0.1.1
-	 */
-	public static function getInstance(){
-		$class = get_called_class(); // late-static-bound class name
-		if (!isset(self::$instances[$class])) {
-			self::$instances[$class] = new static;
-		}
-		return self::$instances[$class];
-	}
+    /**
+     * Check Every page to perform optional ajax
+     * 
+     * @static
+     * @access public
+     * @since Method available since Release 0.1.0
+     */
+    static function ajax_check($check = false) {?> <script src="<?= Config::get('info', 'URL'); ?>/assets/js/jquery-plugin.min.js"></script> <?php if($check == false) {echo ('<script>$(function() {$("html").attr("radion", "v__'.(Config::get('info', 'VERSION')).'");});</script>');} else {echo ('<script>$(document).ready(function(){$("html").attr("radion","gr__'.(Config::get('info', 'URL')).'");$("html").attr("version", "v__'.(Config::get('info', 'VERSION')).'");});$(document).on("click", "a:not([data-nd])", function() {var linkUrl = $(this).attr("href");loadPage(linkUrl, 0, null);return false;});$(window).bind("popstate", function() {var linkUrl = location.href;loadPage(linkUrl, 0, null);});/*** Send a GET or POST request dynamically** @param argUrl Contains the page URL* @param argParams String or serialized params to be passed to the request* @param argType Decides the type of the request: 1 for POST; 0 for GET;* @return string*/function loadPage(argUrl, argType, argParams) {if(argType == 1) {argType = "POST";} else {argType = "GET";if(argUrl != window.location){window.history.pushState({path: argUrl}, "", argUrl);}}$.ajax({url: argUrl,type: argType,data: argParams,success: function(data) {var result = data;$(document).scrollTop(0);$("v__'.Config::get('info', 'VERSION').'").replaceWith(result.v__'.Config::get('info', 'VERSION').');reload();}});/*** This function gets called every time a dynamic request is made*/function reload() {location.reload();}}</script>');}}
 }

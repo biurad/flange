@@ -60,42 +60,77 @@ hashing/salting web standards.                                                  
 |  I thanks Php.net and Sololearn.com for its guildline in PHP Programming                                   |
 |  Finally, i thank Wikipedia for the countries's icons 20px                                                 |
 +------------------------------------------------------------------------------------------------------------+
- */
+*/
 namespace Radion;
 
-/**
- * The Application Container
- * -----------------------------------------------------------------------
- *
- * Containers are used for dependency injection (DI), which allows us to
- * reduce coupling. It is a rather simple piece of code, but it is
- * powerful.
- *
- */
-class Container
+class Bootstrap
 {
     /**
-     * Link a value inside the container.
-     *
-     * @param mixed $property_name property name that we want to register
-     * @param mixed $value         the value/array/object/closure
-     *
+     * Module list available
+     * @var Array Module Array
      */
-    public function link($property_name, $value)
+    private $modulesList = [];
+
+    /**
+     * Application constructor
+     * @param boolean $loadmodules If load module or just access to config data
+     */
+    public function __construct($loadmodules = false)
     {
-        $this->$property_name = $value;
+
+        // If loadmodule, load modules
+        if ($loadmodules) {
+            $this->loadModules();
+        }
+
     }
 
     /**
-     * Checks whether the container has a property.
-     *
-     * @param $property_name
-     *
-     * @return bool
-     *
+     * Load module function
      */
-    public function has($property_name)
+    public function loadModules()
     {
-        return isset($this->$property_name);
+
+        // Get list modules available in application
+        foreach (scandir(BR_PATH.'Libraries') as $directory) {
+
+            // Check if file is an file
+            if ($directory == "." || $directory == "..") {
+                continue;
+            }
+
+            // Get directory path
+            $directoryPath = BR_PATH.'Libraries/' . $directory;
+
+            // Check if file parsed is a directory (module need to be a directory)
+            if (!is_dir($directoryPath)) {
+
+                // Save error in log file
+                error_log('Fail to load module : ' . $directory . ' --> is not a directory');
+                continue;
+            }
+
+            // Load module
+            $ModuleLoad = new LoadManager($directory);
+
+            // Check module configuratino file
+            if (!$ModuleLoad->checkConfig()) {
+
+                // Save error in log file
+                error_log('Fail to load module : ' . $directory . ' --> wrong configuration');
+                continue;
+            }
+
+            // Check if module is enabled
+            if ($ModuleLoad->isEnable()) {
+                // If enabled, save in module list
+                $this->modulesList[$directory] = $ModuleLoad;
+                if (!file_exists($this->getModulePath() . '/autoload.php')) {
+                    throw new Exception("Error : Autoload file not exist for this library : " . $this->getDirectory(), 1);
+                }
+
+                require $this->getModulePath() . '/autoload.php';
+            }
+        }
     }
 }

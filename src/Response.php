@@ -1,5 +1,5 @@
 <?php
- /*
+/*
         This code is under MIT License
         
         +--------------------------------+
@@ -63,17 +63,13 @@
 */
 namespace Radion;
 
-/**
- * Class Response.
- *
- */
-class ResponseManager
-{
+use Illuminate\Support\Facades\Session;
+
+class Response {
+
     /**
-     * Hive containing all response values.
-     *
+     * Hive containing all response values
      * @var array
-     *
      */
     private static $hive = [];
 
@@ -84,34 +80,27 @@ class ResponseManager
     /**
      * Response constructor.
      */
-    private function __construct()
+	private function __construct()
     {
-        if (!isset($_SESSION)) {
+        if(!isset($_SESSION)){
             session_start();
         }
-    }
+	}
 
     /**
-     * Redirect to a location.
-     *
+     * Redirect to a location
      * @param $htmlLocation
      * @param int $time
-     *
-     * @return ResponseManager
-     *
+     * @return Response
      */
     public static function redirect($htmlLocation, $time = 0)
     {
         self::$htmlLocation = $htmlLocation;
         self::$time = $time;
+        return new self;
+	}
 
-        return new self();
-    }
-
-    /**
-     * @param array $flashVars
-     *
-     */
+    // hello?
     public function with(array $flashVars)
     {
         $_SESSION['ss_flash_variables'] = $flashVars;
@@ -119,15 +108,15 @@ class ResponseManager
 
     /**
      * We do redirect when the Response object is destroyed.
-     *
      */
     public function __destruct()
     {
-        if (!headers_sent()) {
-            header('Location:' . self::$htmlLocation, true, 302);
+        if(!headers_sent())
+        {
+            header("Location:".self::$htmlLocation, TRUE, 302);
             exit();
         }
         // Something has caused our redirect not working properly. Using redirect with meta
-        exit('<meta http-equiv="refresh" content="' . self::$time . '; url=' . self::$htmlLocation . '" />');
+        exit('<meta http-equiv="refresh" content="'.self::$time.'; url='.self::$htmlLocation.'" />');
     }
 }
