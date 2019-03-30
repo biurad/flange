@@ -63,8 +63,7 @@
 */
 namespace Radion;
 
-use Rlis\RadeView\RadeViewManager as Rade;
-use Radion\SharerManager as Sharer;
+use Sharer;
 
 /**
  * The Viewer Manager
@@ -80,6 +79,8 @@ class Viewer
     // the hive is where all data is stored, which is then usable from all template
     // files
     private static $hive = [];
+    /** @var boolean to enable html output compression */
+	private static $_htmlCompression = false;
 
     /**
      * Finds, renders and displays a template file. Reports a 404 error in
@@ -95,6 +96,15 @@ class Viewer
      */
     static function file($file, array $data = [])
     {
+        // Output content
+        if(self::$_htmlCompression){
+            if(getenv('ENVIRONMENT') == 'debug') {
+                $beforeCompression = ($file);
+                $afterCompression = ($file);
+                Debugger::addMessage('data', 'html-compression-rate', (!empty($beforeCompression) ? 100 - round($afterCompression / $beforeCompression * 100, 1) : '0').'%' );
+            }
+        }
+
         if (Config::get('theme', 'Template') === 'DEFAULT') {
             // Do you love displaying blank pages?
             if ($file === 'index' || $file === 'index.php') {
@@ -121,7 +131,7 @@ class Viewer
         } else if (Config::get('theme','Template') === 'RADEVIEW') {
             $views = 'Resources/Themes/' . Config::get('theme','theme_style') . '/views';
             $compiledFolder = 'Resources/' . Config::get('theme','storage_path') . '/framework';
-            $rade = new Rade($views, $compiledFolder);
+            $rade = new myRade($views, $compiledFolder);
             define("RADEVIEW_MODE", 0); // (optional) 1=forced (test),2=run fast (production), 0=automatic, default value.
             // Do you love displaying blank pages?
             if ($file === 'index' || $file === 'index.php') {
@@ -133,6 +143,7 @@ class Viewer
                  */
                 echo $rade->run($file, $data);
             }
+
         } else if (Config::get('theme','Template') === 'TPL') {
             /**
              * Get the path of the calling script and get it's containing Directory
@@ -165,8 +176,28 @@ class Viewer
             } else {
                 Debugger::report(404, true);
             }
-        } else {
-            Debugger::display('simple', 'Viewer Template Note Found', "Set your preferred Viewer Template in Theme's Config File");
+        } else if (Config::get('theme','Template ') === 'HTML') {
+            if ($file === 'index' || $file === 'index.php') {
+                Debugger::report(404, true);
+            } else {
+                /**
+                 * Get the path of the calling script and get it's containing Directory
+                 * to enable include() style of accessing files
+                 */
+                $callingScriptPath = debug_backtrace()[0]['file'];
+                $callingScriptDirectory = realpath(dirname($callingScriptPath));
+                if (file_exists($callingScriptDirectory . '/' . 'Resources/Themes/' . Config::get('theme','theme_style' ) . '/views/' . $file)) {
+                    self::render($callingScriptDirectory . '/' . 'Resources/Themes/' . Config::get('theme','theme_style' ) . '/views/' . $file, $data);
+                } else if (file_exists($callingScriptDirectory . '/' . 'Resources/Themes/' . Config::get('theme','theme_style' ) . '/views/' . $file . '.html')) {
+                    self::render($callingScriptDirectory . '/' . 'Resources/Themes/' . Config::get('theme','theme_style' ) . '/views/' . $file . '.html', $data);
+                } else if (file_exists(BR_PATH . 'Resources/Themes/' . Config::get('theme','theme_style' ) . '/views/' . $file)) {
+                    self::render('Resources/Themes/' . Config::get('theme','theme_style' ) . '/views/' . $file, $data);
+                } else if (file_exists(BR_PATH . 'Resources/Themes/' . Config::get('theme','theme_style' ) . '/views/' . $file . '.html')) {
+                    self::render(BR_PATH . 'Resources/Themes/' . Config::get('theme','theme_style' ) . '/views/' . $file . '.html', $data);
+                } else {
+                    Debugger::report(404, true);
+                }
+            }
         }
     }
 
@@ -205,8 +236,19 @@ class Viewer
 
         $output = preg_replace_callback('!\{\{(.*?)\}\}!', 'Viewer::replace', $input);
 
+        // Compresss output
+        if (Config::get('theme','compression') === true) {
+            $output = \Rlis\RadeMinify\RadeMinify::html($output);
+            echo ($output);
+        } else if (Config::get('theme', 'compression') == false) {
+            echo ($output);
+        } else {
+            header('HTTP/1.1 503 Service Unavailable.', true, 503);
+            Debugger::display('wrong', 'Compression Notice', 'The application compression was not set correctly');
+            exit(1);
+        }
 
-        echo ($output);
+        //echo ($output);
     }
 
     static private function replace($matches)
@@ -238,5 +280,15 @@ class Viewer
             }
         }
     }
+}
+
+class myRade extends \Rlis\RadeView\RadeViewManager
+{
+    use \Rlis\RadeView\RadeViewManagerHtmlBootstrap;
+    use \Rlis\RadeView\RadeViewManagerCustom;
+    //use \Rlis\RadeView\RadeViewManagerHtml;
+    //use \Rlis\RadeView\RadeViewManagerCache;
+    //use \Rlis\RadeView\RadeViewManagerCacheRedis;
+    //use \Rlis\RadeView\RadeViewManagerLogic;
 }
 

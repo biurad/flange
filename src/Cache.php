@@ -119,6 +119,75 @@ class Cache extends CacheConfig
 
         return self::getInstance();
     }
+
+    function OpenCacheDir()
+    {
+        $cache = BR_PATH.'Resources/' . Config::get('theme','storage_path');
+        $htmlcontent = "<!DOCTYPE html><html><head><meta charset='utf-8'><title>Biurad Slim Framework</title></head><body></body></html>";
+        if (!file_exists($cache)) {
+            $oldmask = umask(0);
+            @mkdir($cache, 0777, true);
+            @umask($oldmask);
+        }
+        if (!file_exists($cache.'/.htaccess')) {
+            $f = @fopen($cache."/.htaccess", "a+");
+            @fwrite($f, "deny from all");
+            @fclose($f);
+        }
+        if (!file_exists($cache.'/index.html')) {
+            $f = @fopen($cache."/index.html", "a+");
+            @fwrite($f, "<!DOCTYPE html><html><head><meta charset='utf-8'><title>Biurad Slim Framework</title></head><body></body></html>");
+            @fclose($f);
+        }
+        if (!file_exists($cache.'/framework/index.html')) {
+            $f = @fopen($cache."/framework/index.html", "a+");
+            @fwrite($f, "<!DOCTYPE html><html><head><meta charset='utf-8'><title>Biurad Slim Framework</title></head><body></body></html>");
+            @fclose($f);
+        }
+    }
+    static function read($fileName)
+    {
+        $cache = BR_PATH.'Resources/' . Config::get('theme','storage_path');
+        $fileName = $cache.'/' . $fileName;
+        if (file_exists($fileName)) {
+            $handle   = fopen($fileName, 'rb');
+            $variable = fread($handle, filesize($fileName));
+            fclose($handle);
+            return unserialize($variable);
+        } else {
+            return null;
+        }
+    }
+    static function write($fileName, $variable)
+    {
+        $cache = BR_PATH.'Resources/' . Config::get('theme','storage_path');
+        $fileName = $cache.'/' . $fileName;
+        $handle   = fopen($fileName, 'a');
+        fwrite($handle, serialize($variable));
+        fclose($handle);
+    }
+    static function delete($fileName)
+    {
+        $cache = BR_PATH.'Resources/' . Config::get('theme','storage_path');
+        $fileName = $cache.'/' . $fileName;
+        @unlink($fileName);
+    }
+
+    static function cachebase() {
+        $cache = BR_PATH.'Resources/' . Config::get('theme','storage_path');
+        return $cache;
+    }
+
+    function ClearCache() {
+        $path = BR_PATH.'Resources/' . Config::get('theme','storage_path');
+        if ($handle = opendir($path)) {
+            while (false !== ($file = readdir($handle))) {
+                if (strripos($file, ['temp','rade','logs','rb']) !== false) {
+                    @unlink($path . '/' . $file);
+                }
+            }
+        }
+    }
 }
 
 class CacheConfig
