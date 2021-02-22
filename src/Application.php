@@ -17,17 +17,16 @@ declare(strict_types=1);
 
 namespace Rade;
 
-use Biurad\Http\Factories\GuzzleHttpPsr7Factory;
 use Biurad\Http\Response\HtmlResponse;
 use Flight\Routing\Exceptions\RouteNotFoundException;
 use Flight\Routing\Route;
 use Flight\Routing\RouteCollection;
 use GuzzleHttp\Exception\BadResponseException;
 use Laminas\Escaper\Escaper;
-use Laminas\HttpHandlerRunner\Emitter\SapiStreamEmitter;
 use Laminas\Stratigility\Utils;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 use Rade\API\BootableProviderInterface;
 use Rade\API\ControllerProviderInterface;
 use Rade\API\EventListenerProviderInterface;
@@ -45,9 +44,13 @@ use Symfony\Component\Console\Input\ArgvInput;
  *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
-class Application extends Container
+class Application extends Container implements RequestHandlerInterface
 {
     public const VERSION = '2.0.0-DEV';
+
+    public const MASTER_REQUEST = 1;
+
+    public const SUB_REQUEST = 2;
 
     private bool $booted = false;
 
@@ -85,6 +88,16 @@ class Application extends Container
     public function isVagrantEnvironment(): bool
     {
         return (\getenv('HOME') === '/home/vagrant' || \getenv('VAGRANT') === 'VAGRANT') && \is_dir('/dev/shm');
+    }
+
+    /**
+     * Returns the request type the kernel is currently processing.
+     *
+     * @return int One of Application::MASTER_REQUEST and Application::SUB_REQUEST
+     */
+    public function getRequestType(): int
+    {
+        return $this->config['requestType'];
     }
 
     /**
@@ -240,7 +253,10 @@ class Application extends Container
             );
         }
 
-        $this['routes']->group($prefix, $controllers);
+        $prefixPath = \trim($prefix, '/') ?: '/';
+        $prefixName = '/' !== $prefixPath ? str_replace('/', '_', $prefixPath) . '_' : '';
+
+        $this['routes']->group($prefixName, $controllers)->withPrefix('/' . $prefixPath);
 
         return $this;
     }
@@ -319,22 +335,14 @@ class Application extends Container
             return $this['console']->run(new ArgvInput(['no-debug' => !$this['debug']]));
         }
 
-        $emitter = new SapiStreamEmitter();
-        $request = $request ?? GuzzleHttpPsr7Factory::fromGlobalRequest();
+        $request = $request ?? $this['http.server_request_creator'];
 
-        try {
-            $response = $this->handleRequest($request);
+        $response = $this->handle($request, self::MASTER_REQUEST, $catch);
 
-            if ($response instanceof ResponseInterface) {
-                $emitter->emit($this->filterResponse($response, $request));
-                $this->terminate($request, $response);
-            }
-        } catch (\Throwable $e) {
-            if (!$catch || $this->isRunningInConsole()) {
-                throw $e;
-            }
+        if ($response instanceof ResponseInterface) {
+            $this['http.emitter']->emit($response);
 
-            $response = $emitter->emit($this->handleThrowable($e, $request));
+            $this->terminate($request, $response);
         }
     }
 
@@ -353,11 +361,17 @@ class Application extends Container
      * Exceptions are not caught.
      *
      * @param ServerRequestInterface $request
+     * @param int                    $type    The type of the request
+     *                               (one of self::MASTER_REQUEST or self::SUB_REQUEST)
+     * @param bool                   $catch   Whether to catch exceptions or not
      *
      * @return ResponseInterface
      */
-    public function handleRequest(ServerRequestInterface $request): ResponseInterface
+    public function handle(ServerRequestInterface $request, $type = self::MASTER_REQUEST, bool $catch = true): ResponseInterface
     {
+        $this->config['requestType'] = $type;
+
+        // Listen to request made on self::MASTER_REQUEST and self::SUB_REQUEST
         $event = new RequestEvent($this, $request);
         $this['dispatcher']->dispatch($event, Events::REQUEST);
 
@@ -366,24 +380,24 @@ class Application extends Container
         }
 
         try {
-            return $this['router']->handle($request);
-        } catch (RouteNotFoundException $e) {
-            // If base directory, and no route matched
-            $path = $request->getUri()->getPath();
-            $base = \dirname($request->getServerParams()['SCRIPT_NAME'] ?? '/');
-
-            if (\rtrim($path, '/') . '/' === \rtrim($base, '\/') . '/') {
-                return $this->createWelcomeResponse();
+            $response = $this['router']->handle($request);
+        } catch (\Throwable $e) {
+            if (!$catch || $this->isRunningInConsole()) {
+                throw $e;
             }
 
-            $message = $e->getMessage();
+            if ($e instanceof RouteNotFoundException) {
+                $e = $this->handleRouterException($e, $request);
 
-            if ('' !== $referer = $request->getHeaderLine('referer')) {
-                $message .= \sprintf(' (from "%s")', $referer);
+                if ($e instanceof ResponseInterface) {
+                    return $e;
+                }
             }
 
-            throw new RouteNotFoundException($message, 404);
+            $response = $this->handleThrowable($e, $request);
         }
+
+        return $this->filterResponse($response, $request);
     }
 
     /**
@@ -395,6 +409,33 @@ class Application extends Container
         $this['dispatcher']->dispatch($event, Events::RESPONSE);
 
         return $event->getResponse();
+    }
+
+    /**
+     * Handle RouteNotFoundException for Flight Routing
+     *
+     * @param RouteNotFoundException $e
+     * @param ServerRequestInterface $request
+     * 
+     * @return RouteNotFoundException|ResponseInterface
+     */
+    protected function handleRouterException(RouteNotFoundException $e, ServerRequestInterface $request)
+    {
+        // If base directory, and no route matched
+        $path = $request->getUri()->getPath();
+        $base = \dirname($request->getServerParams()['SCRIPT_NAME'] ?? '/');
+
+        if (\rtrim($path, '/') . '/' === \rtrim($base, '\/') . '/') {
+            return $this->createWelcomeResponse();
+        }
+
+        $message = $e->getMessage();
+
+        if ('' !== $referer = $request->getHeaderLine('referer')) {
+            $message .= \sprintf(' (from "%s")', $referer);
+        }
+
+        return new RouteNotFoundException($message, 404);
     }
 
     /**

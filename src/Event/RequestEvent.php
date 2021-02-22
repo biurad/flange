@@ -61,4 +61,24 @@ class RequestEvent extends KernelEvent
     {
         return null !== $this->response;
     }
+
+    /**
+     * Returns the request type the kernel is currently processing.
+     *
+     * @return int One of Application::MASTER_REQUEST and Application::SUB_REQUEST
+     */
+    public function getRequestType(): int
+    {
+        return $this->getApplication()->getRequestType();
+    }
+
+    /**
+     * Checks if this is a master request.
+     *
+     * @return bool True if the request is a master request
+     */
+    public function isMasterRequest(): bool
+    {
+        return \Rade\Application::MASTER_REQUEST === $this->getRequestType();
+    }
 }
