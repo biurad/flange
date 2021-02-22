@@ -1,31 +1,79 @@
 {
-    "name": "biurad/slim",
-    "description": "A professional made easy framework for web development",
+    "name": "divineniiquaye/php-rade",
+    "description": "A modern PSR fully complaint framework for web, crafted from SILEX",
     "keywords": [
-        "biurad slim framework",
-        "radion",
-        "biurad",
+        "framework",
+        "rade",
+        "divinenii",
         "php-framework",
         "php framework",
         "framework",
-        "php 7",
-        "hhvm"
+        "php",
+        "php-17",
+        "psr-15",
+        "psr-11",
+        "psr-7"
     ],
-    "license": "MIT",
-    "type": "project",
-    "authors": [{
-        "name": "BiuStudio",
-        "email": "support@biuhub.net",
-        "homepage": "https://slim.biurad.ml",
-        "role": "Developer"
-    }],
+    "homepage": "https://www.divienii.com",
+    "license": "BSD-3-Clause",
+    "authors": [
+        {
+            "name": "Divine Niiquaye Ibok",
+            "email": "divineibok@gmail.com"
+        }
+    ],
+    "support": {
+        "docs": "https://docs.divienii.com/php-rade",
+        "issues": "https://github.com/divineniiquaye/php-rade/issues",
+        "rss": "https://github.com/divineniiquaye/php-rade/releases.atom",
+        "source": "https://github.com/divineniiquaye/php-rade"
+    },
     "require": {
-        "php": ">=5.6.0",
-        "maximebf/debugbar": ">=1.0.0"
+        "php": "^7.4 || ^8.0",
+        "biurad/annotations": "1.x-dev",
+        "biurad/events-bus": "1.x-dev",
+        "biurad/http-galaxy": "1.x-dev",
+        "divineniiquaye/flight-routing": "1.x-dev",
+        "divineniiquaye/rade-di": "^0.1.5",
+        "symfony/console": "5.2.*",
+        "symfony/process": "5.2.*",
+        "tracy/tracy": "^2.8"
+    },
+    "require-dev": {
+        "composer/package-versions-deprecated": "^1.11",
+        "phpunit/phpunit": "^9.5",
+        "phpstan/phpstan": "^0.12",
+        "phpstan/phpstan-strict-rules": "^0.12",
+        "squizlabs/php_codesniffer": "^3.5",
+    },
+    "suggest": {
+        "biurad/annotations": "A powerful annotations and attributes support for PHP 7.2+",
+        "biurad/cache": "A powerful cache library for advanced caching and Http Galaxy session cache handler",
+        "biurad/flysystem": "A FileManager for handling filesytem on local disk and cloud storage",
+        "biurad/templating": "A library that provides all the tools needed in working with any kind of template system"
     },
     "autoload": {
         "psr-4": {
-            "Radion\\": "src/"
+            "Rade\\": "src/"
         }
-    }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Rade\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "phpcs": "phpcs -q",
+        "phpstan": "phpstan analyse",
+        "psalm": "psalm --show-info=true",
+        "phpunit": "phpunit --no-coverage",
+        "test": [
+            "@phpcs",
+            "@phpstan",
+            "@psalm",
+            "@phpunit"
+        ]
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }
