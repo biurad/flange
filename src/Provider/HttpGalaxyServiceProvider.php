@@ -204,7 +204,7 @@ class HttpGalaxyServiceProvider implements ConfigurationInterface, ServiceProvid
 
         $app['session.storage.metadata_bag'] = new MetadataBag($session['meta_storage_key'], $session['metadata_update_threshold']);
         $app['session.handler.native_file'] = function (Container $app) use ($session) {
-            if ($app instanceof \Rade\Application && $app->isRunningInConsole()) {
+            if (\in_array(\PHP_SAPI, ['cli', 'phpdbg', 'embed'], true)) {
                 return new NullSessionHandler();
             }
 
