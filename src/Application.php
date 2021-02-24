@@ -323,7 +323,7 @@ class Application extends Container implements RequestHandlerInterface
      *
      * @param ServerRequestInterface |null $request Request to process
      *
-     * @return bool|null
+     * @return bool|mixed
      */
     public function run(ServerRequestInterface $request = null, bool $catch = true)
     {
@@ -335,14 +335,13 @@ class Application extends Container implements RequestHandlerInterface
             return $this['console']->run(new ArgvInput(['no-debug' => !$this['debug']]));
         }
 
-        $request = $request ?? $this['http.server_request_creator'];
-
+        $request  = $request ?? $this['http.server_request_creator'];
         $response = $this->handle($request, self::MASTER_REQUEST, $catch);
 
         if ($response instanceof ResponseInterface) {
-            $this['http.emitter']->emit($response);
-
             $this->terminate($request, $response);
+
+            return $this['http.emitter']->emit($response);
         }
     }
 
@@ -416,7 +415,7 @@ class Application extends Container implements RequestHandlerInterface
      *
      * @param RouteNotFoundException $e
      * @param ServerRequestInterface $request
-     * 
+     *
      * @return RouteNotFoundException|ResponseInterface
      */
     protected function handleRouterException(RouteNotFoundException $e, ServerRequestInterface $request)
