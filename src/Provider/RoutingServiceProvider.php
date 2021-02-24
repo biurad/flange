@@ -95,22 +95,19 @@ class RoutingServiceProvider implements ConfigurationInterface, ServiceProviderI
 
         $app['router'] = function () use ($app, $config): Router {
             $router = $app->callInstance(Router::class, ['options' => $config['options'] ?? []]);
+            $middlewares = array_merge([PathMiddleware::class, HttpMiddleware::class], $config['middlewares'] ?? []);
 
-            $middlewares = \array_merge(
-                [
-                    PathMiddleware::class,
-                    HttpMiddleware::class,
-                ],
-                $config['middlewares'] ?? [],
-                [
+            if ($app instanceof \Rade\Application) {
+                \array_push(
+                    $middlewares,
                     CookiesMiddleware::class,
                     SessionMiddleware::class,
                     AccessControlMiddleware::class,
                     ContentSecurityPolicyMiddleware::class,
                     RouteHandlerMiddleware::class,
                     new ErrorHandlerMiddleware($config['response_error']),
-                ],
-            );
+                );
+            }
 
             $router->addMiddleware(...$middlewares);
 
