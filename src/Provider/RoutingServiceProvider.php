@@ -23,6 +23,7 @@ use Biurad\Http\Middlewares\CookiesMiddleware;
 use Biurad\Http\Middlewares\ErrorHandlerMiddleware;
 use Biurad\Http\Middlewares\HttpMiddleware;
 use Biurad\Http\Middlewares\SessionMiddleware;
+use Flight\Routing\Annotation\Listener;
 use Flight\Routing\Middlewares\PathMiddleware;
 use Flight\Routing\RouteCollection;
 use Flight\Routing\Router;
@@ -87,14 +88,23 @@ class RoutingServiceProvider implements ConfigurationInterface, ServiceProviderI
     public function register(Container $app): void
     {
         $app['routes_factory']  = $app->factory(fn () => new RouteCollection());
-        $config = $app['routing.config'] ?? [];
+        $config = $app->parameters['routing'] ?? [];
 
-        if (isset($config['redirect_permanent'])) {
-            $app['path_middleware'] = $app->callInstance(PathMiddleware::class, [$config['redirect_permanent']]);
+        // If debug is not set, use default
+        if (!isset($config['options']['debug'])) {
+            $config['options']['debug'] = $app->parameters['debug'];
         }
 
-        $app['router'] = function () use ($app, $config): Router {
-            $router = $app->callInstance(Router::class, ['options' => $config['options'] ?? []]);
+        if (isset($config['redirect_permanent'])) {
+            $app['path_middleware'] = new PathMiddleware($config['redirect_permanent']);
+        }
+
+        if (isset($app['annotation'])) {
+            $app['router.annotation_listener'] = new Listener($app['routes_factory']);
+        }
+
+        $app['router'] = static function () use ($app, $config): Router {
+            $router = $app->call(Router::class, ['options' => $config['options'] ?? []]);
             $middlewares = array_merge([PathMiddleware::class, HttpMiddleware::class], $config['middlewares'] ?? []);
 
             if ($app instanceof \Rade\Application) {
@@ -108,20 +118,19 @@ class RoutingServiceProvider implements ConfigurationInterface, ServiceProviderI
                     new ErrorHandlerMiddleware($config['response_error']),
                 );
             }
-
             $router->addMiddleware(...$middlewares);
 
             return $router;
         };
         $app['routes'] = $app['router']->getCollection();
 
-        unset($app['routing.config']);
+        unset($app->parameters['routing']);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function boot(Application $app)
+    public function boot(Application $app): void
     {
         // Add tagged middlewares to router.
         foreach ($app->tagged(self::TAG_MIDDLEWARE) as [$middleware, $tag]) {
@@ -132,6 +141,11 @@ class RoutingServiceProvider implements ConfigurationInterface, ServiceProviderI
             }
 
             $app['router']->addMiddleware($middleware);
+        }
+
+        // Load routes from annotation ...
+        if (isset($app['annotation'])) {
+            $app['router']->loadAnnotation($app['annotation']);
         }
     }
 }
