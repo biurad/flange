@@ -34,7 +34,8 @@
         "biurad/events-bus": "1.x-dev",
         "biurad/http-galaxy": "1.x-dev",
         "divineniiquaye/flight-routing": "1.x-dev",
-        "divineniiquaye/rade-di": "^0.1.5",
+        "divineniiquaye/rade-di": "^0.2.0",
+        "symfony/config": "5.2.*",
         "symfony/console": "5.2.*",
         "symfony/process": "5.2.*",
         "tracy/tracy": "^2.8"
