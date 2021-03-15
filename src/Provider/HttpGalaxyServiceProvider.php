@@ -143,7 +143,7 @@ class HttpGalaxyServiceProvider implements ConfigurationInterface, ServiceProvid
                         ->scalarNode('handler_id')->defaultValue('session.handler.native_file')->end()
                         ->scalarNode('name')
                             ->validate()
-                                ->ifTrue(function ($v) {
+                                ->ifTrue(function ($v): bool {
                                     \parse_str($v, $parsed);
 
                                     return \implode('&', \array_keys($parsed)) !== (string) $v;
@@ -189,34 +189,29 @@ class HttpGalaxyServiceProvider implements ConfigurationInterface, ServiceProvid
     public function register(Container $app): void
     {
         $app['http.factory'] = new GuzzleHttpPsr7Factory();
-        $app['http.server_request_creator'] = fn () => GuzzleHttpPsr7Factory::fromGlobalRequest();
         $app['http.emitter'] = new SapiStreamEmitter();
-        $config = $app['http.config'] ?? [];
+        $app->set('http.server_request_creator', GuzzleHttpPsr7Factory::fromGlobalRequest());
+        $config = $app->parameters['http'] ?? [];
 
-        $app['http.csp_middleare'] = new ContentSecurityPolicy([] === $config['policies']['content_security_policy']);
+        $app['http.csp_middleware'] = new ContentSecurityPolicy([] === $config['policies']['content_security_policy']);
         $app['http.acl_middleware'] = new AccessControlMiddleware($config['headers']['cors'] ?? []);
         $app['http.middleware'] = new HttpMiddleware(\array_intersect_key($config, \array_flip(['policies', 'headers'])));
 
         if (isset($app['cache.psr6'])) {
-            $app['http.cache_middleware'] = $app->callInstance(CacheControlMiddleware::class, [3 => $config['caching']]);
+            $app['http.cache_middleware'] = $app->call(CacheControlMiddleware::class, [3 => $config['caching']]);
         }
         $session = $config['session'];
 
         $app['session.storage.metadata_bag'] = new MetadataBag($session['meta_storage_key'], $session['metadata_update_threshold']);
-        $app['session.handler.native_file'] = function (Container $app) use ($session) {
+        $app['session.handler.native_file'] = static function (Container $app) use ($session) {
             if (\in_array(\PHP_SAPI, ['cli', 'phpdbg', 'embed'], true)) {
                 return new NullSessionHandler();
             }
 
-            return new StrictSessionHandler(
-                new NativeFileSessionHandler($app['project_dir'] . $session['save_path'])
-            );
+            return new StrictSessionHandler(new NativeFileSessionHandler($app->parameters['project_dir'] . $session['save_path']));
         };
-        $app['session.handler'] =  function (Container $app) use ($session): AbstractSessionHandler {
-            $handler = $app->callInstance(
-                HandlerFactory::class,
-                ['minutes' => $session['cookie_lifetime']]
-            );
+        $app['session.handler'] = static function (Container $app) use ($session): AbstractSessionHandler {
+            $handler = $app->call(HandlerFactory::class, ['minutes' => $session['cookie_lifetime']]);
 
             try {
                 return $handler->createHandler($session['handler_id']);
@@ -224,9 +219,9 @@ class HttpGalaxyServiceProvider implements ConfigurationInterface, ServiceProvid
                 return $app[$session['handler_id']];
             }
         };
-        $app['session.storage.native'] = $app->callInstance(NativeSessionStorage::class, [$session, $app['session.handler']]);
-        $app['session.storage.php_bridge'] = $app->callInstance(PhpBridgeSessionStorage::class, [$app['session.handler']]);
-        $app['cookie'] = function () use ($session): CookieFactory {
+        $app['session.storage.native'] = $app->call(NativeSessionStorage::class, [$session, $app['session.handler']]);
+        $app['session.storage.php_bridge'] = $app->call(PhpBridgeSessionStorage::class, [$app['session.handler']]);
+        $app['cookie'] = static function () use ($session): CookieFactory {
             $cookie = new CookieFactory();
 
             return $cookie->setDefaultPathAndDomain(
@@ -237,6 +232,6 @@ class HttpGalaxyServiceProvider implements ConfigurationInterface, ServiceProvid
         };
         $app['session'] = new Session($app[$session['storage_id']]);
 
-        unset($app['http.config']);
+        unset($app->parameters['http']);
     }
 }
