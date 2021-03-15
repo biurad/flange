@@ -42,7 +42,7 @@ use Tracy\Helpers;
 	}
 </style>
 
-<h1><?= get_class($container) ?></h1>
+<h1><?= get_class($this->container) ?></h1>
 
 <div class="tracy-inner nette-ContainerPanel">
 <div class="tracy-inner-container">
@@ -59,17 +59,18 @@ use Tracy\Helpers;
 		<tbody>
 		<?php foreach ($types as $name => $type): ?>
 		<?php $name = (string) $name ?>
-		<?php $autowired = in_array($name, array_merge($wiring[$type][0] ?? [], $wiring[$type][1] ?? []), true) ?>
+		<?php $autowired = null !== $type ?>
 		<tr>
-			<td class="<?= isset($frozen[$name]) ? 'created' : '' ?>"><?= is_numeric($name) ? "<span title='$name'>–</span>" : Helpers::escapeHtml($name) ?></td>
+			<td class="<?= (isset($frozen[$name]) || isset($services[$name])) ? 'created' : '' ?>"><?= is_numeric($name) ? "<span title='$name'>–</span>" : Helpers::escapeHtml($name) ?></td>
 			<td class="<?= $autowired ? 'yes' : '' ?>"><?= $autowired ? 'yes' : 'no' ?></td>
 			<td>
-				<?php if (isset($frozen[$name]) && !$instances[$name] instanceof \Rade\DI\Container): ?>
-					<?= Dumper::toHtml($instances[$name], [Dumper::COLLAPSE => true, Dumper::LIVE => true]); ?>
-				<?php elseif (isset($instances[$name]) && \is_object($instances[$name])): ?>
-					<code><?= get_class($instances[$name]) ?></code>
-				<?php elseif (is_string($type)): ?>
-					<code><?= Dumper::toHtml($instances[$name]) ?></code>
+                <?php $service = $services[$name] ?? $instances[$name] ?? null; ?>
+				<?php if ((isset($frozen[$name]) || isset($services[$name])) && !$service instanceof \Rade\DI\Container): ?>
+					<?= Dumper::toHtml($service, [Dumper::COLLAPSE => true, Dumper::LIVE => true]); ?>
+				<?php elseif (\is_object($service)): ?>
+					<code><?= $type ?? \get_class($service) ?></code>
+				<?php else: ?>
+					<code><?= $type ?? Dumper::toHtml($service) ?></code>
 				<?php endif ?>
 			</td>
 		</tr>

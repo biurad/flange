@@ -17,10 +17,10 @@ declare(strict_types=1);
 
 namespace Rade\Debug\Tracy;
 
-use DivineNii\Invoker\CallableReflection;
 use Nette;
 use Rade\DI\Container;
 use Tracy;
+use Rade\DI\Resolvers\AutowireValueResolver;
 
 /**
  * Dependency injection container panel for Debugger Bar.
@@ -32,7 +32,7 @@ class ContainerPanel implements Tracy\IBarPanel
     private COntainer $container;
 
     /** @var null|float */
-    private $elapsedTime;
+    private ?float $elapsedTime;
 
     public function __construct(Container $container)
     {
@@ -51,32 +51,38 @@ class ContainerPanel implements Tracy\IBarPanel
 
     /**
      * Renders panel.
+     *
+     * @throws \ReflectionException
+     * @throws \Throwable
+     *
+     * @return string
      */
     public function getPanel(): string
     {
         $rc       = new \ReflectionClass($this->container);
         $types    = [];
         $resolver = $this->getContainerProperty('resolver');
+        $wiring   = $this->getContainerProperty('types') + $this->getContainerProperty('wiring', AutowireValueResolver::class, $resolver);
 
-        foreach ($this->getContainerProperty('values') as $id => $service) {
-            if (\is_callable($service) && null !== $type = CallableReflection::create($service)->getReturnType()) {
-                if ($type instanceof \ReflectionNamedType) {
-                    $types[$id] = $type->getName();
+        foreach ($this->container->keys() as $id) {
+            foreach ($wiring as $type => $names) {
+                if (\in_array($id, $names, true) && \class_exists($type)) {
+                    $types[$id] = $type;
+
+                    continue;
                 }
-            } elseif (\is_object($service) && !$service instanceof \stdClass) {
-                $types[$id] = \get_class($service);
-            } else {
-                $types[$id] = 'empty';
+            }
+
+            if (!isset($types[$id])) {
+                $types[$id] = null;
             }
         }
-
         \ksort($types);
-        $wiring = $this->getContainerProperty('wiring', 'Rade\DI\Resolvers\AutowireValueResolver', $resolver);
 
         return Nette\Utils\Helpers::capture(function () use ($types, $wiring, $rc): void {
-            $container = $this->container;
             $file = $rc->getFileName();
-            $instances = $this->getContainerProperty('values');
+            $instances = $this->getContainerProperty('values') + $this->getContainerProperty('factories') + $this->getContainerProperty('raw');
+            $services = $this->getContainerProperty('services');
             $frozen = $this->getContainerProperty('frozen');
             $configs = $this->getContainerProperty('config', 'Rade\Application');
 
@@ -84,7 +90,15 @@ class ContainerPanel implements Tracy\IBarPanel
         });
     }
 
-    private function getContainerProperty(string $name, string $className = 'Rade\DI\COntainer', $instance = null)
+    /**
+     * @param class-string $className
+     * @param object|null $instance
+     *
+     * @throws \ReflectionException
+     *
+     * @return mixed
+     */
+    private function getContainerProperty(string $name, string $className = Container::class, $instance = null)
     {
         $prop = (new \ReflectionClass($className))->getProperty($name);
         $prop->setAccessible(true);
