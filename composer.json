@@ -42,6 +42,7 @@
         "tracy/tracy": "^2.8"
     },
     "require-dev": {
+        "biurad/cache": "1.x-dev",
         "composer/package-versions-deprecated": "^1.11",
         "monolog/monolog": "^2",
         "phpunit/phpunit": "^9.5",
