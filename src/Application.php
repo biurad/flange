@@ -64,7 +64,7 @@ class Application extends Container implements RequestHandlerInterface
         parent::__construct();
 
         $this->config = $config;
-        $this->offsetSet('project_dir', \rtrim($rootDir, '/') . '/');
+        $this->parameters['project_dir'] = \rtrim($rootDir, '/') . '/';
 
         $this->register(new Provider\ConfigServiceProvider());
         $this->register(new Provider\CoreServiceProvider());
@@ -332,7 +332,7 @@ class Application extends Container implements RequestHandlerInterface
         }
 
         if ($this->isRunningInConsole()) {
-            return $this['console']->run(new ArgvInput(['no-debug' => !$this['debug']]));
+            return $this['console']->run(new ArgvInput(['no-debug' => !$this->parameters['debug']]));
         }
 
         $request  = $request ?? $this['http.server_request_creator'];
