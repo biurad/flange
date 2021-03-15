@@ -28,7 +28,7 @@ use Rade\DI\ServiceProviderInterface;
 
 /**
  * Rade core Provider
- * 
+ *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
 class CoreServiceProvider implements ServiceProviderInterface
@@ -46,24 +46,24 @@ class CoreServiceProvider implements ServiceProviderInterface
      */
     public function register(Container $app): void
     {
-        $app['argument_value_resolvers'] = function (Container $app): array {
+        $app['argument_value_resolvers'] = static function (Container $app): array {
             return [
                 [new NamedValueResolver($app)],
                 [new TypeHintValueResolver($app)],
                 [new DefaultValueResolver()],
             ];
         };
-        $app['callback_resolver'] = function (Container $app): Invoker {
+        $app['callback_resolver'] = static function (Container $app): Invoker {
             $argumentResolvers = $app['argument_value_resolvers'];
 
-            \usort($argumentResolvers, function ($a, $b) {
+            \usort($argumentResolvers, static function ($a, $b): int {
                 return key($a) <=> key($b);
             });
 
-            return new Invoker(array_map(fn ($value) => current($value), $argumentResolvers), $app);
+            return new Invoker(array_map(static fn ($value) => current($value), $argumentResolvers), $app);
         };
         $app['arguments_resolver'] = $app['callback_resolver']->getArgumentResolver();
         $app['callable_resolver'] = new CallableResolver($app);
-        $app['dispatcher'] = LazyEventDispatcher::class;
+        $app['dispatcher'] = $app->lazy(LazyEventDispatcher::class);
     }
 }

@@ -40,9 +40,9 @@ class ConfigServiceProvider implements ConfigurationInterface, ServiceProviderIn
      */
     public function getConfigTreeBuilder(): TreeBuilder
     {
-        $trreBuilder = new TreeBuilder($this->getName());
+        $treeBuilder = new TreeBuilder($this->getName());
 
-        $trreBuilder->getRootNode()
+        $treeBuilder->getRootNode()
             ->children()
                 ->scalarNode('locale')->defaultValue('en')->end()
                 ->booleanNode('debug')->defaultFalse()->end()
@@ -53,7 +53,7 @@ class ConfigServiceProvider implements ConfigurationInterface, ServiceProviderIn
             ->end()
         ;
 
-        return $trreBuilder;
+        return $treeBuilder;
     }
 
     /**
@@ -61,20 +61,20 @@ class ConfigServiceProvider implements ConfigurationInterface, ServiceProviderIn
      */
     public function register(Container $app): void
     {
-        $config = $app['config.config'] ?? [];
+        $config = $app->parameters['config'] ?? [];
 
         if ([] !== $config['paths']) {
-            $config['paths'] = \array_map(fn (string $path) => $app['project_dir'] . $path, $config['paths']);
+            $config['paths'] = \array_map(static fn (string $path) => $app->parameters['project_dir'] . $path, $config['paths']);
         }
 
-        $app['configl.loader_file'] = new FileLocator($config['paths']);
+        $app['config.loader_file'] = new FileLocator($config['paths']);
         $app['config.loader_resolver'] = new LoaderResolver();
-        $app['config.loader'] = DelegatingLoader::class;
+        $app['config.loader'] = $app->lazy(DelegatingLoader::class);
 
         // The default debug environment.
-        $app['debug']  = $config['debug'];
-        $app['locale'] = $config['locale'];
+        $app->parameters['debug']  = $config['debug'];
+        $app->parameters['locale'] = $config['locale'];
 
-        unset($app['config.config']); // Remove default config from DI.
+        unset($app->parameters['config']); // Remove default config from DI.
     }
 }
