@@ -58,6 +58,8 @@ class Application extends Container implements RequestHandlerInterface
 
     /**
      * Instantiate a new Application.
+     *
+     * @param array<string,mixed> $config
      */
     public function __construct(string $rootDir, array $config = [])
     {
@@ -231,7 +233,7 @@ class Application extends Container implements RequestHandlerInterface
      *
      * @return Application
      */
-    public function mount($prefix, $controllers): self
+    public function mount(string $prefix, $controllers): self
     {
         if ($controllers instanceof ControllerProviderInterface) {
             $connectedControllers = $controllers->connect($this);
@@ -281,7 +283,7 @@ class Application extends Container implements RequestHandlerInterface
      * @param int      $priority  The higher this value, the earlier an event
      *                            listener will be triggered in the chain (defaults to 0)
      */
-    public function on($eventName, $callback, $priority = 0): void
+    public function on(string $eventName, $callback, $priority = 0): void
     {
         $this['dispatcher']->addListener($eventName, $callback, $priority);
     }
@@ -338,11 +340,9 @@ class Application extends Container implements RequestHandlerInterface
         $request  = $request ?? $this['http.server_request_creator'];
         $response = $this->handle($request, self::MASTER_REQUEST, $catch);
 
-        if ($response instanceof ResponseInterface) {
-            $this->terminate($request, $response);
+        $this->terminate($request, $response);
 
-            return $this['http.emitter']->emit($response);
-        }
+        return $this['http.emitter']->emit($response);
     }
 
     /**
@@ -443,7 +443,7 @@ class Application extends Container implements RequestHandlerInterface
      * @param \Throwable             $e
      * @param ServerRequestInterface $request
      *
-     * @throws Exception
+     * @throws \Throwable
      *
      * @return ResponseInterface
      */
@@ -483,13 +483,13 @@ class Application extends Container implements RequestHandlerInterface
      */
     protected function createWelcomeResponse(): ResponseInterface
     {
-        $debug = $this['debug'];
+        $debug = $this->parameters['debug'];
         $version = self::VERSION;
-        $docVersion = \substr($version, 0, 1) . '.x.x';
+        $docVersion = $version[0] . '.x.x';
 
         ob_start();
         include __DIR__ . '/Resources/welcome.phtml';
 
-        return new HtmlResponse(ob_get_clean(), 404);
+        return new HtmlResponse((string) ob_get_clean(), 404);
     }
 }
