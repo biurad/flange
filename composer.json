@@ -35,6 +35,7 @@
         "biurad/http-galaxy": "1.x-dev",
         "divineniiquaye/flight-routing": "1.x-dev",
         "divineniiquaye/rade-di": "^0.2.0",
+        "doctrine/annotations": "^1.12",
         "symfony/config": "5.2.*",
         "symfony/console": "5.2.*",
         "symfony/process": "5.2.*",
