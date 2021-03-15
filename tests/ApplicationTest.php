@@ -61,13 +61,13 @@ class ApplicationTest extends BaseTestCase
         $debug = false;
 
         $app = self::getApplication();
-        $this->assertEquals($locale, $app['locale']);
-        $this->assertEquals($debug, $app['debug']);
+        $this->assertEquals($locale, $app->parameters['locale']);
+        $this->assertEquals($debug, $app->parameters['debug']);
 
         $config = ['locale' => 'fr', 'debug' => true];
         $app = self::getApplication(__DIR__, \compact('config'));
-        $this->assertNotEquals($locale, $app['locale']);
-        $this->assertNotEquals($debug, $app['debug']);
+        $this->assertNotEquals($locale, $app->parameters['locale']);
+        $this->assertNotEquals($debug, $app->parameters['debug']);
     }
 
     public function testGetRequest(): void
@@ -116,10 +116,10 @@ class ApplicationTest extends BaseTestCase
     public function testOn(): void
     {
         $app = self::getApplication();
-        $app['pass'] = false;
+        $app['pass'] = $app->raw(false);
 
         $app->on('test', function (Event $e) use ($app) {
-            $app['pass'] = true;
+            $app['pass'] = $app->raw(true);
         });
 
         $app['dispatcher']->dispatch(new Event(), 'test');
