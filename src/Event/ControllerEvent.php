@@ -27,10 +27,9 @@ use Rade\Application;
  * to retrieve the current arguments. With setArguments() you can replace
  * arguments that are used to call the controller.
  *
- * Arguments set in the event must be compatible with the signature of the
- * controller.
+ * Arguments set in the event must be compatible with the signature of the controller.
  *
- * @author Christophe Coevoet <stof@notk.org>
+ * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
 final class ControllerEvent extends KernelEvent
 {
@@ -44,11 +43,6 @@ final class ControllerEvent extends KernelEvent
 
         $this->controller = $controller;
         $this->arguments  = $arguments;
-    }
-
-    public function getName(): ?string
-    {
-        return $this->arguments['_route'] ?? null;
     }
 
     /**

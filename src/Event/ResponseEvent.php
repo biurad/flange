@@ -28,7 +28,7 @@ use Rade\Application;
  * setResponse() you can set a new response that will be returned to the
  * browser.
  *
- * @author Bernhard Schussek <bschussek@gmail.com>
+ * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
 final class ResponseEvent extends KernelEvent
 {

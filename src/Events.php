@@ -18,7 +18,7 @@ declare(strict_types=1);
 namespace Rade;
 
 /**
- * Contains all events thrown in the Applicatiob.
+ * Contains all events thrown in the Application.
  *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
@@ -30,20 +30,16 @@ final class Events
      *
      * This event allows you to create a response for a request before any
      * other code in the framework is executed.
-     *
-     * @Event("Rade\Event\RequestEvent")
      */
-    public const REQUEST = 'kernel.request';
+    public const REQUEST = Event\RequestEvent::class;
 
     /**
      * The EXCEPTION event occurs when an uncaught exception appears.
      *
      * This event allows you to create a response for a thrown exception or
      * to modify the thrown exception.
-     *
-     * @Event("Rade\Event\ExceptionEvent")
      */
-    public const EXCEPTION = 'kernel.exception';
+    public const EXCEPTION = Event\ExceptionEvent::class;
 
     /**
      * The CONTROLLER event occurs once a controller was found for
@@ -51,10 +47,8 @@ final class Events
      *
      * This event allows you to change the controller and arguments that will be passed to
      * the controller while handling the request.
-     *
-     * @Event("Rade\Event\ControllerEvent")
      */
-    public const CONTROLLER = 'kernel.controller';
+    public const CONTROLLER = Event\ControllerEvent::class;
 
     /**
      * The RESPONSE event occurs once a response was created for
@@ -62,17 +56,13 @@ final class Events
      *
      * This event allows you to modify or replace the response that will be
      * replied.
-     *
-     * @Event("Rade\Event\ResponseEvent")
      */
-    public const RESPONSE = 'kernel.response';
+    public const RESPONSE = Event\ResponseEvent::class;
 
     /**
      * The TERMINATE event occurs once a response was sent.
      *
      * This event allows you to run expensive post-response jobs.
-     *
-     * @Event("Rade\Event\TerminateEvent")
      */
-    public const TERMINATE = 'kernel.terminate';
+    public const TERMINATE = Event\TerminateEvent::class;
 }

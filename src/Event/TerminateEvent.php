@@ -17,28 +17,18 @@ declare(strict_types=1);
 
 namespace Rade\Event;
 
-use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Rade\Application;
 
 /**
  * Allows to execute logic after a response was sent.
  *
- * @author Jordi Boggiano <j.boggiano@seld.be>
+ * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
 final class TerminateEvent extends KernelEvent
 {
-    private $response;
-
-    public function __construct(Application $kernel, Request $request, Response $response)
+    public function __construct(Application $kernel, Request $request)
     {
         parent::__construct($kernel, $request);
-
-        $this->response = $response;
-    }
-
-    public function getResponse(): Response
-    {
-        return $this->response;
     }
 }
