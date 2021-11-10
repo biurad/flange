@@ -20,7 +20,6 @@ namespace Rade\Debug\Tracy;
 use Nette;
 use Rade\DI\Container;
 use Tracy;
-use Rade\DI\Resolvers\AutowireValueResolver;
 
 /**
  * Dependency injection container panel for Debugger Bar.
@@ -29,14 +28,16 @@ class ContainerPanel implements Tracy\IBarPanel
 {
     use Nette\SmartObject;
 
-    private COntainer $container;
+    public static ?float $compilationTime = null;
 
-    /** @var null|float */
+    private Container $container;
+
     private ?float $elapsedTime;
 
     public function __construct(Container $container)
     {
         $this->container = $container;
+        $this->elapsedTime = self::$compilationTime ? \microtime(true) - self::$compilationTime : null;
     }
 
     /**
@@ -45,6 +46,8 @@ class ContainerPanel implements Tracy\IBarPanel
     public function getTab(): string
     {
         return Nette\Utils\Helpers::capture(function (): void {
+            $elapsedTime = $this->elapsedTime;
+
             require __DIR__ . '/templates/ContainerPanel.tab.phtml';
         });
     }
@@ -54,37 +57,30 @@ class ContainerPanel implements Tracy\IBarPanel
      *
      * @throws \ReflectionException
      * @throws \Throwable
-     *
-     * @return string
      */
     public function getPanel(): string
     {
-        $rc       = new \ReflectionClass($this->container);
-        $types    = [];
-        $resolver = $this->getContainerProperty('resolver');
-        $wiring   = $this->getContainerProperty('types') + $this->getContainerProperty('wiring', AutowireValueResolver::class, $resolver);
+        $rc = new \ReflectionClass(Container::class);
+        $types = [];
+        $wiring = $this->getContainerProperty('types', $rc);
 
         foreach ($this->container->keys() as $id) {
             foreach ($wiring as $type => $names) {
-                if (\in_array($id, $names, true) && \class_exists($type)) {
+                if (\in_array($id, $names, true)) {
                     $types[$id] = $type;
 
-                    continue;
+                    continue 2;
                 }
             }
-
-            if (!isset($types[$id])) {
-                $types[$id] = null;
-            }
         }
+
         \ksort($types);
 
         return Nette\Utils\Helpers::capture(function () use ($types, $wiring, $rc): void {
             $file = $rc->getFileName();
-            $instances = $this->getContainerProperty('values') + $this->getContainerProperty('factories') + $this->getContainerProperty('raw');
-            $services = $this->getContainerProperty('services');
-            $frozen = $this->getContainerProperty('frozen');
-            $configs = $this->getContainerProperty('config', 'Rade\Application');
+            $instances = $this->getContainerProperty('definitions', $rc);
+            $services = $this->getContainerProperty('services', $rc);
+            $configs = $this->getContainerProperty('parameters', $rc);
 
             require __DIR__ . '/templates/ContainerPanel.panel.phtml';
         });
@@ -92,17 +88,21 @@ class ContainerPanel implements Tracy\IBarPanel
 
     /**
      * @param class-string $className
-     * @param object|null $instance
+     * @param object|null  $instance
      *
      * @throws \ReflectionException
      *
      * @return mixed
      */
-    private function getContainerProperty(string $name, string $className = Container::class, $instance = null)
+    private function getContainerProperty(string $property, \ReflectionClass $appRef)
     {
-        $prop = (new \ReflectionClass($className))->getProperty($name);
+        if (!$appRef->hasProperty($property)) {
+            $appRef = $appRef->getParentClass();
+        }
+
+        $prop = $appRef->getProperty($property);
         $prop->setAccessible(true);
 
-        return $prop->getValue($instance ?? $this->container);
+        return $prop->getValue($this->container);
     }
 }

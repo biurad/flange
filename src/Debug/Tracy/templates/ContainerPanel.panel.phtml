@@ -42,39 +42,38 @@ use Tracy\Helpers;
 	}
 </style>
 
-<h1><?= get_class($this->container) ?></h1>
+<h1><?= \get_class($this->container) ?></h1>
 
 <div class="tracy-inner nette-ContainerPanel">
 <div class="tracy-inner-container">
-	<h2>Services</h2>
+    <h2>Services</h2>
 
-	<table class="tracy-sortable">
+    <table class="tracy-sortable">
 		<thead>
 		<tr>
 			<th>Name</th>
 			<th>Autowired</th>
+			<th>Initialized</th>
 			<th>Service</th>
 		</tr>
 		</thead>
 		<tbody>
-		<?php foreach ($types as $name => $type): ?>
-		<?php $name = (string) $name ?>
-		<?php $autowired = null !== $type ?>
-		<tr>
-			<td class="<?= (isset($frozen[$name]) || isset($services[$name])) ? 'created' : '' ?>"><?= is_numeric($name) ? "<span title='$name'>–</span>" : Helpers::escapeHtml($name) ?></td>
-			<td class="<?= $autowired ? 'yes' : '' ?>"><?= $autowired ? 'yes' : 'no' ?></td>
-			<td>
-                <?php $service = $services[$name] ?? $instances[$name] ?? null; ?>
-				<?php if ((isset($frozen[$name]) || isset($services[$name])) && !$service instanceof \Rade\DI\Container): ?>
-					<?= Dumper::toHtml($service, [Dumper::COLLAPSE => true, Dumper::LIVE => true]); ?>
-				<?php elseif (\is_object($service)): ?>
-					<code><?= $type ?? \get_class($service) ?></code>
-				<?php else: ?>
-					<code><?= $type ?? Dumper::toHtml($service) ?></code>
-				<?php endif ?>
-			</td>
-		</tr>
-		<?php endforeach ?>
+        <?php foreach ($instances as $id => $service): ?>
+            <tr>
+                <td class="<?= isset($services[$id]) ? 'created' : ''; ?>">
+                    <?= \is_numeric($id) ? "<span title='$id'>–</span>" : Helpers::escapeHtml($id) ?>
+                </td>
+                <td class="<?= isset($types[$id]) ? 'yes' : ''; ?>"><?= isset($types[$id]) ? 'yes' : 'no'; ?></td>
+                <td class="<?= $this->container->initialized($id) ? 'yes' : ''; ?>"><?= $this->container->initialized($id) ? 'yes' : 'no'; ?></td>
+                <td>
+                    <?php if (isset($services[$id])): ?>
+                        <?= Dumper::toHtml($services[$id] ?? $service, [Dumper::COLLAPSE => true, Dumper::LIVE => true]); ?>
+                    <?php else: ?>
+                        <code><?= Dumper::toHtml($service); ?></code>
+                    <?php endif ?>
+                </td>
+            </tr>
+        <?php endforeach ?>
 		</tbody>
 	</table>
 
