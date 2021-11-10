@@ -17,22 +17,20 @@ declare(strict_types=1);
 
 namespace Rade\API;
 
-use Flight\Routing\RouteCollection;
 use Rade\Application;
 
 /**
- * Interface for controller providers.
+ * This interface serves as a way of extending existing services
+ * or extending the application with extra services.
  *
- * @author Fabien Potencier <fabien@symfony.com>
+ * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
 interface ControllerProviderInterface
 {
     /**
-     * Returns routes to connect to the given application.
+     * Register your http routes and or console commands.
      *
      * @param Application $app An Application instance
-     *
-     * @return RouteCollection A RouteCollection instance
      */
-    public function connect(Application $app);
+    public function __invoke(Application $app): void;
 }
