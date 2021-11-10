@@ -17,15 +17,15 @@ declare(strict_types=1);
 
 namespace Rade\API;
 
-use Rade\DI\Container;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Psr\EventDispatcher\EventDispatcherInterface;
+use Rade\Application;
 
 /**
  * Interface for event listener providers.
  *
- * @author Fabien Potencier <fabien@symfony.com>
+ * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
 interface EventListenerProviderInterface
 {
-    public function subscribe(Container $app, EventDispatcherInterface $dispatcher);
+    public function subscribe(Application $app, EventDispatcherInterface $dispatcher);
 }
