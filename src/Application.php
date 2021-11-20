@@ -175,10 +175,6 @@ class Application extends DI\Container implements RouterInterface
             $request = $this->get('psr17.factory')->fromGlobalRequest();
         }
 
-        if (!$this->has(RequestHandlerInterface::class)) {
-            $this->definitions[RequestHandlerInterface::class] = new Handler\RouteHandler($this);
-        }
-
         return (new SapiStreamEmitter())->emit($this->handle($request, $catch));
     }
 
@@ -191,6 +187,10 @@ class Application extends DI\Container implements RouterInterface
      */
     public function handle(ServerRequestInterface $request, bool $catch = true): ResponseInterface
     {
+        if (!$this->has(RequestHandlerInterface::class)) {
+            $this->definitions[RequestHandlerInterface::class] = new Handler\RouteHandler($this);
+        }
+
         try {
             $this->getDispatcher()->dispatch($event = new Event\RequestEvent($this, $request));
 
