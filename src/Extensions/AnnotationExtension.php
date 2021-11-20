@@ -149,5 +149,9 @@ class AnnotationExtension implements AliasedInterface, BootExtensionInterface, C
             $loader->bind('listener', [$listeners]);
         }
 
+        if ($container->hasExtension(RoutingExtension::class)) {
+            $container->set('router.annotation.collection', new Definition([new Reference('annotation.loader'), 'load'], [Route::class, false]))
+                ->autowire([RouteCollection::class]);
+        }
     }
 }
