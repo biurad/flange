@@ -83,6 +83,11 @@
             "Rade\\Tests\\": "tests/"
         }
     },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "2.0.x-dev"
+        }
+    },
     "scripts": {
         "phpcs": "phpcs -q",
         "phpstan": "phpstan analyse",
