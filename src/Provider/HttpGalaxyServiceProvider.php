@@ -18,11 +18,14 @@ declare(strict_types=1);
 namespace Rade\Provider;
 
 use Biurad\Http\Cookie;
-use Biurad\Http\Factories\GuzzleHttpPsr7Factory;
 use Biurad\Http\Factory\CookieFactory;
-use Biurad\Http\Middlewares\AccessControlMiddleware;
+use Biurad\Http\Factory\NyholmPsr7Factory;
+use Biurad\Http\Interfaces\CookieFactoryInterface;
 use Biurad\Http\Middlewares\CacheControlMiddleware;
-use Biurad\Http\Middlewares\HttpMiddleware;
+use Biurad\Http\Middlewares\CookiesMiddleware;
+use Biurad\Http\Middlewares\HttpCorsMiddleware;
+use Biurad\Http\Middlewares\HttpHeadersMiddleware;
+use Biurad\Http\Middlewares\HttpPolicyMiddleware;
 use Biurad\Http\Session;
 use Biurad\Http\Sessions\HandlerFactory;
 use Biurad\Http\Sessions\Handlers\AbstractSessionHandler;
@@ -31,28 +34,30 @@ use Biurad\Http\Sessions\Handlers\NullSessionHandler;
 use Biurad\Http\Sessions\Handlers\StrictSessionHandler;
 use Biurad\Http\Sessions\MetadataBag;
 use Biurad\Http\Sessions\Storage\NativeSessionStorage;
-use Biurad\Http\Sessions\Storage\PhpBridgeSessionStorage;
-use Biurad\Http\Strategies\ContentSecurityPolicy;
-use Laminas\HttpHandlerRunner\Emitter\SapiStreamEmitter;
-use Rade\DI\Container;
-use Rade\DI\ServiceProviderInterface;
+use Rade\DI\AbstractContainer;
+use Rade\DI\Definitions\Statement;
+use Rade\DI\Extensions\BootExtensionInterface;
+use Rade\DI\Services\AliasedInterface;
+use Rade\DI\Services\ServiceProviderInterface;
 use Rade\Provider\HttpGalaxy\CorsConfiguration;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
+
+use function Rade\DI\Loader\{referenced, service, wrap};
 
 /**
  * Biurad Http Galaxy Provider.
  *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
-class HttpGalaxyServiceProvider implements ConfigurationInterface, ServiceProviderInterface
+class HttpGalaxyServiceProvider implements AliasedInterface, BootExtensionInterface, ConfigurationInterface, ServiceProviderInterface
 {
     /**
      * {@inheritdoc}
      */
-    public function getName(): string
+    public function getAlias(): string
     {
-        return 'http';
+        return 'http_galaxy';
     }
 
     /**
@@ -60,12 +65,14 @@ class HttpGalaxyServiceProvider implements ConfigurationInterface, ServiceProvid
      */
     public function getConfigTreeBuilder(): TreeBuilder
     {
-        $treeBuilder = new TreeBuilder($this->getName());
+        $treeBuilder = new TreeBuilder($this->getAlias());
         $rootNode = $treeBuilder->getRootNode();
 
         $rootNode
             ->children()
+                ->scalarNode('psr17_factory')->end()
                 ->arrayNode('caching')
+                    ->canBeEnabled()
                     ->addDefaultsIfNotSet()
                     ->children()
                         ->integerNode('cache_lifetime')->defaultValue(86400 * 30)->end()
@@ -92,6 +99,7 @@ class HttpGalaxyServiceProvider implements ConfigurationInterface, ServiceProvid
                     ->end()
                 ->end()
                 ->arrayNode('policies')
+                    ->canBeEnabled()
                     ->addDefaultsIfNotSet()
                     ->children()
                         ->arrayNode('content_security_policy')
@@ -117,6 +125,7 @@ class HttpGalaxyServiceProvider implements ConfigurationInterface, ServiceProvid
                             ->end()
                             ->defaultValue('SAMEORIGIN')
                         ->end()
+                        ->booleanNode('expose_csp_nonce')->defaultValue(true)->end()
                     ->end()
                 ->end()
                 ->arrayNode('headers')
@@ -135,9 +144,39 @@ class HttpGalaxyServiceProvider implements ConfigurationInterface, ServiceProvid
                         ->end()
                     ->end()
                 ->end()
+                ->arrayNode('cookie')
+                    ->info('cookie configuration')
+                    ->addDefaultsIfNotSet()
+                    ->canBeEnabled()
+                    ->children()
+                        ->scalarNode('prefix_name')->defaultValue('rade_')->end()
+                        ->scalarNode('encrypter')->defaultValue(null)->end()
+                        ->arrayNode('excludes_encryption')
+                            ->prototype('scalar')->defaultValue([])->end()
+                        ->end()
+                        ->arrayNode('cookies')
+                            ->arrayPrototype()
+                                ->addDefaultsIfNotSet()
+                                ->children()
+                                    ->scalarNode('name')->end()
+                                    ->scalarNode('value')->end()
+                                    ->variableNode('expires')
+                                        ->beforeNormalization()
+                                            ->always()
+                                            ->then(fn ($v) => wrap('Nette\Utils\DateTime::from', [$v]))
+                                        ->end()
+                                    ->end()
+                                    ->scalarNode('domain')->end()
+                                    ->scalarNode('path')->end()
+                                ->end()
+                            ->end()
+                        ->end()
+                    ->end()
+                ->end()
                 ->arrayNode('session')
                     ->info('session configuration')
                     ->addDefaultsIfNotSet()
+                    ->canBeEnabled()
                     ->children()
                         ->scalarNode('storage_id')->defaultValue('session.storage.native')->end()
                         ->scalarNode('handler_id')->defaultValue('session.handler.native_file')->end()
@@ -156,7 +195,10 @@ class HttpGalaxyServiceProvider implements ConfigurationInterface, ServiceProvid
                         ->scalarNode('cookie_domain')->end()
                         ->enumNode('cookie_secure')->values([true, false, 'auto'])->end()
                         ->booleanNode('cookie_httponly')->defaultTrue()->end()
-                        ->enumNode('cookie_samesite')->values(Cookie::SAMESITE_COLLECTION)->defaultValue('lax')->end()
+                        ->enumNode('cookie_samesite')
+                            ->values([null, Cookie::SAME_SITE_LAX, Cookie::SAME_SITE_NONE, Cookie::SAME_SITE_STRICT])
+                            ->defaultValue(Cookie::SAME_SITE_LAX)
+                        ->end()
                         ->booleanNode('use_cookies')->end()
                         ->scalarNode('gc_divisor')->end()
                         ->scalarNode('gc_probability')->defaultValue(1)->end()
@@ -186,52 +228,82 @@ class HttpGalaxyServiceProvider implements ConfigurationInterface, ServiceProvid
     /**
      * {@inheritdoc}
      */
-    public function register(Container $app): void
+    public function register(AbstractContainer $container, array $configs = []): void
     {
-        $app['http.factory'] = new GuzzleHttpPsr7Factory();
-        $app['http.emitter'] = new SapiStreamEmitter();
-        $app->set('http.server_request_creator', GuzzleHttpPsr7Factory::fromGlobalRequest());
-        $config = $app->parameters['http'] ?? [];
-
-        $app['http.csp_middleware'] = new ContentSecurityPolicy([] === $config['policies']['content_security_policy']);
-        $app['http.acl_middleware'] = new AccessControlMiddleware($config['headers']['cors'] ?? []);
-        $app['http.middleware'] = new HttpMiddleware(\array_intersect_key($config, \array_flip(['policies', 'headers'])));
-
-        if (isset($app['cache.psr6'])) {
-            $app['http.cache_middleware'] = $app->call(CacheControlMiddleware::class, [3 => $config['caching']]);
+        if (!$container->has('psr17.factory')) {
+            $container->autowire('psr17.factory', service($configs['psr17_factory'] ?? NyholmPsr7Factory::class));
         }
-        $session = $config['session'];
 
-        $app['session.storage.metadata_bag'] = new MetadataBag($session['meta_storage_key'], $session['metadata_update_threshold']);
-        $app['session.handler.native_file'] = static function (Container $app) use ($session) {
-            if (\in_array(\PHP_SAPI, ['cli', 'phpdbg', 'embed'], true)) {
-                return new NullSessionHandler();
+        if ($configs['cookie']['enabled']) {
+            unset($configs['cookie']['enabled']);
+            $cookie = $container->set('http.cookie', service(CookieFactory::class))->typed([CookieFactory::class, CookieFactoryInterface::class]);
+            $cookieMiddleware = $container->set('http.middleware.cookie', service(CookiesMiddleware::class));
+            $cookies = [];
+
+            foreach ($configs['cookie']['cookies'] as $cookieData) {
+                $cookies[] = new Statement(Cookie::class, $cookieData);
             }
 
-            return new StrictSessionHandler(new NativeFileSessionHandler($app->parameters['project_dir'] . $session['save_path']));
-        };
-        $app['session.handler'] = static function (Container $app) use ($session): AbstractSessionHandler {
-            $handler = $app->call(HandlerFactory::class, ['minutes' => $session['cookie_lifetime']]);
-
-            try {
-                return $handler->createHandler($session['handler_id']);
-            } catch (\InvalidArgumentException $e) {
-                return $app[$session['handler_id']];
+            if (!empty($cookies)) {
+                $cookie->bind('addCookie', [$cookies]);
             }
-        };
-        $app['session.storage.native'] = $app->call(NativeSessionStorage::class, [$session, $app['session.handler']]);
-        $app['session.storage.php_bridge'] = $app->call(PhpBridgeSessionStorage::class, [$app['session.handler']]);
-        $app['cookie'] = static function () use ($session): CookieFactory {
-            $cookie = new CookieFactory();
 
-            return $cookie->setDefaultPathAndDomain(
-                $session['cookie_path'] ?? '/',
-                $session['cookie_domain'] ?? '',
-                $session['cookie_secure'] ?? $session['cookie_httponly']
-            );
-        };
-        $app['session'] = new Session($app[$session['storage_id']]);
+            if (!empty($excludeCookies = $configs['cookie']['excludes_encryption'])) {
+                $cookieMiddleware->bind('excludeEncodingFor', $excludeCookies);
+            }
+        }
 
-        unset($app->parameters['http']);
+        $container->set('http.middleware.headers', service(HttpHeadersMiddleware::class, [\array_diff_key($configs['headers'], ['cors' => []])]));
+
+        if ($configs['policies']['enabled']) {
+            unset($configs['policies']['enabled']);
+            $container->set('http.middleware.policies', service(HttpPolicyMiddleware::class, [$configs['policies']]));
+        }
+
+        if ($configs['headers']['cors']['enabled']) {
+            unset($configs['headers']['cors']['enabled']);
+            $container->set('http.middleware.cors', service(HttpCorsMiddleware::class, [$configs['headers']['cors']]));
+        }
+
+        if ($configs['caching']['enabled']) {
+            unset($configs['caching']['enabled']);
+            $container->set('http.middleware.cache', service(CacheControlMiddleware::class, [3 => $configs['caching']]));
+        }
+
+        if (($session = $configs['session'])['enabled']) {
+            unset($session['enabled']);
+
+            if (!\extension_loaded('session')) {
+                throw new \LogicException('Session support cannot be enabled as the session extension is not installed. See https://php.net/session.installation for instructions.');
+            }
+
+            $container->autowire('session.storage.native', service(NativeSessionStorage::class, [
+                \array_intersect_key($session, ['storage_id' => null, 'handler_id' => null, 'meta_storage_key' => null, 'metadata_update_threshold' => null]),
+                referenced('session.handler'),
+            ]))
+                ->arg(2, wrap(MetadataBag::class, [$session['meta_storage_key'], $session['metadata_update_threshold']]));
+
+            $container->set('session.handler.native_file', service(StrictSessionHandler::class, [
+                $container->isRunningInConsole() ? wrap(NullSessionHandler::class) : wrap(NativeFileSessionHandler::class, [$container->parameters['project_dir'] . '/' . $session['save_path']]),
+            ]))->autowire([AbstractSessionHandler::class]);
+
+            if ($container->has($session['handler_id'])) {
+                $container->alias('session.handler', $session['handler_id']);
+            } else {
+                $container->set('session.handler', service([wrap(HandlerFactory::class, [2 => $session['cookie_lifetime']]), 'createHandler']))
+                    ->args([$session['handler_id']])
+                    ->autowire([AbstractSessionHandler::class]);
+            }
+
+            $container->autowire('http.session', service(Session::class, [referenced($session['storage_id'])]));
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function boot(AbstractContainer $container): void
+    {
+
     }
 }

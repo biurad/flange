@@ -27,14 +27,12 @@ use Symfony\Component\Config\Definition\Builder\ScalarNodeDefinition;
  */
 class CorsConfiguration
 {
-    /**
-     * {@inheritDoc}
-     */
     public static function getConfigNode(): ArrayNodeDefinition
     {
         $rootNode = new ArrayNodeDefinition('cors');
 
         $rootNode
+            ->canBeEnabled()
             ->addDefaultsIfNotSet()
             ->children()
                 ->append(self::getAllowCredentials())
@@ -80,7 +78,7 @@ class CorsConfiguration
         $node
             ->beforeNormalization()
                 ->always(function ($v) {
-                    if ($v === '*') {
+                    if ('*' === $v) {
                         return ['*'];
                     }
 
@@ -100,7 +98,7 @@ class CorsConfiguration
         $node
             ->beforeNormalization()
                 ->always(function ($v) {
-                    if ($v === '*') {
+                    if ('*' === $v) {
                         return ['*'];
                     }
 
@@ -137,7 +135,7 @@ class CorsConfiguration
         $node
             ->defaultValue(0)
             ->validate()
-                ->ifTrue(fn ($v) => !is_numeric($v))
+                ->ifTrue(fn ($v) => !\is_numeric($v))
                 ->thenInvalid('max_age must be an integer (seconds)')
             ->end()
         ;
