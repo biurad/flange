@@ -21,6 +21,7 @@ use Flight\Routing\Handlers\RouteHandler as BaseRouteHandler;
 use Flight\Routing\Route;
 use Psr\Http\Message\ServerRequestInterface;
 use Rade\Application;
+use Rade\DI\Container;
 use Rade\Event\ControllerEvent;
 
 /**
@@ -30,16 +31,18 @@ use Rade\Event\ControllerEvent;
  */
 class RouteHandler extends BaseRouteHandler
 {
-    public function __construct(Application $container)
+    public function __construct(Container $container)
     {
-        $handlerResolver = function ($handler, array $parameters) use ($container) {
-            $event = new ControllerEvent($container, $handler, $parameters, $parameters[ServerRequestInterface::class]);
-            $container->getDispatcher()->dispatch($event);
+        if ($container instanceof Application) {
+            $handlerResolver = function ($handler, array $parameters) use ($container) {
+                $event = new ControllerEvent($container, $handler, $parameters, $parameters[ServerRequestInterface::class]);
+                $container->getDispatcher()->dispatch($event);
 
-            return $container->getResolver()->resolve($event->getController(), $event->getArguments());
-        };
+                return $container->getResolver()->resolve($event->getController(), $event->getArguments());
+            };
+        }
 
-        parent::__construct($container->get('psr17.factory'), $handlerResolver);
+        parent::__construct($container->get('psr17.factory'), $handlerResolver ?? [$container->getResolver(), 'resolve']);
     }
 
     /**
