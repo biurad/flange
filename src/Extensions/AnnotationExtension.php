@@ -15,7 +15,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\Provider;
+namespace Rade\DI\Extensions;
 
 use Biurad\Annotations\AnnotationLoader;
 use Biurad\Annotations\ListenerInterface;
@@ -28,9 +28,7 @@ use Rade\DI\AbstractContainer;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
-use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Services\AliasedInterface;
-use Rade\DI\Services\ServiceProviderInterface;
 use Spiral\Attributes\AnnotationReader as DoctrineReader;
 use Spiral\Attributes\AttributeReader;
 use Spiral\Attributes\Composite\MergeReader;
@@ -42,7 +40,7 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
  *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
-class AnnotationServiceProvider implements AliasedInterface, BootExtensionInterface, ConfigurationInterface, ServiceProviderInterface
+class AnnotationExtension implements AliasedInterface, BootExtensionInterface, ConfigurationInterface, ExtensionInterface
 {
     /**
      * {@inheritdoc}
