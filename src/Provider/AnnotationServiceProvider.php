@@ -19,27 +19,35 @@ namespace Rade\Provider;
 
 use Biurad\Annotations\AnnotationLoader;
 use Biurad\Annotations\ListenerInterface;
-use Composer\Autoload\ClassLoader;
 use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Annotations\AnnotationRegistry;
-use Doctrine\Common\Annotations\CachedReader;
-use Doctrine\Common\Annotations\Reader;
-use Rade\API\BootableProviderInterface;
-use Rade\Application;
-use Rade\DI\Container;
-use Rade\DI\ServiceProviderInterface;
+use Doctrine\Common\Annotations\PsrCachedReader;
+use Flight\Routing\Annotation\Route;
+use Flight\Routing\RouteCollection;
+use Rade\DI\AbstractContainer;
+use Rade\DI\Definition;
+use Rade\DI\Definitions\Reference;
+use Rade\DI\Definitions\Statement;
+use Rade\DI\Extensions\BootExtensionInterface;
+use Rade\DI\Services\AliasedInterface;
+use Rade\DI\Services\ServiceProviderInterface;
 use Spiral\Attributes\AnnotationReader as DoctrineReader;
 use Spiral\Attributes\AttributeReader;
 use Spiral\Attributes\Composite\MergeReader;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 
-class AnnotationServiceProvider implements ConfigurationInterface, ServiceProviderInterface, BootableProviderInterface
+/**
+ * Biurad Annotation Extension.
+ *
+ * @author Divine Niiquaye Ibok <divineibok@gmail.com>
+ */
+class AnnotationServiceProvider implements AliasedInterface, BootExtensionInterface, ConfigurationInterface, ServiceProviderInterface
 {
     /**
      * {@inheritdoc}
      */
-    public function getName(): string
+    public function getAlias(): string
     {
         return 'annotation';
     }
@@ -49,17 +57,28 @@ class AnnotationServiceProvider implements ConfigurationInterface, ServiceProvid
      */
     public function getConfigTreeBuilder(): TreeBuilder
     {
-        $treeBuilder = new TreeBuilder($this->getName());
+        $treeBuilder = new TreeBuilder(__CLASS__);
 
         $treeBuilder->getRootNode()
             ->children()
+                ->scalarNode('use_reader')->end()
+                ->variableNode('class_loader')
+                    ->beforeNormalization()
+                        ->ifTrue(fn ($v): bool => !\is_callable($v))
+                        ->thenInvalid('Class loader must be a class invoker or a callable')
+                    ->end()
+                ->end()
+                ->arrayNode('listeners')
+                    ->beforeNormalization()->ifString()->then(fn ($v) => [$v])->end()
+                    ->prototype('scalar')->end()
+                    ->defaultValue([])
+                ->end()
                 ->arrayNode('resources')
                     ->beforeNormalization()->ifString()->then(fn ($v) => [$v])->end()
                     ->prototype('scalar')->end()
                     ->defaultValue([])
                 ->end()
-                ->booleanNode('debug')->end()
-                ->arrayNode('ignores')
+                ->arrayNode('doctrine_ignores')
                     ->beforeNormalization()->ifString()->then(fn ($v) => [$v])->end()
                     ->prototype('scalar')->end()
                     ->defaultValue(['persistent', 'serializationVersion', 'inject'])
@@ -74,69 +93,63 @@ class AnnotationServiceProvider implements ConfigurationInterface, ServiceProvid
     /**
      * {@inheritdoc}
      */
-    public function register(Container $app): void
+    public function register(AbstractContainer $container, array $configs = []): void
     {
-        $composer = new ClassLoader();
-        $composer->setPsr4('App\\', $app->parameters['project_dir']);
-        $composer->register();
+        $loader = $container->autowire('annotation.loader', new Definition(AnnotationLoader::class));
 
-        $config = $app->parameters['annotation'] ?? [];
-
-        if (!isset($config['debug'])) {
-            $config['debug'] = $app->parameters['debug'];
+        if (isset($configs['class_loader'])) {
+            $loader->arg(1, $configs['class_loader']);
         }
 
-        if (null !== $doctrine  = \class_exists(AnnotationReader::class)) {
-            $app['annotation.doctrine'] = static function (Container $app) use ($config): Reader {
-                $annotation = new AnnotationReader();
-
-                foreach ($config['ignores'] as $excluded) {
-                    $annotation::addGlobalIgnoredName($excluded);
-                }
-
-                if (isset($app['cache.doctrine'])) {
-                    return new CachedReader($annotation, $app['cache.doctrine'], $config['debug']);
-                }
-
-                return $annotation;
-            };
+        if (!empty($resources = $configs['resources'] ?? [])) {
+            $loader->bind('resource', [$resources]);
         }
 
-        $app['annotation'] = static function (Container $app) use ($doctrine, $config): AnnotationLoader {
-            $reader = new AttributeReader();
+        if (isset($configs['use_reader'])) {
+            $loader->arg(0, $container->has($configs['use_reader']) ? new Reference($configs['use_reader']) : new Statement($configs['use_reader']));
+            $attribute = AttributeReader::class;
 
-            if (null !== $doctrine) {
-                $reader = new MergeReader([$reader, new DoctrineReader($app['annotation.doctrine'])]);
+            if (null !== \class_exists(AnnotationReader::class)) {
+                $doctrineService = AnnotationReader::class;
+
+                if ($container->has('psr6.cache')) {
+                    $doctrineService = PsrCachedReader::class;
+                    $doctrineArgs = [new Statement($doctrineService), $container->get('psr6.cache'), $container->parameter('debug')];
+                }
+
+                $doctrineService = $container->autowire('annotation.doctrine', new Definition($doctrineService, $doctrineArgs ?? []));
+
+                foreach ($configs['doctrine_ignores'] as $doctrineExclude) {
+                    $doctrineService->bind('addGlobalIgnoredName', $doctrineExclude);
+                }
+
+                //$attribute = new MergeReader([$reader, new DoctrineReader($app['annotation.doctrine'])]);
+                $attributeArgs = [[new Statement($attribute), new Statement(DoctrineReader::class)]];
+                $attribute = MergeReader::class;
+
+                // doctrine/annotations ^1.0 compatibility.
+                if (\method_exists(AnnotationRegistry::class, 'registerLoader')) {
+                    AnnotationRegistry::registerUniqueLoader('class_exists');
+                }
             }
 
-            $annotation = new AnnotationLoader($reader);
-            $annotation->attach(...$config['resources']);
-
-            return $annotation;
-        };
-
-        // doctrine/annotations ^1.0 compatibility.
-        if (\method_exists(AnnotationRegistry::class, 'registerLoader')) {
-            AnnotationRegistry::registerUniqueLoader('class_exists');
+            $container->autowire('annotation.reader', new Definition($attribute, $attributeArgs ?? []));
         }
-
-        unset($app->parameters['annotation']);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function boot(Application $app)
+    public function boot(AbstractContainer $container): void
     {
-        $listeners = $app->get(ListenerInterface::class);
+        $loader = $container->definition('annotation.loader');
+        $listeners = $container->findBy(ListenerInterface::class, fn (string $listenerId) => new Reference($listenerId));
 
-        if (!\is_array($listeners)) {
-            $listeners = [$listeners];
+        if ($loader instanceof AnnotationLoader) {
+            $loader->listener(...$container->getResolver()->resolveArguments($listeners));
+        } else {
+            $loader->bind('listener', [$listeners]);
         }
 
-        $app['annotation']->attachListener(...$listeners);
-
-        //Build annotations ...
-        $app['annotation']->build();
     }
 }
