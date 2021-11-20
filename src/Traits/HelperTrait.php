@@ -62,9 +62,9 @@ trait HelperTrait
         if (null === $configLoader) {
             if ($this->has('config.loader_resolver')) {
                 return $this->get('config.loader_resolver');
-             }
+            }
 
-             if (isset($this->definitions['builder.loader_resolver'])) {
+            if (isset($this->definitions['builder.loader_resolver'])) {
                 $configLoader = $this->definitions['builder.loader_resolver'];
                 unset($this->definitions['builder.loader_resolver']);
 

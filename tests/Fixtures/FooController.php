@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace Rade\Tests\Fixtures;
 
-use DivineNii\Invoker\CallableResolver;
+use Psr\Http\Message\ResponseFactoryInterface;
 use Rade\Application;
 
 class FooController
@@ -27,8 +27,8 @@ class FooController
         return 'Hello ' . $app->escape()->escapeHtml($name);
     }
 
-    public function barSpecialAction(CallableResolver $resolver, string $name)
+    public function barSpecialAction(ResponseFactoryInterface $res, string $name)
     {
-        return 'Hello ' . $name . ' in ' . \get_class($resolver);
+        return 'Hello ' . $name . ' in ' . \get_class($res);
     }
 }

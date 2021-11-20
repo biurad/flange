@@ -17,33 +17,25 @@ declare(strict_types=1);
 
 namespace Rade\Tests;
 
-use Biurad\Http\Factories\GuzzleHttpPsr7Factory;
+use Biurad\Http\Factory\NyholmPsr7Factory;
 use Biurad\Http\Interfaces\Psr17Interface;
 use PHPUnit\Framework\TestCase;
 use Rade\Application;
-use Rade\Provider\HttpGalaxyServiceProvider;
-use Rade\Provider\RoutingServiceProvider;
 
 /**
- * Application Base TestCase
- * 
+ * Application Base TestCase.
+ *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
 class BaseTestCase extends TestCase
 {
-    public static function getApplication(string $rootDir = __DIR__, array $config = []): Application
+    public static function getApplication(bool $debug = true): Application
     {
-        $app = new Application($rootDir, $config);
-
-        //Let's use default routing and http service.
-        $app->register(new HttpGalaxyServiceProvider());
-        $app->register(new RoutingServiceProvider());
-
-        return $app;
+        return new Application(null, null, $debug);
     }
 
     public static function getPSR17Factory(): Psr17Interface
     {
-        return new GuzzleHttpPsr7Factory();
+        return new NyholmPsr7Factory();
     }
 }
