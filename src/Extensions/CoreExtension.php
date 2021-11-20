@@ -15,24 +15,22 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\Provider;
+namespace Rade\DI\Extensions;
 
 use Rade\DI\AbstractContainer;
+use Rade\DI\Definition;
 use Rade\DI\Services\AliasedInterface;
 use Rade\DI\Services\DependenciesInterface;
-use Rade\DI\Services\ServiceProviderInterface;
 use Rade\Handler\EventHandler;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
-
-use function Rade\DI\Loader\service;
 
 /**
  * Rade Core Extension.
  *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
-class CoreServiceProvider implements AliasedInterface, ConfigurationInterface, DependenciesInterface, ServiceProviderInterface
+class CoreExtension implements AliasedInterface, ConfigurationInterface, DependenciesInterface, ExtensionInterface
 {
     private string $rootDir;
 
@@ -57,9 +55,8 @@ class CoreServiceProvider implements AliasedInterface, ConfigurationInterface, D
         $treeBuilder = new TreeBuilder($this->getAlias());
 
         $treeBuilder->getRootNode()
-            ->addDefaultsIfNotSet()
             ->children()
-                ->scalarNode('events_dispatcher')->defaultValue(EventHandler::class)->end()
+                ->scalarNode('events_dispatcher')->end()
             ->end()
         ;
 
@@ -71,10 +68,7 @@ class CoreServiceProvider implements AliasedInterface, ConfigurationInterface, D
      */
     public function dependencies(): array
     {
-        return [
-            [ConfigServiceProvider::class, [$this->rootDir]],
-            RoutingServiceProvider::class,
-        ];
+        return [[ConfigExtension::class, [$this->rootDir]], RoutingExtension::class];
     }
 
     /**
@@ -83,10 +77,12 @@ class CoreServiceProvider implements AliasedInterface, ConfigurationInterface, D
     public function register(AbstractContainer $container, array $configs = []): void
     {
         if (!$container->has('events.dispatcher')) {
-            if ($container->has($configs['events_dispatcher'])) {
-                $container->alias('events.dispatcher', $configs['events_dispatcher']);
+            $eventsDispatcher = $configs['events_dispatcher'] ?? EventHandler::class;
+
+            if ($container->has($eventsDispatcher)) {
+                $container->alias('events.dispatcher', $eventsDispatcher);
             } else {
-                $container->autowire('events.dispatcher', service($configs['events_dispatcher'] ?? EventHandler::class));
+                $container->autowire('events.dispatcher', new Definition($eventsDispatcher));
             }
         }
     }

@@ -15,14 +15,14 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\Provider;
+namespace Rade\DI\Extensions;
 
 use Rade\AppBuilder;
 use Rade\DI\AbstractContainer;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Loader\{ClosureLoader, DirectoryLoader, GlobFileLoader, PhpFileLoader, YamlFileLoader};
-use Rade\DI\Services\{AliasedInterface, ServiceProviderInterface};
+use Rade\DI\Services\AliasedInterface;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Config\FileLocator;
@@ -33,7 +33,7 @@ use Symfony\Component\Config\Loader\LoaderResolver;
  *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
-class ConfigServiceProvider implements AliasedInterface, ConfigurationInterface, ServiceProviderInterface
+class ConfigExtension implements AliasedInterface, ConfigurationInterface, ExtensionInterface
 {
     private string $rootDir;
 
