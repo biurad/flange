@@ -17,7 +17,7 @@
 
 Its also to note that, Rade has support for [PSR-11], built with [Rade DI][] library gracing the project with an advanced DI.
 
-![image](https://user-images.githubusercontent.com/53147395/142729210-3e6b8532-0909-4dcd-8850-9f0d71e6d013.png)
+![PHP Rade Framework Image](https://user-images.githubusercontent.com/53147395/142729210-3e6b8532-0909-4dcd-8850-9f0d71e6d013.png)
 
 
 ## 📦 Installation & Basic Usage
@@ -71,7 +71,7 @@ $app = \Rade\AppBuilder::build(static function (\Rade\AppBuilder $creator): void
 
     // Adding routes requires the Rade\DI\Extensions\RoutingExtension to be loaded.
     // Routes should always be added before Rade\DI\Extensions\RoutingExtension is booted, else it will not be compiled.
-    $creator->match('/hello/{name:\w+}', to: phpCode('fn (string $name): string => \'Hello \' . $this->escape()->escapeHtml($name));'));
+    $creator->match('/hello/{name:\w+}', to: phpCode('fn (string $name): string => \'Hello \' . $this->escape()->escapeHtml($name);'));
 
     $extensions = [
         [Rade\DI\Extensions\CoreExtension::class, [__DIR__]],
