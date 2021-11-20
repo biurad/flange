@@ -17,341 +17,169 @@ declare(strict_types=1);
 
 namespace Rade;
 
-use Biurad\Http\Response\HtmlResponse;
-use Flight\Routing\Exceptions\RouteNotFoundException;
-use Flight\Routing\Route;
-use Flight\Routing\RouteCollection;
-use GuzzleHttp\Exception\BadResponseException;
-use Laminas\Escaper\Escaper;
-use Laminas\Stratigility\Utils;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Server\RequestHandlerInterface;
-use Rade\API\BootableProviderInterface;
-use Rade\API\ControllerProviderInterface;
-use Rade\API\EventListenerProviderInterface;
-use Rade\DI\Container;
-use Rade\DI\ServiceProviderInterface;
-use Rade\Event\ExceptionEvent;
-use Rade\Event\RequestEvent;
-use Rade\Event\ResponseEvent;
-use Rade\Event\TerminateEvent;
-use Symfony\Component\Config\Definition\ConfigurationInterface;
-use Symfony\Component\Console\Input\ArgvInput;
+use Biurad\Http\{Factory\NyholmPsr7Factory, Interfaces\Psr17Interface, Response\HtmlResponse};
+use Flight\Routing\{Exceptions\RouteNotFoundException, Route, RouteCollection, Router};
+use Flight\Routing\Generator\GeneratedUri;
+use Flight\Routing\Interfaces\RouteMatcherInterface;
+use Psr\Http\Message\{ResponseInterface, ServerRequestInterface};
+use Psr\Http\Server\{MiddlewareInterface, RequestHandlerInterface};
+use Laminas\Stratigility\Middleware\{CallableMiddlewareDecorator, RequestHandlerMiddleware};
+use Laminas\{HttpHandlerRunner\Emitter\SapiStreamEmitter, Stratigility\Utils};
+use Psr\EventDispatcher\EventDispatcherInterface;
+use Rade\DI\Definitions\{Reference, Statement};
+use Symfony\Component\Console\Application as ConsoleApplication;
 
 /**
  * The Rade framework core class.
  *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
-class Application extends Container implements RequestHandlerInterface
+class Application extends DI\Container implements RouterInterface
 {
+    use Traits\HelperTrait;
+
     public const VERSION = '2.0.0-DEV';
-
-    public const MASTER_REQUEST = 1;
-
-    public const SUB_REQUEST = 2;
-
-    private bool $booted = false;
-
-    private array $config;
 
     /**
      * Instantiate a new Application.
-     *
-     * @param array<string,mixed> $config
      */
-    public function __construct(string $rootDir, array $config = [])
+    public function __construct(Psr17Interface $psr17Factory = null, EventDispatcherInterface $dispatcher = null, bool $debug = false)
     {
         parent::__construct();
 
-        $this->config = $config;
-        $this->parameters['project_dir'] = \rtrim($rootDir, '/') . '/';
+        if (empty($this->methodsMap)) {
+            $this->definitions['http.router'] = Router::withCollection();
+            $this->definitions['psr17.factory'] = $psr17Factory = ($psr17Factory ?? new NyholmPsr7Factory());
+            $this->definitions['events.dispatcher'] = $dispatcher = ($dispatcher ?? new Handler\EventHandler());
 
-        $this->register(new Provider\ConfigServiceProvider());
-        $this->register(new Provider\CoreServiceProvider());
+            $this->types(
+                [
+                    'http.router' => [Router::class, RouteMatcherInterface::class],
+                    'psr17.factory' => DI\Resolvers\Resolver::autowireService($psr17Factory),
+                    'events.dispatcher' => DI\Resolvers\Resolver::autowireService($dispatcher),
+                ]
+            );
+        }
+
+        $this->parameters['debug'] ??= $debug;
+    }
+
+    public function strictAutowiring(bool $boolean = true): void
+    {
+        $this->resolver->setStrictAutowiring($boolean);
+    }
+
+    public function getDispatcher(): EventDispatcherInterface
+    {
+        return $this->services['events.dispatcher'] ?? $this->get('events.dispatcher');
     }
 
     /**
-     * Determine if the application is running in the console.
+     * {@inheritdoc}
      *
-     * @return bool
+     * @param MiddlewareInterface|RequestHandlerInterface|Reference|Statement|callable ...$middlewares
      */
-    public function isRunningInConsole(): bool
+    public function pipe(object ...$middlewares): void
     {
-        return \in_array(\PHP_SAPI, ['cli', 'phpdbg', 'embed'], true);
+        $this->get('http.router')->pipe(...$this->resolveMiddlewares($middlewares));
     }
 
     /**
-     * Determine if the application is in vagrant environment.
+     * {@inheritdoc}
      *
-     * @return bool
+     * @param MiddlewareInterface|RequestHandlerInterface|Reference|Statement|callable ...$middlewares
      */
-    public function isVagrantEnvironment(): bool
+    public function pipes(string $named, object ...$middlewares): void
     {
-        return (\getenv('HOME') === '/home/vagrant' || \getenv('VAGRANT') === 'VAGRANT') && \is_dir('/dev/shm');
-    }
-
-    /**
-     * Returns the request type the kernel is currently processing.
-     *
-     * @return int One of Application::MASTER_REQUEST and Application::SUB_REQUEST
-     */
-    public function getRequestType(): int
-    {
-        return $this->config['requestType'];
+        $this->get('http.router')->pipes($named, ...$this->resolveMiddlewares($middlewares));
     }
 
     /**
      * {@inheritdoc}
      */
-    public function register(ServiceProviderInterface $provider, array $values = [])
+    public function generateUri(string $routeName, array $parameters = []): GeneratedUri
     {
-        if ($provider instanceof ConfigurationInterface) {
-            $name   = $provider->getName();
-            $values = [$name => $values];
-
-            if (isset($this->config[$name])) {
-                $values = \array_intersect_key($this->config, [$name => true]);
-            }
-        }
-
-        return parent::register($provider, $values);
+        return $this->get('http.router')->generateUri($routeName, $parameters);
     }
 
     /**
-     * Boots all service providers.
-     *
-     * This method is automatically called by handle(), but you can use it
-     * to boot all service providers when not handling a request.
+     * {@inheritdoc}
      */
-    public function boot(): void
+    public function match(string $pattern, array $methods = Route::DEFAULT_METHODS, $to = null): Route
     {
-        if ($this->booted) {
-            return;
-        }
-        $this->booted = true;
-
-        foreach ($this->providers as $provider) {
-            if ($provider instanceof EventListenerProviderInterface) {
-                $provider->subscribe($this, $this['dispatcher']);
-            }
-
-            if ($provider instanceof BootableProviderInterface) {
-                $provider->boot($this);
-            }
-        }
+        return ($this->services['http.router'] ?? $this->get('http.router'))->getCollection()->addRoute($pattern, $methods, $to)->getRoute();
     }
 
     /**
-     * Maps a pattern to a callable.
-     *
-     * You can optionally specify HTTP methods that should be matched.
-     *
-     * @param string $pattern Matched route pattern
-     * @param mixed  $to      Callback that returns the response when matched
-     *
-     * @return Route
-     */
-    public function match(string $pattern, $to = null, array $methods = ['GET', 'HEAD']): Route
-    {
-        return $this['routes']->addRoute($pattern, $methods, $to);
-    }
-
-    /**
-     * Maps a POST request to a callable.
-     *
-     * @param string $pattern Matched route pattern
-     * @param mixed  $to      Callback that returns the response when matched
-     *
-     * @return Route
+     * {@inheritdoc}
      */
     public function post(string $pattern, $to = null): Route
     {
-        return $this['routes']->post($pattern, $to);
+        return $this->match($pattern, [Router::METHOD_POST], $to);
     }
 
     /**
-     * Maps a PUT request to a callable.
-     *
-     * @param string $pattern Matched route pattern
-     * @param mixed  $to      Callback that returns the response when matched
-     *
-     * @return Route
+     * {@inheritdoc}
      */
     public function put(string $pattern, $to = null): Route
     {
-        return $this['routes']->put($pattern, $to);
+        return $this->match($pattern, [Router::METHOD_PUT], $to);
     }
 
     /**
-     * Maps a DELETE request to a callable.
-     *
-     * @param string $pattern Matched route pattern
-     * @param mixed  $to      Callback that returns the response when matched
-     *
-     * @return Route
+     * {@inheritdoc}
      */
     public function delete(string $pattern, $to = null): Route
     {
-        return $this['routes']->delete($pattern, $to);
+        return $this->match($pattern, [Router::METHOD_DELETE], $to);
     }
 
     /**
-     * Maps an OPTIONS request to a callable.
-     *
-     * @param string $pattern Matched route pattern
-     * @param mixed  $to      Callback that returns the response when matched
-     *
-     * @return Route
+     * {@inheritdoc}
      */
     public function options(string $pattern, $to = null): Route
     {
-        return $this['routes']->options($pattern, $to);
+        return $this->match($pattern, [Router::METHOD_OPTIONS], $to);
     }
 
     /**
-     * Maps a PATCH request to a callable.
-     *
-     * @param string $pattern Matched route pattern
-     * @param mixed  $to      Callback that returns the response when matched
-     *
-     * @return Route
+     * {@inheritdoc}
      */
     public function patch(string $pattern, $to = null): Route
     {
-        return $this['routes']->patch($pattern, $to);
+        return $this->match($pattern, [Router::METHOD_PATCH], $to);
     }
 
     /**
-     * Mounts controllers under the given route prefix.
-     *
-     * @param string                                               $prefix      The route named prefix
-     * @param callable|ControllerProviderInterface|RouteCollection $controllers A RouteCollection, a callable, or a ControllerProviderInterface instance
-     *
-     * @throws \LogicException
-     *
-     * @return Application
+     * {@inheritdoc}
      */
-    public function mount(string $prefix, $controllers): self
+    public function group(string $prefix, $collection = null): RouteCollection
     {
-        if ($controllers instanceof ControllerProviderInterface) {
-            $connectedControllers = $controllers->connect($this);
-
-            if (!$connectedControllers instanceof RouteCollection) {
-                throw new \LogicException(
-                    \sprintf(
-                        'The method "%s::connect" must return a "RouteCollection" instance. Got: "%s"',
-                        \get_class($controllers),
-                        \is_object($connectedControllers) ? \get_class($connectedControllers) : \gettype($connectedControllers)
-                    )
-                );
-            }
-
-            $controllers = $connectedControllers;
-        } elseif (!$controllers instanceof RouteCollection && !\is_callable($controllers)) {
-            throw new \LogicException(
-                'The "mount" method takes either a "RouteCollection" instance, "ControllerProviderInterface" instance, or a callable.'
-            );
-        }
-
-        $prefixPath = \trim($prefix, '/') ?: '/';
-        $prefixName = '/' !== $prefixPath ? str_replace('/', '_', $prefixPath) . '_' : '';
-
-        $this['routes']->group($prefixName, $controllers)->withPrefix('/' . $prefixPath);
-
-        return $this;
-    }
-
-    /**
-     * Context specific methods for use in secure output escaping.
-     *
-     * @param string $encoding
-     *
-     * @return Escaper
-     */
-    public function escape($encoding = null): Escaper
-    {
-        return new Escaper($encoding);
-    }
-
-    /**
-     * Adds an event listener that listens on the specified events.
-     *
-     * @param string   $eventName The event to listen on
-     * @param callable $callback  The listener
-     * @param int      $priority  The higher this value, the earlier an event
-     *                            listener will be triggered in the chain (defaults to 0)
-     */
-    public function on(string $eventName, $callback, $priority = 0): void
-    {
-        $this['dispatcher']->addListener($eventName, $callback, $priority);
-    }
-
-    /**
-     * Registers an error handler.
-     *
-     * Error handlers are simple callables which take a single Exception
-     * as an argument. If a controller throws an exception, an error handler
-     * can return a specific response.
-     *
-     * When an exception occurs, all handlers will be called, until one returns
-     * something (a string or a Response object), at which point that will be
-     * returned to the client.
-     *
-     * For this reason you should add logging handlers before output handlers.
-     *
-     * @param mixed $callback Error handler callback, takes an Exception argument
-     * @param int   $priority The higher this value, the earlier an event
-     *                        listener will be triggered in the chain (defaults to -8)
-     */
-    public function error($callback, int $priority = -8): void
-    {
-        $exceptionWrapper = static function (ExceptionEvent $event) use ($callback): void {
-            $e        = $event->getThrowable();
-            $code     = $e instanceof BadResponseException ? $e->getResponse()->getStatusCode() : 500;
-            $response = $callback(...[$event, (string) $code]);
-
-            if ($response instanceof ResponseInterface) {
-                $event->setResponse($response);
-            }
-        };
-
-        $this->on(Events::EXCEPTION, $exceptionWrapper, $priority);
+        return $this->get('http.router')->getCollection()->group($prefix, $collection);
     }
 
     /**
      * Handles the request and delivers the response.
      *
-     * @param ServerRequestInterface |null $request Request to process
+     * @param ServerRequestInterface|null $request Request to process
      *
-     * @return bool|mixed
+     * @return int|bool
      */
     public function run(ServerRequestInterface $request = null, bool $catch = true)
     {
-        if (!$this->booted) {
-            $this->boot();
-        }
-
         if ($this->isRunningInConsole()) {
-            return $this['console']->run(new ArgvInput(['no-debug' => !$this->parameters['debug']]));
+            $this->get(ConsoleApplication::class)->run();
         }
 
-        $request  = $request ?? $this['http.server_request_creator'];
-        $response = $this->handle($request, self::MASTER_REQUEST, $catch);
+        if (null === $request) {
+            $request = $this->get('psr17.factory')->fromGlobalRequest();
+        }
 
-        $this->terminate($request, $response);
+        if (!$this->has(RequestHandlerInterface::class)) {
+            $this->definitions[RequestHandlerInterface::class] = new Handler\RouteHandler($this);
+        }
 
-        return $this['http.emitter']->emit($response);
-    }
-
-    /**
-     * Terminates a request/response cycle.
-     */
-    public function terminate(ServerRequestInterface $request, ResponseInterface $response): void
-    {
-        $event = new TerminateEvent($this, $request, $response);
-        $this['dispatcher']->dispatch($event, Events::TERMINATE);
+        return (new SapiStreamEmitter())->emit($this->handle($request, $catch));
     }
 
     /**
@@ -359,72 +187,46 @@ class Application extends Container implements RequestHandlerInterface
      *
      * Exceptions are not caught.
      *
-     * @param ServerRequestInterface $request
-     * @param int                    $type    The type of the request
-     *                               (one of self::MASTER_REQUEST or self::SUB_REQUEST)
-     * @param bool                   $catch   Whether to catch exceptions or not
-     *
-     * @return ResponseInterface
+     * @param bool $catch Whether to catch exceptions or not
      */
-    public function handle(ServerRequestInterface $request, $type = self::MASTER_REQUEST, bool $catch = true): ResponseInterface
+    public function handle(ServerRequestInterface $request, bool $catch = true): ResponseInterface
     {
-        $this->config['requestType'] = $type;
-
-        // Listen to request made on self::MASTER_REQUEST and self::SUB_REQUEST
-        $event = new RequestEvent($this, $request);
-        $this['dispatcher']->dispatch($event, Events::REQUEST);
-
-        if ($event->hasResponse()) {
-            return $event->getResponse();
-        }
-
         try {
-            $response = $this['router']->handle($request);
+            $this->getDispatcher()->dispatch($event = new Event\RequestEvent($this, $request));
+
+            if ($event->hasResponse()) {
+                return $event->getResponse();
+            }
+
+            $request = $event->getRequest();
+            $response = $this->get('http.router')->process($request, $this->get(RequestHandlerInterface::class));
+
+            $this->getDispatcher()->dispatch($event = new Event\ResponseEvent($this, $request, $response));
         } catch (\Throwable $e) {
             if (!$catch || $this->isRunningInConsole()) {
                 throw $e;
             }
 
-            if ($e instanceof RouteNotFoundException) {
-                $e = $this->handleRouterException($e, $request);
-
-                if ($e instanceof ResponseInterface) {
-                    return $e;
-                }
-            }
-
-            $response = $this->handleThrowable($e, $request);
+            return $this->handleThrowable($e, $request);
+        } finally {
+            $this->getDispatcher()->dispatch(new Event\TerminateEvent($this, $request));
         }
-
-        return $this->filterResponse($response, $request);
-    }
-
-    /**
-     * Filters a response object.
-     */
-    protected function filterResponse(ResponseInterface $response, ServerRequestInterface $request): ResponseInterface
-    {
-        $event = new ResponseEvent($this, $request, $response);
-        $this['dispatcher']->dispatch($event, Events::RESPONSE);
 
         return $event->getResponse();
     }
 
     /**
-     * Handle RouteNotFoundException for Flight Routing
-     *
-     * @param RouteNotFoundException $e
-     * @param ServerRequestInterface $request
+     * Handle RouteNotFoundException for Flight Routing.
      *
      * @return RouteNotFoundException|ResponseInterface
      */
     protected function handleRouterException(RouteNotFoundException $e, ServerRequestInterface $request)
     {
-        // If base directory, and no route matched
-        $path = $request->getUri()->getPath();
-        $base = \dirname($request->getServerParams()['SCRIPT_NAME'] ?? '/');
+        if (empty($pathInfo = $request->getServerParams()['PATH_INFO'] ?? '')) {
+            $pathInfo = $request->getUri()->getPath();
+        }
 
-        if (\rtrim($path, '/') . '/' === \rtrim($base, '\/') . '/') {
+        if ('/' === $pathInfo) {
             return $this->createWelcomeResponse();
         }
 
@@ -440,36 +242,29 @@ class Application extends Container implements RequestHandlerInterface
     /**
      * Handles a throwable by trying to convert it to a Response.
      *
-     * @param \Throwable             $e
-     * @param ServerRequestInterface $request
-     *
      * @throws \Throwable
-     *
-     * @return ResponseInterface
      */
     protected function handleThrowable(\Throwable $e, ServerRequestInterface $request): ResponseInterface
     {
-        $event = new ExceptionEvent($this, $request, $e);
-        $this['dispatcher']->dispatch($event, Events::EXCEPTION);
+        $this->getDispatcher()->dispatch($event = new Event\ExceptionEvent($this, $request, $e));
 
         // a listener might have replaced the exception
         $e = $event->getThrowable();
 
-        // Incase we have a bad response error and event has no response.
-        if ($e instanceof BadResponseException && !$event->hasResponse()) {
-            $event->setResponse($e->getResponse());
-        }
+        if (null === $response = $event->getResponse()) {
+            if ($e instanceof RouteNotFoundException) {
+                $e = $this->handleRouterException($e, $request);
 
-        if (!$event->hasResponse()) {
+                if ($e instanceof ResponseInterface) {
+                    return $e;
+                }
+            }
+
             throw $e;
         }
 
-        /** @var \Biurad\Http\Response $response */
-        $response = $event->getResponse();
-
-        // the developer asked for a specific status code
-        if (!$event->isAllowingCustomResponseCode() && !$response->isClientError() && !$response->isServerError() && !$response->isRedirect()) {
-            // ensure that we actually have an error response and keep the HTTP status code and headers
+        // ensure that we actually have an error response and keep the HTTP status code and headers
+        if (!$event->isAllowingCustomResponseCode()) {
             $response = $response->withStatus(Utils::getStatusCode($e, $response));
         }
 
@@ -477,9 +272,7 @@ class Application extends Container implements RequestHandlerInterface
     }
 
     /**
-     * The default welcome page for application
-     *
-     * @return ResponseInterface
+     * The default welcome page for application.
      */
     protected function createWelcomeResponse(): ResponseInterface
     {
@@ -487,9 +280,34 @@ class Application extends Container implements RequestHandlerInterface
         $version = self::VERSION;
         $docVersion = $version[0] . '.x.x';
 
-        ob_start();
+        \ob_start();
+
         include __DIR__ . '/Resources/welcome.phtml';
 
-        return new HtmlResponse((string) ob_get_clean(), 404);
+        return new HtmlResponse((string) \ob_get_clean(), 404);
+    }
+
+    /**
+     * Resolve Middlewares.
+     *
+     * @param array<int,MiddlewareInterface|RequestHandlerInterface|Reference|Statement|callable> $middlewares
+     *
+     * @return array<int,MiddlewareInterface>
+     */
+    protected function resolveMiddlewares(array $middlewares): array
+    {
+        foreach ($middlewares as $offset => $middleware) {
+            if ($middleware instanceof RequestHandlerInterface) {
+                $middlewares[$offset] = new RequestHandlerMiddleware($middleware);
+            } elseif ($middleware instanceof Statement) {
+                $middlewares[$offset] = $this->resolver->resolve($middleware->getValue(), $middleware->getArguments());
+            } elseif ($middleware instanceof Reference) {
+                $middlewares[$offset] = $this->get((string) $middleware);
+            } elseif (\is_callable($middleware)) {
+                $middlewares[$offset] = new CallableMiddlewareDecorator($middleware);
+            }
+        }
+
+        return $middlewares;
     }
 }

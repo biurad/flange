@@ -8,7 +8,7 @@
 [![Quality Score](https://img.shields.io/scrutinizer/g/divineniiquaye/php-rade.svg?style=flat-square)](https://scrutinizer-ci.com/g/divineniiquaye/php-rade)
 [![Sponsor development of this project](https://img.shields.io/badge/sponsor%20this%20package-%E2%9D%A4-ff69b4.svg?style=flat-square)](https://biurad.com/sponsor)
 
-**divineniiquaye/php-rade** is a fast, simple and light framewrok for [PHP] 7.4+ based on [PSR-7] and [PSR-15] with support for annotations, created by [Divine Niiquaye][@divineniiquaye] and inspired by [Silex]. This libray seeks to help developers who are lazy, beginners, or people who want to build things fast with extremely less dependencies.
+**divineniiquaye/php-rade** is a fast, simple and micro framework for [PHP] 7.4+ based on [PSR-7] and [PSR-15] with support for annotations, created by [Divine Niiquaye][@divineniiquaye] and inspired by [Silex]. This library seeks to help developers who are lazy, beginners, or people who want to build things fast with extremely less dependencies.
 
 Its also to note that, Rade has support for [PSR-11], built with [Rade DI][] library gracing the project with an advanced DI.
 
@@ -20,50 +20,103 @@ This project requires [PHP] 7.4 or higher. The recommended way to install, is vi
 $ composer require divineniiquaye/php-rade
 ```
 
-Rade is built based on [Flight Routing][], [Symfony components][] and [Biurad libraries][]. Rade is a fully PSR complaint [PHP] framework, fully cutomizable and can even be used to develop business projects:
+Rade is built based on [Flight Routing][], [Symfony components][] and [Biurad libraries][]. Rade is a fully PSR complaint [PHP] framework, fully customizable and can even be used to develop from small to large projects:
 
 ```php
-use Psr\Http\Message\ResponseInterface;
-use Rade\Event\ExceptionEvent;
-
 require_once __DIR__ . '/vendor/autoload.php';
 
-// Set the project directory and optionally add default configurations to second parameter
-$app = new Rade\Application(__DIR__);
-
-//Let's use default routing and http service.
-$app->register(new Rade\Provider\HttpGalaxyServiceProvider());
-$app->register(new Rade\Provider\RoutingServiceProvider());
+// Boot the application.
+$app = new Rade\Application();
 
 // Add a route to application
 $app->match('/hello/{name:\w+}', fn (string $name): string => 'Hello ' . $app->escape()->escapeHtml($name));
 
-// You can set custom pages for catch errors
-$app->error(function (ExceptionEvent $event, string $code) use (): ?ResponseInterface {
-    // 404.html, or 40x.html, or 4xx.html, or error.html
-    $templates = [
-        '/errors/' . $code . '.html.php',
-        '/errors/' . \substr($code, 0, 2) . 'x.html.php',
-        '/errors/' . \substr($code, 0, 1) . 'xx.html.php',
-        '/errors/default.html.php',
-    ];
+$extensions = [
+    [Rade\DI\Extensions\CoreExtension::class, [__DIR__]],
+    // You can add more extensions here ...
+];
 
-    // Tries to load a template file from a list of error templates.
-    foreach ($template as $template) {
-        if (file_exists($template)) {
-            return (static function () use ($template, $code) {
-                ob_start();
-                include __DIR__ . $template;
+//If you want to use extensions, here is an example:
+$app->loadExtensions($extensions, ['config' => ['debug' => $_ENV['APP_DEBUG'] ?? false]]);
 
-                return new HtmlResponse(ob_get_clean(), (int) $code);
-            })();
-        }
-    }
-
-    return null;
-});
+// You can set custom pages for caught exceptions, using default event dispatcher, or your custom event dispatcher.
+$app->getDispatcher()->addListener(Rade\Events::EXCEPTION, new ErrorListener(), -8);
 
 $app->run();
+```
+
+Working on a big project!, it is advisable to use the application's cacheable version. This gives you 70% - 100% more performance than using the Application class with extensions,
+
+```php
+use function Rade\DI\Loader\{phpCode, wrap};
+
+$config = [
+    'compiled_file' => __DIR__ . '/caches/compiled_test.php',
+    'debug' => $_ENV['APP_DEBUG'] ?? false, // Set the debug mode environment
+    'containerClass' => 'Application' // The class name for the compiled application.
+];
+
+// Setup cache for application.
+$app = \Rade\AppBuilder::build(static function (\Rade\AppBuilder $creator): void {
+    // Add resource to re-compile if changes are made to this file.
+    $creator->addResource(new FileResource(__FILE__));
+
+    // Adding routes requires the Rade\DI\Extensions\RoutingExtension to be loaded.
+    // Routes should always be added before Rade\DI\Extensions\RoutingExtension is booted, else it will not be compiled.
+    $creator->match('/hello/{name:\w+}', to: phpCode('fn (string $name): string => \'Hello \' . $this->escape()->escapeHtml($name));'));
+
+    $extensions = [
+        [Rade\DI\Extensions\CoreExtension::class, [__DIR__]],
+        // You can add more extensions here ...
+    ];
+
+    //If you want to use extensions, here is an example as its recommended to use extensions to build your application.
+    $app->loadExtensions($extensions, ['config' => ['debug' => $creator->parameters['debug']]]);
+
+    // You can set custom pages for caught exceptions, using default event dispatcher, or your custom event dispatcher.
+    $creator->definition('events.dispatcher')->bind('addListener', [Rade\Events::EXCEPTION, wrap(ErrorListener::class), -8]);
+}, $config);
+
+$app->run(); // Boot the application.
+
+```
+
+Here's an example of a custom error you can use for your application.
+
+```php
+use Biurad\Http\Response\HtmlResponse;
+use Rade\Event\ExceptionEvent;
+
+class ErrorListener
+{
+    public function __invoke(ExceptionEvent $event): void
+    {
+        // If extensions were loaded, the %project_dir% will exist, else replace will absolute path
+        $errorsPath = $event->getApplication()->parameter('%project_dir%/errors/');
+
+        $code = $event->getThrowable()->getCode();
+        $templates = [
+            $errorsPath . \substr($code, 0, 2) . 'x.html.php', // 40x.html.php format ...
+            $errorsPath . \substr($code, 0, 1) . 'xx.html.php', // 4xx.html.php format ...
+            $errorsPath . $code . '.html.php', // 404.html.php format ...
+            $errorsPath . 'default.html.php',
+        ];
+
+        // Tries to load a template file from a list of error templates.
+        foreach ($template as $template) {
+            if (\file_exists($template)) {
+                $event->setResponse(
+                    (static function () use ($template, $code) {
+                        \ob_start();
+                        include __DIR__ . $template;
+
+                        return new HtmlResponse(\ob_get_clean(), (int) $code);
+                    })()
+                );
+            }
+        }
+    }
+}
 ```
 
 ## 📓 Documentation
