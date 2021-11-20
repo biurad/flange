@@ -15,7 +15,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\Provider;
+namespace Rade\DI\Extensions;
 
 use Biurad\Http\Middlewares\ErrorHandlerMiddleware;
 use Flight\Routing\Annotation\Listener;
@@ -35,10 +35,8 @@ use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Exceptions\ServiceCreationException;
-use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Services\AliasedInterface;
 use Rade\DI\Services\DependenciesInterface;
-use Rade\DI\Services\ServiceProviderInterface;
 use Rade\Handler\RouteHandler;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
@@ -48,7 +46,7 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
  *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
-class RoutingServiceProvider implements AliasedInterface, BootExtensionInterface, ConfigurationInterface, DependenciesInterface, ServiceProviderInterface
+class RoutingExtension implements AliasedInterface, BootExtensionInterface, ConfigurationInterface, DependenciesInterface, ExtensionInterface
 {
     protected const ROUTE_DATA_TO_METHOD = [
         'name' => 'bind',
