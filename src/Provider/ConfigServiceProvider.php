@@ -17,20 +17,35 @@ declare(strict_types=1);
 
 namespace Rade\Provider;
 
-use Rade\DI\Container;
-use Rade\DI\ServiceProviderInterface;
+use Rade\AppBuilder;
+use Rade\DI\AbstractContainer;
+use Rade\DI\Definition;
+use Rade\DI\Definitions\Statement;
+use Rade\DI\Loader\{ClosureLoader, DirectoryLoader, GlobFileLoader, PhpFileLoader, YamlFileLoader};
+use Rade\DI\Services\{AliasedInterface, ServiceProviderInterface};
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Config\FileLocator;
-use Symfony\Component\Config\Loader\DelegatingLoader;
 use Symfony\Component\Config\Loader\LoaderResolver;
 
-class ConfigServiceProvider implements ConfigurationInterface, ServiceProviderInterface
+/**
+ * Symfony's Config component extension.
+ *
+ * @author Divine Niiquaye Ibok <divineibok@gmail.com>
+ */
+class ConfigServiceProvider implements AliasedInterface, ConfigurationInterface, ServiceProviderInterface
 {
+    private string $rootDir;
+
+    public function __construct(string $rootDir)
+    {
+        $this->rootDir = \rtrim($rootDir, \DIRECTORY_SEPARATOR);
+    }
+
     /**
      * {@inheritdoc}
      */
-    public function getName(): string
+    public function getAlias(): string
     {
         return 'config';
     }
@@ -40,15 +55,18 @@ class ConfigServiceProvider implements ConfigurationInterface, ServiceProviderIn
      */
     public function getConfigTreeBuilder(): TreeBuilder
     {
-        $treeBuilder = new TreeBuilder($this->getName());
+        $treeBuilder = new TreeBuilder($this->getAlias());
 
         $treeBuilder->getRootNode()
+            ->addDefaultsIfNotSet()
             ->children()
                 ->scalarNode('locale')->defaultValue('en')->end()
                 ->booleanNode('debug')->defaultFalse()->end()
                 ->arrayNode('paths')
-                    ->defaultValue([])
-                    ->prototype('scalar')->end()
+                    ->prototype('scalar')->isRequired()->cannotBeEmpty()->end()
+                ->end()
+                ->arrayNode('loaders')
+                    ->prototype('scalar')->defaultValue([])->end()
                 ->end()
             ->end()
         ;
@@ -59,22 +77,32 @@ class ConfigServiceProvider implements ConfigurationInterface, ServiceProviderIn
     /**
      * {@inheritdoc}
      */
-    public function register(Container $app): void
+    public function register(AbstractContainer $container, array $configs = []): void
     {
-        $config = $app->parameters['config'] ?? [];
+        // The default configs ...
+        $container->parameters['locale'] = $configs['locale'] ?? null;
+        $container->parameters['debug'] = $configs['debug'] ?? false;
+        $container->parameters['project_dir'] = $this->rootDir;
 
-        if ([] !== $config['paths']) {
-            $config['paths'] = \array_map(static fn (string $path) => $app->parameters['project_dir'] . $path, $config['paths']);
+        // Configurations ...
+        $configLoaders = [...$configs['loaders'], ...[PhpFileLoader::class, YamlFileLoader::class, ClosureLoader::class, DirectoryLoader::class, GlobFileLoader::class]];
+
+        if ($container instanceof AppBuilder) {
+            $builderResolver = new LoaderResolver();
+            $fileLocator = new FileLocator(\array_map([$container, 'parameter'], $configs['paths']));
+
+            foreach ($configLoaders as $builderLoader) {
+                $builderResolver->addLoader(new $builderLoader($container, $fileLocator));
+            }
+
+            $container->set('builder.loader_resolver', $builderResolver);
         }
 
-        $app['config.loader_file'] = new FileLocator($config['paths']);
-        $app['config.loader_resolver'] = new LoaderResolver();
-        $app['config.loader'] = $app->lazy(DelegatingLoader::class);
+        foreach ($configLoaders as &$configLoader) {
+            $configLoader = new Statement($configLoader);
+        }
 
-        // The default debug environment.
-        $app->parameters['debug']  = $config['debug'];
-        $app->parameters['locale'] = $config['locale'];
-
-        unset($app->parameters['config']); // Remove default config from DI.
+        $container->autowire('config.loader_locator', new Definition(FileLocator::class, [\array_map([$container, 'parameter'], $configs['paths'])]));
+        $container->set('config.loader_resolver', new Definition(LoaderResolver::class, [$configLoaders]));
     }
 }
