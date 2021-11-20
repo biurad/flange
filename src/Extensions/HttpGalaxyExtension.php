@@ -15,7 +15,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\Provider;
+namespace Rade\DI\Extensions;
 
 use Biurad\Http\Cookie;
 use Biurad\Http\Factory\CookieFactory;
@@ -36,9 +36,7 @@ use Biurad\Http\Sessions\MetadataBag;
 use Biurad\Http\Sessions\Storage\NativeSessionStorage;
 use Rade\DI\AbstractContainer;
 use Rade\DI\Definitions\Statement;
-use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Services\AliasedInterface;
-use Rade\DI\Services\ServiceProviderInterface;
 use Rade\Provider\HttpGalaxy\CorsConfiguration;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
@@ -50,7 +48,7 @@ use function Rade\DI\Loader\{referenced, service, wrap};
  *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
-class HttpGalaxyServiceProvider implements AliasedInterface, BootExtensionInterface, ConfigurationInterface, ServiceProviderInterface
+class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, ExtensionInterface
 {
     /**
      * {@inheritdoc}
@@ -297,13 +295,5 @@ class HttpGalaxyServiceProvider implements AliasedInterface, BootExtensionInterf
 
             $container->autowire('http.session', service(Session::class, [referenced($session['storage_id'])]));
         }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function boot(AbstractContainer $container): void
-    {
-
     }
 }

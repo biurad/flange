@@ -74,7 +74,8 @@
     },
     "autoload": {
         "psr-4": {
-            "Rade\\": "src/"
+            "Rade\\": "src/",
+            "Rade\\DI\\Extensions\\": "src/Extensions"
         }
     },
     "autoload-dev": {
