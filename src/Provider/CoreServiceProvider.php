@@ -17,53 +17,77 @@ declare(strict_types=1);
 
 namespace Rade\Provider;
 
-use Biurad\Events\LazyEventDispatcher;
-use DivineNii\Invoker\ArgumentResolver\DefaultValueResolver;
-use DivineNii\Invoker\ArgumentResolver\NamedValueResolver;
-use DivineNii\Invoker\ArgumentResolver\TypeHintValueResolver;
-use DivineNii\Invoker\CallableResolver;
-use DivineNii\Invoker\Invoker;
-use Rade\DI\Container;
-use Rade\DI\ServiceProviderInterface;
+use Rade\DI\AbstractContainer;
+use Rade\DI\Services\AliasedInterface;
+use Rade\DI\Services\DependenciesInterface;
+use Rade\DI\Services\ServiceProviderInterface;
+use Rade\Handler\EventHandler;
+use Symfony\Component\Config\Definition\Builder\TreeBuilder;
+use Symfony\Component\Config\Definition\ConfigurationInterface;
+
+use function Rade\DI\Loader\service;
 
 /**
- * Rade core Provider
+ * Rade Core Extension.
  *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
-class CoreServiceProvider implements ServiceProviderInterface
+class CoreServiceProvider implements AliasedInterface, ConfigurationInterface, DependenciesInterface, ServiceProviderInterface
 {
-    /**
-     * {@inheritdoc}
-     */
-    public function getName(): string
+    private string $rootDir;
+
+    public function __construct(string $rootDir)
     {
-        return 'framework';
+        $this->rootDir = \rtrim($rootDir, \DIRECTORY_SEPARATOR);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function register(Container $app): void
+    public function getAlias(): string
     {
-        $app['argument_value_resolvers'] = static function (Container $app): array {
-            return [
-                [new NamedValueResolver($app)],
-                [new TypeHintValueResolver($app)],
-                [new DefaultValueResolver()],
-            ];
-        };
-        $app['callback_resolver'] = static function (Container $app): Invoker {
-            $argumentResolvers = $app['argument_value_resolvers'];
+        return 'core';
+    }
 
-            \usort($argumentResolvers, static function ($a, $b): int {
-                return key($a) <=> key($b);
-            });
+    /**
+     * {@inheritdoc}
+     */
+    public function getConfigTreeBuilder(): TreeBuilder
+    {
+        $treeBuilder = new TreeBuilder($this->getAlias());
 
-            return new Invoker(array_map(static fn ($value) => current($value), $argumentResolvers), $app);
-        };
-        $app['arguments_resolver'] = $app['callback_resolver']->getArgumentResolver();
-        $app['callable_resolver'] = new CallableResolver($app);
-        $app['dispatcher'] = $app->lazy(LazyEventDispatcher::class);
+        $treeBuilder->getRootNode()
+            ->addDefaultsIfNotSet()
+            ->children()
+                ->scalarNode('events_dispatcher')->defaultValue(EventHandler::class)->end()
+            ->end()
+        ;
+
+        return $treeBuilder;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function dependencies(): array
+    {
+        return [
+            [ConfigServiceProvider::class, [$this->rootDir]],
+            RoutingServiceProvider::class,
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function register(AbstractContainer $container, array $configs = []): void
+    {
+        if (!$container->has('events.dispatcher')) {
+            if ($container->has($configs['events_dispatcher'])) {
+                $container->alias('events.dispatcher', $configs['events_dispatcher']);
+            } else {
+                $container->autowire('events.dispatcher', service($configs['events_dispatcher'] ?? EventHandler::class));
+            }
+        }
     }
 }
