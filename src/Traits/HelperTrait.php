@@ -79,8 +79,6 @@ trait HelperTrait
 
     /**
      * Context specific methods for use in secure output escaping.
-     *
-     * @param string $encoding
      */
     public function escape(string $encoding = null): Escaper
     {
@@ -162,7 +160,7 @@ trait HelperTrait
      */
     public function getLocation(string $path, string $baseDir = 'src')
     {
-        if (false !== \strpos($path, '..')) {
+        if (\str_contains($path, '..')) {
             throw new \RuntimeException(\sprintf('File name "%s" contains invalid characters (..).', $path));
         }
 
