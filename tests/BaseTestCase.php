@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace Rade\Tests;
 
-use Biurad\Http\Factory\NyholmPsr7Factory;
+use Biurad\Http\Factory\Psr17Factory;
 use Biurad\Http\Interfaces\Psr17Interface;
 use PHPUnit\Framework\TestCase;
 use Rade\Application;
@@ -36,6 +36,6 @@ class BaseTestCase extends TestCase
 
     public static function getPSR17Factory(): Psr17Interface
     {
-        return new NyholmPsr7Factory();
+        return new Psr17Factory();
     }
 }

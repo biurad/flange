@@ -20,7 +20,6 @@ namespace Rade\Tests;
 use Flight\Routing\Route;
 use Flight\Routing\RouteCollection;
 use Psr\Http\Message\ServerRequestInterface;
-use Rade\Application;
 use Rade\DI\Extensions\ConfigExtension;
 
 /**
@@ -53,13 +52,13 @@ class ApplicationTest extends BaseTestCase
     public function testConstructorInjection(): void
     {
         $app = self::getApplication();
-        $this->assertArrayNotHasKey('locale', $app->parameters);
+        $this->assertArrayNotHasKey('default_locale', $app->parameters);
         $this->assertTrue($app->parameters['debug']);
 
         $app = self::getApplication();
         $app->loadExtensions([[ConfigExtension::class, [__DIR__]]], ['config' => ['locale' => 'fr', 'debug' => false]]);
 
-        $this->assertEquals('fr', $app->parameters['locale']);
+        $this->assertEquals('fr', $app->parameters['default_locale']);
         $this->assertFalse($app->parameters['debug']);
         $this->assertEquals(__DIR__, $app->parameters['project_dir']);
     }
@@ -140,7 +139,7 @@ class ApplicationTest extends BaseTestCase
         $request = self::getPSR17Factory()->createServerRequest('GET', '/Divine');
         $response = $app->handle($request);
 
-        $this->assertEquals('Hello Divine in Biurad\Http\Factory\NyholmPsr7Factory', (string) $response->getBody());
+        $this->assertEquals('Hello Divine in Biurad\Http\Factory\Psr17Factory', (string) $response->getBody());
     }
 
     public function testGroupPreservesOrder(): void
