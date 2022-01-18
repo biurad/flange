@@ -13,7 +13,7 @@
 
 ---
 
-**divineniiquaye/php-rade** is a fast, simple and micro framework for [PHP] 7.4+ based on [PSR-7] and [PSR-15] with support for annotations, created by [Divine Niiquaye][@divineniiquaye] and inspired by [Silex]. This library seeks to help developers who are lazy, beginners, or people who want to build things fast with extremely less dependencies.
+**divineniiquaye/php-rade** is incredibly fast, micro, compilable and scalable framework for [PHP] 7.4+ based on [PSR-7] and [PSR-15] with support for annotations/attributes, created by [Divine Niiquaye][@divineniiquaye] and inspired by [Silex]. This library seeks to help developers who are lazy, beginners, small businesses or people who want to build things fast with extremely less dependencies.
 
 Its also to note that, Rade has support for [PSR-11], built with [Rade DI][] library gracing the project with an advanced DI.
 
@@ -53,7 +53,7 @@ $app->getDispatcher()->addListener(Rade\Events::EXCEPTION, new ErrorListener(), 
 $app->run();
 ```
 
-Working on a big project!, it is advisable to use the application's cacheable version. This gives you 70% - 100% more performance than using the Application class with extensions,
+Working on a big project!, it is advisable to use the application's cacheable version. This gives you over 100% more performance than using the un-cacheable Application class with extensions,
 
 ```php
 use function Rade\DI\Loader\{phpCode, wrap};
@@ -125,6 +125,8 @@ class ErrorListener
     }
 }
 ```
+
+Important to note that, using [PSR-15] middlewares stack uses the [PHP] SPL Queue class with the following algorithm, LAST <- FIRST : FIRST -> LAST. Also in regards to loading extensions and adding event listeners to the default event dispatcher by priority, The higher the number, the earlier an extension or event listener will be triggered in the chain (defaults to 0).
 
 ## 📓 Documentation
 
