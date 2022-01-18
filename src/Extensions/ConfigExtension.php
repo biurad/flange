@@ -62,7 +62,7 @@ class ConfigExtension implements AliasedInterface, ConfigurationInterface, Exten
             ->addDefaultsIfNotSet()
             ->children()
                 ->scalarNode('locale')->defaultValue('en')->end()
-                ->booleanNode('debug')->defaultFalse()->end()
+                ->booleanNode('debug')->defaultNull()->end()
                 ->arrayNode('paths')
                     ->prototype('scalar')->isRequired()->cannotBeEmpty()->end()
                 ->end()
@@ -82,8 +82,11 @@ class ConfigExtension implements AliasedInterface, ConfigurationInterface, Exten
     {
         // The default configs ...
         $container->parameters['default_locale'] = $configs['locale'] ?? 'en';
-        $container->parameters['debug'] = $configs['debug'] ?? false;
         $container->parameters['project_dir'] = $this->rootDir;
+
+        if (isset($configs['debug'])) {
+            $container->parameters['debug'] = $configs['debug'];
+        }
 
         // Configurations ...
         $configLoaders = [...$configs['loaders'], ...[PhpFileLoader::class, YamlFileLoader::class, ClosureLoader::class, DirectoryLoader::class, GlobFileLoader::class]];
