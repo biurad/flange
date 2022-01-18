@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace Rade;
 
+use Fig\Http\Message\RequestMethodInterface;
 use Flight\Routing\Interfaces\RouteMatcherInterface;
 use Flight\Routing\Route;
 use Flight\Routing\RouteCollection;
@@ -27,9 +28,9 @@ use Symfony\Component\Config\ConfigCache;
 /**
  * Create a cacheable application.
  *
- @author Divine Niiquaye Ibok <divineibok@gmail.com>
+ * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
-class AppBuilder extends DI\ContainerBuilder implements RouterInterface
+class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelInterface
 {
     use Traits\HelperTrait;
 
@@ -53,7 +54,7 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface
     public function __call(string $name, array $arguments)
     {
         if (!(isset($this->parameters['routes'][$this->routeIndex]) || \method_exists(Route::class, $name))) {
-            throw new \BadMethodCallException(sprintf('Call to undefined method %s::%s()', __CLASS__, $name));
+            throw new \BadMethodCallException(\sprintf('Call to undefined method %s::%s()', __CLASS__, $name));
         }
 
         if (1 === \count($arguments)) {
@@ -68,17 +69,23 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface
     /**
      * {@inheritdoc}
      *
-     * @param Reference|Statement|callable ...$middlewares
+     * @param DI\Definitions\Reference|DI\Definitions\Statement|DI\Definition ...$middlewares
      */
     public function pipe(object ...$middlewares): void
     {
-        $this->definition('http.router')->bind('pipe', \func_get_args());
+        foreach ($middlewares as $middleware) {
+            if ($middleware instanceof DI\Definitions\Reference) {
+                continue;
+            }
+
+            $this->autowire('http.middleware.' . \spl_object_id($middleware), $middleware)->public(false);
+        }
     }
 
     /**
      * {@inheritdoc}
      *
-     * @param Reference|Statement|callable ...$middlewares
+     * @param DI\Definitions\Reference|DI\Definitions\Statement|DI\Definition ...$middlewares
      */
     public function pipes(string $named, object ...$middlewares): void
     {
@@ -108,7 +115,7 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface
      */
     public function post(string $pattern, $to = null)
     {
-        return $this->match($pattern, [Router::METHOD_POST], $to);
+        return $this->match($pattern, [RequestMethodInterface::METHOD_POST], $to);
     }
 
     /**
@@ -116,7 +123,7 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface
      */
     public function put(string $pattern, $to = null)
     {
-        return $this->match($pattern, [Router::METHOD_PUT], $to);
+        return $this->match($pattern, [RequestMethodInterface::METHOD_PUT], $to);
     }
 
     /**
@@ -124,7 +131,7 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface
      */
     public function delete(string $pattern, $to = null)
     {
-        return $this->match($pattern, [Router::METHOD_DELETE], $to);
+        return $this->match($pattern, [RequestMethodInterface::METHOD_DELETE], $to);
     }
 
     /**
@@ -132,7 +139,7 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface
      */
     public function options(string $pattern, $to = null)
     {
-        return $this->match($pattern, [Router::METHOD_OPTIONS], $to);
+        return $this->match($pattern, [RequestMethodInterface::METHOD_OPTIONS], $to);
     }
 
     /**
@@ -140,7 +147,7 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface
      */
     public function patch(string $pattern, $to = null)
     {
-        return $this->match($pattern, [Router::METHOD_PATCH], $to);
+        return $this->match($pattern, [RequestMethodInterface::METHOD_PATCH], $to);
     }
 
     /**
@@ -160,17 +167,23 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface
      * Compiled container and build the application.
      *
      * supported $options config (defaults):
-     * - compiled_file => sys_get_temp_dir(), The directory where compiled application class will live in.
+     * - cacheDir => composer's vendor dir, The directory where compiled application class will live in.
      * - strictAutowiring => true, Resolvable services which are not typed, will be resolved if false.
      * - shortArraySyntax => true, Controls whether [] or array() syntax should be used for an array.
-     * - containerClass => CompiledApplication, The class name of the compiled application.
+     * - maxLineLength => 200, Max line of generated code in compiled container class.
+     * - maxDefinitions => 500, Max definitions reach before splitting into traits.
      *
      * @param callable            $application write services in here
      * @param array<string,mixed> $options
+     *
+     * @throws \ReflectionException
      */
     public static function build(callable $application, array $options = []): Application
     {
-        $cache = new ConfigCache($options['compiled_file'] ?? (\sys_get_temp_dir() . '/rade_container.php'), $debug = $options['debug'] ?? false);
+        $debug = $options['debug'] ?? $_SERVER['APP_DEBUG'] ?? $_ENV['APP_DEBUG'] ?? false;
+        $defFile = 'load_' . ($containerClass = 'App_' . ($debug ? 'Debug' : '') . 'Container') . '.php';
+        $cacheDir = $options['cacheDir'] ?? \dirname((new \ReflectionClass(\Composer\Autoload\ClassLoader::class))->getFileName(), 2);
+        $cache = new ConfigCache($cachePath = $cacheDir . '/' . $containerClass . '_' . \PHP_SAPI . '.php', $debug);
 
         if (!$cache->isFresh()) {
             $appBuilder = new static($debug);
@@ -182,15 +195,21 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface
             $application($appBuilder);
 
             // Default node visitors.
+            $appBuilder->addNodeVisitor(new DI\NodeVisitor\MethodsResolver());
             $appBuilder->addNodeVisitor(new DI\NodeVisitor\AutowiringResolver());
+            $appBuilder->addNodeVisitor($splitter = new DI\NodeVisitor\DefinitionsSplitter($options['maxDefinitions'] ?? 500, $defFile));
 
             // Write the compiled application class to path.
-            $cache->write($appBuilder->compile($options += ['containerClass' => 'CompiledApplication']), $appBuilder->getResources());
+            $cache->write($appBuilder->compile($options + \compact('containerClass')), $appBuilder->getResources());
+
+            require $splitter->buildTraits($cacheDir, $appBuilder->isDebug());
+        } else {
+            require_once $cacheDir . '/' . $defFile;
         }
 
-        include $cache->getPath();
+        require $cachePath;
 
-        return new $options['containerClass']();
+        return new $containerClass();
     }
 
     /**

@@ -59,9 +59,8 @@ Working on a big project!, it is advisable to use the application's cacheable ve
 use function Rade\DI\Loader\{phpCode, wrap};
 
 $config = [
-    'compiled_file' => __DIR__ . '/caches/compiled_test.php',
+    'cacheDir' => __DIR__ . '/caches',
     'debug' => $_ENV['APP_DEBUG'] ?? false, // Set the debug mode environment
-    'containerClass' => 'Application' // The class name for the compiled application.
 ];
 
 // Setup cache for application.
@@ -79,7 +78,7 @@ $app = \Rade\AppBuilder::build(static function (\Rade\AppBuilder $creator): void
     ];
 
     //If you want to use extensions, here is an example as its recommended to use extensions to build your application.
-    $app->loadExtensions($extensions, ['config' => ['debug' => $creator->parameters['debug']]]);
+    $app->loadExtensions($extensions, ['config' => ['debug' => $creator->isDebug()]]);
 
     // You can set custom pages for caught exceptions, using default event dispatcher, or your custom event dispatcher.
     $creator->definition('events.dispatcher')->bind('addListener', [Rade\Events::EXCEPTION, wrap(ErrorListener::class), -8]);

@@ -17,8 +17,10 @@ declare(strict_types=1);
 
 namespace Rade;
 
-use Biurad\Http\{Factory\NyholmPsr7Factory, Interfaces\Psr17Interface, Response\HtmlResponse};
+use Biurad\Http\{Interfaces\Psr17Interface, Request, Response, Response\HtmlResponse};
+use Biurad\Http\Factory\Psr17Factory;
 use Flight\Routing\{Exceptions\RouteNotFoundException, Route, RouteCollection, Router};
+use Fig\Http\Message\RequestMethodInterface;
 use Flight\Routing\Generator\GeneratedUri;
 use Flight\Routing\Interfaces\RouteMatcherInterface;
 use Psr\Http\Message\{ResponseInterface, ServerRequestInterface};
@@ -28,13 +30,14 @@ use Laminas\{HttpHandlerRunner\Emitter\SapiStreamEmitter, Stratigility\Utils};
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Rade\DI\Definitions\{Reference, Statement};
 use Symfony\Component\Console\Application as ConsoleApplication;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * The Rade framework core class.
  *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
-class Application extends DI\Container implements RouterInterface
+class Application extends DI\Container implements RouterInterface, KernelInterface
 {
     use Traits\HelperTrait;
 
@@ -49,21 +52,30 @@ class Application extends DI\Container implements RouterInterface
 
         if (empty($this->methodsMap)) {
             $this->definitions['http.router'] = Router::withCollection();
-            $this->definitions['psr17.factory'] = $psr17Factory = ($psr17Factory ?? new NyholmPsr7Factory());
+            $this->definitions['request_stack'] = new RequestStack();
+            $this->definitions['psr17.factory'] = $psr17Factory = ($psr17Factory ?? new Psr17Factory());
             $this->definitions['events.dispatcher'] = $dispatcher = ($dispatcher ?? new Handler\EventHandler());
 
             $this->types(
                 [
                     'http.router' => [Router::class, RouteMatcherInterface::class],
-                    'psr17.factory' => DI\Resolvers\Resolver::autowireService($psr17Factory),
-                    'events.dispatcher' => DI\Resolvers\Resolver::autowireService($dispatcher),
+                    'request_stack' => [RequestStack::class],
+                    'psr17.factory' => DI\Resolver::autowireService($psr17Factory),
+                    'events.dispatcher' => DI\Resolver::autowireService($dispatcher),
                 ]
             );
+
+            unset($psr17Factory, $dispatcher);
         }
 
-        $this->parameters['debug'] ??= $debug;
+        if (!isset($this->parameters['debug'])) {
+            $this->parameters['debug'] = $debug;
+        }
     }
 
+    /**
+     * If true, exception will be thrown on resolvable services with are not typed.
+     */
     public function strictAutowiring(bool $boolean = true): void
     {
         $this->resolver->setStrictAutowiring($boolean);
@@ -115,7 +127,7 @@ class Application extends DI\Container implements RouterInterface
      */
     public function post(string $pattern, $to = null): Route
     {
-        return $this->match($pattern, [Router::METHOD_POST], $to);
+        return $this->match($pattern, [RequestMethodInterface::METHOD_POST], $to);
     }
 
     /**
@@ -123,7 +135,7 @@ class Application extends DI\Container implements RouterInterface
      */
     public function put(string $pattern, $to = null): Route
     {
-        return $this->match($pattern, [Router::METHOD_PUT], $to);
+        return $this->match($pattern, [RequestMethodInterface::METHOD_PUT], $to);
     }
 
     /**
@@ -131,7 +143,7 @@ class Application extends DI\Container implements RouterInterface
      */
     public function delete(string $pattern, $to = null): Route
     {
-        return $this->match($pattern, [Router::METHOD_DELETE], $to);
+        return $this->match($pattern, [RequestMethodInterface::METHOD_DELETE], $to);
     }
 
     /**
@@ -139,7 +151,7 @@ class Application extends DI\Container implements RouterInterface
      */
     public function options(string $pattern, $to = null): Route
     {
-        return $this->match($pattern, [Router::METHOD_OPTIONS], $to);
+        return $this->match($pattern, [RequestMethodInterface::METHOD_OPTIONS], $to);
     }
 
     /**
@@ -147,7 +159,7 @@ class Application extends DI\Container implements RouterInterface
      */
     public function patch(string $pattern, $to = null): Route
     {
-        return $this->match($pattern, [Router::METHOD_PATCH], $to);
+        return $this->match($pattern, [RequestMethodInterface::METHOD_PATCH], $to);
     }
 
     /**
@@ -163,6 +175,8 @@ class Application extends DI\Container implements RouterInterface
      *
      * @param ServerRequestInterface|null $request Request to process
      *
+     * @throws \Throwable
+     *
      * @return int|bool
      */
     public function run(ServerRequestInterface $request = null, bool $catch = true)
@@ -175,7 +189,19 @@ class Application extends DI\Container implements RouterInterface
             $request = $this->get('psr17.factory')->fromGlobalRequest();
         }
 
-        return (new SapiStreamEmitter())->emit($this->handle($request, $catch));
+        $response = $this->handle($request, $catch);
+
+        if ($response instanceof Response) {
+            $response->getResponse()->send();
+
+            return true;
+        }
+
+        if (class_exists(SapiStreamEmitter::class)) {
+            return (new SapiStreamEmitter())->emit($response);
+        }
+
+        throw new \RuntimeException(\sprintf('Unable to emit response onto the browser. Try running "composer require laminas/laminas-httphandlerrunner".'));
     }
 
     /**
@@ -192,14 +218,11 @@ class Application extends DI\Container implements RouterInterface
         }
 
         try {
-            $this->getDispatcher()->dispatch($event = new Event\RequestEvent($this, $request));
-
-            if ($event->hasResponse()) {
-                return $event->getResponse();
-            }
-
-            $request = $event->getRequest();
             $response = $this->get('http.router')->process($request, $this->get(RequestHandlerInterface::class));
+
+            if ($request instanceof Request) {
+                $request = $request->withRequest($this->get('request_stack')->getMainRequest());
+            }
 
             $this->getDispatcher()->dispatch($event = new Event\ResponseEvent($this, $request, $response));
         } catch (\Throwable $e) {

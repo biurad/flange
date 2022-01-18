@@ -18,12 +18,14 @@ declare(strict_types=1);
 namespace Rade\DI\Extensions;
 
 use Biurad\Http\Middlewares\ErrorHandlerMiddleware;
+use Biurad\Http\Middlewares\PrepareResponseMiddleware;
 use Flight\Routing\Annotation\Listener;
 use Flight\Routing\Interfaces\RouteMatcherInterface;
 use Flight\Routing\Middlewares\PathMiddleware;
 use Flight\Routing\RouteCollection;
 use Flight\Routing\Router;
 use Flight\Routing\Route;
+use Laminas\Stratigility\Middleware\OriginalMessages;
 use Nette\Utils\Arrays;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -42,7 +44,7 @@ use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 
 /**
- * Flight Routing Extension. (Recommend to be used with AppBuilder).
+ * Flight Routing Extension. (Recommend being used with AppBuilder).
  *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
@@ -87,7 +89,7 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
      */
     public function getConfigTreeBuilder(): TreeBuilder
     {
-        $treeBuilder = new TreeBuilder($this->getAlias());
+        $treeBuilder = new TreeBuilder(__CLASS__);
 
         $treeBuilder->getRootNode()
             ->addDefaultsIfNotSet()
@@ -99,15 +101,39 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
                 ->scalarNode('namespace')->defaultValue(null)->end()
                 ->scalarNode('routes_handler')->end()
                 ->scalarNode('cache')->end()
-                ->arrayNode('middlewares')
-                    ->scalarPrototype()->end()
-                ->end()
                 ->arrayNode('pipes')
                     ->normalizeKeys(false)
                     ->defaultValue([])
                     ->beforeNormalization()
+                        ->ifString()->then(fn ($v) => [$v])
                         ->ifTrue(fn ($v) => !\is_array($v) || \array_is_list($v))
-                        ->thenInvalid('Expected patterns values to be an associate array of string keys mapping to mixed values.')
+                        ->thenInvalid('Expected pipes values to be an associate array of string keys mapping to mixed values.')
+                        ->always(function ($value) {
+                            foreach ($value as $key => $middlewares) {
+                                if (\is_array($middlewares)) {
+                                    if (!\array_is_list($middlewares)) {
+                                        $value[\key($middlewares)] = $mValue = \current($middlewares);
+                                        unset($value[$key]);
+
+                                        if (!\array_is_list($mValue)) {
+                                            throw new ServiceCreationException(\sprintf('Expected pipes values to be strings, "%s" given.', \gettype($mValue)));
+                                        }
+                                    }
+
+                                    continue;
+                                }
+
+                                if (!\is_int($key)) {
+                                    throw new ServiceCreationException(\sprintf('Expected pipes key to be an integer, "%s" given.', \gettype($key)));
+                                }
+
+                                if (!\is_string($middlewares)) {
+                                    throw new ServiceCreationException(\sprintf('Expected pipes offset key %s with a string value, "%s" given.', $key, \gettype($middlewares)));
+                                }
+                            }
+
+                            return $value;
+                        })
                     ->end()
                     ->prototype('variable')->end()
                 ->end()
@@ -156,8 +182,15 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
                                 ->beforeNormalization()
                                     ->ifTrue(fn ($v) => !\is_array($v) || \array_is_list($v))
                                     ->thenInvalid('Expected patterns values to be an associate array of string keys mapping to mixed values.')
-                                    ->ifArray()
-                                    ->then(fn (array $v): array => $v[0])
+                                    ->always(function (array $value) {
+                                        foreach ($value as $key => $val) {
+                                            if (\is_array($val)) {
+                                                $value[$key] = \array_merge(...$val);
+                                            }
+                                        }
+
+                                        return $value;
+                                    })
                                 ->end()
                                 ->prototype('variable')->end()
                             ->end()
@@ -167,8 +200,15 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
                                 ->beforeNormalization()
                                     ->ifTrue(fn ($v) => !\is_array($v) || \array_is_list($v))
                                     ->thenInvalid('Expected defaults values to be an associate array of string keys mapping to mixed values.')
-                                    ->ifArray()
-                                    ->then(fn (array $v): array => $v[0])
+                                    ->always(function (array $value) {
+                                        foreach ($value as $key => $val) {
+                                            if (\is_array($val)) {
+                                                $value[$key] = \array_merge(...$val);
+                                            }
+                                        }
+
+                                        return $value;
+                                    })
                                 ->end()
                                 ->prototype('variable')->end()
                             ->end()
@@ -178,8 +218,15 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
                                 ->beforeNormalization()
                                     ->ifTrue(fn ($v) => !\is_array($v) || \array_is_list($v))
                                     ->thenInvalid('Expected arguments values to be an associate array of string keys mapping to mixed values.')
-                                    ->ifArray()
-                                    ->then(fn (array $v): array => $v[0])
+                                    ->always(function (array $value) {
+                                        foreach ($value as $key => $val) {
+                                            if (\is_array($val)) {
+                                                $value[$key] = \array_merge(...$val);
+                                            }
+                                        }
+
+                                        return $value;
+                                    })
                                 ->end()
                                 ->prototype('variable')->end()
                             ->end()
@@ -199,6 +246,7 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
     {
         $routeHandler = $configs['routes_handler'] ?? RouteHandler::class;
         $this->routeNamespace = $configs['namespace'] ?? null;
+        $pipesMiddleware = [];
 
         if ($container->has($routeHandler)) {
             $container->alias(RequestHandlerInterface::class, $routeHandler);
@@ -214,36 +262,12 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
             $container->set('http.router', new Definition(Router::class))->autowire([Router::class, RouteMatcherInterface::class]);
         }
 
-        $pipesMiddleware = \array_map(static function (array $middlewares) use ($container): array {
-            foreach ($middlewares as &$middleware) {
-                if ($container->has($middleware)) {
-                    $middleware = new Reference($middleware);
-
-                    continue;
-                }
-
-                $middleware = new Statement($middleware);
-            }
-
-            return $middlewares;
-        }, $configs['pipes']);
-        $this->middlewares = \array_map(static function (string $middleware) use ($container): object {
-            if ($container->has($middleware)) {
-                return new Reference($middleware);
-            }
-
-            return new Statement($middleware);
-        }, $configs['middlewares']);
-
-        $router = $container->definition('http.router');
-        $this->middlewares[] = new Reference('http.middleware.headers');
-
-        if ($configs['resolve_route_paths']) {
-            $this->middlewares[] = new Statement(PathMiddleware::class, [$configs['redirect_permanent'], $configs['keep_request_method']]);
-        }
-
         if ($container->has('http.middleware.cookie')) {
             $this->middlewares[] = new Reference('http.middleware.cookie');
+        }
+
+        if ($container->has('http.middleware.session')) {
+            $this->middlewares[] = new Reference('http.middleware.session');
         }
 
         if ($container->has('http.middleware.policies')) {
@@ -258,9 +282,28 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
             $this->middlewares[] = new Statement(ErrorHandlerMiddleware::class, [$configs['response_error']]);
         }
 
-        if ($container->has('http.middleware.cache')) {
-            $this->middlewares[] = new Reference('http.middleware.cache');
+        foreach ($configs['pipes'] ?? [] as $m => $middleware) {
+            if (\is_array($middleware)) {
+                $pipesMiddleware[$m] = \array_map(static fn (string $m): object => $container->has($m) ? new Reference($m) : new Statement($m), $middleware);
+
+                continue;
+            }
+
+            $this->middlewares[] = $container->has($middleware) ? new Reference($middleware) : new Statement($middleware);
         }
+
+        if ($container->has('http.middleware.cache')) {
+            $this->middlewares['a'] = new Reference('http.middleware.cache');
+        }
+
+        if ($configs['resolve_route_paths']) {
+            $this->middlewares['b'] = new Statement(PathMiddleware::class, [$configs['redirect_permanent'], $configs['keep_request_method']]);
+        }
+
+        $router = $container->definition('http.router');
+        $this->middlewares[] = new Reference('http.middleware.headers');
+        $this->middlewares[] = new Statement(PrepareResponseMiddleware::class);
+        $this->middlewares[] = new Statement(OriginalMessages::class);
 
         if ($router instanceof Router) {
             if (!$container instanceof Container) {
@@ -275,7 +318,7 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
                 $router->bind('pipes', [$middlewareId, $middlewares]);
             }
 
-            if ($configs['cache']) {
+            if (isset($configs['cache'])) {
                 $router->arg(1, $container->has($configs['cache']) ? new Reference($configs['cache']) : $configs['cache']);
             }
         }
@@ -288,7 +331,7 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
      */
     public function boot(AbstractContainer $container): void
     {
-        [$collection, $groups] = $this->booRoutes($container, $this->routeNamespace);
+        [$collection, $groups] = $this->bootRoutes($container, $this->routeNamespace);
 
         $routes = $container->findBy(RouteCollection::class, static function (string $routesId) use ($container, $groups) {
             if (!empty($collection = $groups[$routesId] ?? [])) {
@@ -322,14 +365,25 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
         });
 
         $router = $container->definition('http.router');
-        $middlewares = \array_merge($middlewares, $this->middlewares);
+        $defaultMiddlewares = []; $mIndex = -1; $mSorted = false;
+
+        foreach ($this->middlewares as $mK => $middleware) {
+            if (!$mSorted && \in_array($mK, ['a', 'b'], true)) {
+                $mIndex += \count($defaultMiddlewares = [...$defaultMiddlewares, ...$middlewares, $middleware]) - $mIndex - 1;
+                $mSorted = true;
+
+                continue;
+            }
+
+            $defaultMiddlewares[++$mIndex] = $middleware;
+        }
 
         if ($router instanceof Router) {
             if (!$container instanceof Container) {
                 throw new ServiceCreationException(\sprintf('Constructing a "%s" instance requires non-builder container.', Router::class));
             }
 
-            $router->pipe(...$container->getResolver()->resolveArguments($middlewares));
+            $router->pipe(...$container->getResolver()->resolveArguments($defaultMiddlewares));
 
             if (!empty($collection)) {
                 $router->getCollection()->routes($collection[0]);
@@ -346,7 +400,7 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
                 throw new ServiceCreationException(\sprintf('Constructing a "%s" instance requires a builder container.', Router::class));
             }
 
-            $router->bind('pipe', [$middlewares]);
+            $router->bind('pipe', [$defaultMiddlewares]);
             $groupedCollection = 'function (\Flight\Routing\RouteCollection $collection) {';
 
             if (!empty($collection)) {
@@ -361,10 +415,10 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
             $router->bind('setCollection', new PhpLiteral($groupedCollection . '};', $collection));
         }
 
-        unset($container->parameters['routes']);
+        unset($container->parameters['routes'], $this->middlewares);
     }
 
-    public function booRoutes(AbstractContainer $container, ?string $routeNamespace): array
+    public function bootRoutes(AbstractContainer $container, ?string $routeNamespace): array
     {
         $collection = $groups = [];
 

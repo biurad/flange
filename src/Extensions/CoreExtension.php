@@ -24,6 +24,7 @@ use Rade\DI\Services\DependenciesInterface;
 use Rade\Handler\EventHandler;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Rade Core Extension.
@@ -52,7 +53,7 @@ class CoreExtension implements AliasedInterface, ConfigurationInterface, Depende
      */
     public function getConfigTreeBuilder(): TreeBuilder
     {
-        $treeBuilder = new TreeBuilder($this->getAlias());
+        $treeBuilder = new TreeBuilder(__CLASS__);
 
         $treeBuilder->getRootNode()
             ->children()
@@ -84,6 +85,10 @@ class CoreExtension implements AliasedInterface, ConfigurationInterface, Depende
             } else {
                 $container->autowire('events.dispatcher', new Definition($eventsDispatcher));
             }
+        }
+
+        if (!$container->has('request_stack')) {
+            $container->autowire('request_stack', new Definition(RequestStack::class));
         }
     }
 }

@@ -17,12 +17,13 @@ declare(strict_types=1);
 
 namespace Rade\Handler;
 
+use Biurad\Http\Request;
 use Flight\Routing\Handlers\RouteHandler as BaseRouteHandler;
 use Flight\Routing\Route;
 use Psr\Http\Message\ServerRequestInterface;
-use Rade\Application;
 use Rade\DI\Container;
 use Rade\Event\ControllerEvent;
+use Rade\Event\RequestEvent;
 
 /**
  * Default route's handler for rade framework.
@@ -33,16 +34,29 @@ class RouteHandler extends BaseRouteHandler
 {
     public function __construct(Container $container)
     {
-        if ($container instanceof Application) {
-            $handlerResolver = function ($handler, array $parameters) use ($container) {
-                $event = new ControllerEvent($container, $handler, $parameters, $parameters[ServerRequestInterface::class]);
-                $container->getDispatcher()->dispatch($event);
+        $handlerResolver = static function ($handler, array $parameters) use ($container) {
+            $request = $parameters[ServerRequestInterface::class] ?? null;
 
-                return $container->getResolver()->resolve($event->getController(), $event->getArguments());
-            };
-        }
+            if ($container->has('events.dispatcher')) {
+                $container->get('events.dispatcher')->dispatch($event = new RequestEvent($container, $request));
 
-        parent::__construct($container->get('psr17.factory'), $handlerResolver ?? [$container->getResolver(), 'resolve']);
+                if ($event->hasResponse()) {
+                    return $event->getResponse();
+                }
+
+                $request = $event->getRequest();
+                $container->get('events.dispatcher')->dispatch($event = new ControllerEvent($container, $handler, $parameters, $request));
+                [$handler, $parameters] = [$event->getController(), $event->getArguments()];
+            }
+
+            if ($request instanceof Request && $container->has('request_stack')) {
+                $container->get('request_stack')->push($request->getRequest());
+            }
+
+            return $container->getResolver()->resolve($handler, $parameters);
+        };
+
+        parent::__construct($container->get('psr17.factory'), $handlerResolver);
     }
 
     /**
