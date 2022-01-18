@@ -8,7 +8,7 @@
         "opcache.enable": true,
         "opcache.enable_cli": true,
         "opcache.jit": 1235,
-        "xdebug.mode": 0
+        "xdebug.mode": "off"
       },
 
     "report.generators": {
