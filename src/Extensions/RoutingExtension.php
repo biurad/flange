@@ -365,7 +365,9 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
         });
 
         $router = $container->definition('http.router');
-        $defaultMiddlewares = []; $mIndex = -1; $mSorted = false;
+        $defaultMiddlewares = [];
+        $mIndex = -1;
+        $mSorted = false;
 
         foreach ($this->middlewares as $mK => $middleware) {
             if (!$mSorted && \in_array($mK, ['a', 'b'], true)) {
