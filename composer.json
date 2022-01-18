@@ -53,6 +53,7 @@
         "symfony/asset": "^5.4 || ^6.0",
         "symfony/cache": "^5.4 || ^6.0",
         "symfony/form": "^5.4 || ^6.0",
+        "symfony/http-client": "^5.4 || ^6.0",
         "symfony/mailer": "^5.4 || ^6.0",
         "symfony/notifier": "^5.4 || ^6.0",
         "symfony/rate-limiter": "^5.4 || ^6.0",
