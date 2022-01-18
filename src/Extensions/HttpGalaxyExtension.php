@@ -17,31 +17,31 @@ declare(strict_types=1);
 
 namespace Rade\DI\Extensions;
 
-use Biurad\Http\Cookie;
 use Biurad\Http\Factory\CookieFactory;
-use Biurad\Http\Factory\NyholmPsr7Factory;
+use Biurad\Http\Factory\Psr17Factory;
 use Biurad\Http\Interfaces\CookieFactoryInterface;
 use Biurad\Http\Middlewares\CacheControlMiddleware;
 use Biurad\Http\Middlewares\CookiesMiddleware;
 use Biurad\Http\Middlewares\HttpCorsMiddleware;
 use Biurad\Http\Middlewares\HttpHeadersMiddleware;
 use Biurad\Http\Middlewares\HttpPolicyMiddleware;
-use Biurad\Http\Session;
-use Biurad\Http\Sessions\HandlerFactory;
-use Biurad\Http\Sessions\Handlers\AbstractSessionHandler;
-use Biurad\Http\Sessions\Handlers\NativeFileSessionHandler;
-use Biurad\Http\Sessions\Handlers\NullSessionHandler;
-use Biurad\Http\Sessions\Handlers\StrictSessionHandler;
-use Biurad\Http\Sessions\MetadataBag;
-use Biurad\Http\Sessions\Storage\NativeSessionStorage;
+use Biurad\Http\Middlewares\SessionMiddleware;
 use Rade\DI\AbstractContainer;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Services\AliasedInterface;
-use Rade\Provider\HttpGalaxy\CorsConfiguration;
+use Rade\KernelInterface;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
+use Symfony\Component\HttpFoundation\Cookie;
+use Symfony\Component\HttpFoundation\Session\Session;
+use Symfony\Component\HttpFoundation\Session\Storage\Handler\AbstractSessionHandler;
+use Symfony\Component\HttpFoundation\Session\Storage\Handler\NativeFileSessionHandler;
+use Symfony\Component\HttpFoundation\Session\Storage\Handler\SessionHandlerFactory;
+use Symfony\Component\HttpFoundation\Session\Storage\Handler\StrictSessionHandler;
+use Symfony\Component\HttpFoundation\Session\Storage\MetadataBag;
+use Symfony\Component\HttpFoundation\Session\Storage\NativeSessionStorage;
 
-use function Rade\DI\Loader\{referenced, service, wrap};
+use function Rade\DI\Loader\{reference, service, wrap};
 
 /**
  * Biurad Http Galaxy Provider.
@@ -63,10 +63,10 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
      */
     public function getConfigTreeBuilder(): TreeBuilder
     {
-        $treeBuilder = new TreeBuilder($this->getAlias());
-        $rootNode = $treeBuilder->getRootNode();
+        $treeBuilder = new TreeBuilder(__CLASS__);
 
-        $rootNode
+        $treeBuilder->getRootNode()
+            ->info('HTTP Galaxy configuration')
             ->children()
                 ->scalarNode('psr17_factory')->end()
                 ->arrayNode('caching')
@@ -129,7 +129,7 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
                 ->arrayNode('headers')
                     ->addDefaultsIfNotSet()
                     ->children()
-                        ->append(CorsConfiguration::getConfigNode())
+                        ->append(Config\HttpCorsSection::getConfigNode())
                         ->arrayNode('request')
                             ->normalizeKeys(false)
                             ->useAttributeAsKey('name')
@@ -156,16 +156,24 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
                             ->arrayPrototype()
                                 ->addDefaultsIfNotSet()
                                 ->children()
-                                    ->scalarNode('name')->end()
-                                    ->scalarNode('value')->end()
+                                    ->scalarNode('name')->isRequired()->end()
+                                    ->scalarNode('value')->defaultNull()->end()
                                     ->variableNode('expires')
                                         ->beforeNormalization()
                                             ->always()
                                             ->then(fn ($v) => wrap('Nette\Utils\DateTime::from', [$v]))
                                         ->end()
+                                        ->defaultValue(0)
                                     ->end()
-                                    ->scalarNode('domain')->end()
-                                    ->scalarNode('path')->end()
+                                    ->scalarNode('path')->defaultValue('/')->end()
+                                    ->scalarNode('domain')->defaultNull()->end()
+                                    ->booleanNode('secure')->defaultNull()->end()
+                                    ->booleanNode('httpOnly')->defaultTrue()->end()
+                                    ->booleanNode('raw')->defaultFalse()->end()
+                                    ->enumNode('cookie_samesite')
+                                        ->values([null, Cookie::SAMESITE_LAX, Cookie::SAMESITE_NONE, Cookie::SAMESITE_STRICT])
+                                        ->defaultValue(Cookie::SAMESITE_LAX)
+                                    ->end()
                                 ->end()
                             ->end()
                         ->end()
@@ -194,8 +202,8 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
                         ->enumNode('cookie_secure')->values([true, false, 'auto'])->end()
                         ->booleanNode('cookie_httponly')->defaultTrue()->end()
                         ->enumNode('cookie_samesite')
-                            ->values([null, Cookie::SAME_SITE_LAX, Cookie::SAME_SITE_NONE, Cookie::SAME_SITE_STRICT])
-                            ->defaultValue(Cookie::SAME_SITE_LAX)
+                            ->values([null, Cookie::SAMESITE_LAX, Cookie::SAMESITE_NONE, Cookie::SAMESITE_STRICT])
+                            ->defaultValue(Cookie::SAMESITE_LAX)
                         ->end()
                         ->booleanNode('use_cookies')->end()
                         ->scalarNode('gc_divisor')->end()
@@ -229,7 +237,7 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
     public function register(AbstractContainer $container, array $configs = []): void
     {
         if (!$container->has('psr17.factory')) {
-            $container->autowire('psr17.factory', service($configs['psr17_factory'] ?? NyholmPsr7Factory::class));
+            $container->autowire('psr17.factory', service($configs['psr17_factory'] ?? Psr17Factory::class));
         }
 
         if ($configs['cookie']['enabled']) {
@@ -277,23 +285,27 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
 
             $container->autowire('session.storage.native', service(NativeSessionStorage::class, [
                 \array_intersect_key($session, ['storage_id' => null, 'handler_id' => null, 'meta_storage_key' => null, 'metadata_update_threshold' => null]),
-                referenced('session.handler'),
+                reference('session.handler'),
             ]))
                 ->arg(2, wrap(MetadataBag::class, [$session['meta_storage_key'], $session['metadata_update_threshold']]));
 
             $container->set('session.handler.native_file', service(StrictSessionHandler::class, [
-                $container->isRunningInConsole() ? wrap(NullSessionHandler::class) : wrap(NativeFileSessionHandler::class, [$container->parameters['project_dir'] . '/' . $session['save_path']]),
+                $container instanceof KernelInterface && $container->isRunningInConsole() ? wrap(NullSessionHandler::class) : wrap(
+                    NativeFileSessionHandler::class,
+                    [$container->parameters['project_dir'] . '/' . $session['save_path']]
+                ),
             ]))->autowire([AbstractSessionHandler::class]);
 
             if ($container->has($session['handler_id'])) {
                 $container->alias('session.handler', $session['handler_id']);
             } else {
-                $container->set('session.handler', service([wrap(HandlerFactory::class, [2 => $session['cookie_lifetime']]), 'createHandler']))
+                $container->set('session.handler', service([wrap(SessionHandlerFactory::class), 'createHandler']))
                     ->args([$session['handler_id']])
                     ->autowire([AbstractSessionHandler::class]);
             }
 
-            $container->autowire('http.session', service(Session::class, [referenced($session['storage_id'])]));
+            $container->set('http.middleware.session', service(SessionMiddleware::class, [wrap(reference('http.session'), [], true)]));
+            $container->autowire('http.session', service(Session::class, [reference($session['storage_id'])]));
         }
     }
 }

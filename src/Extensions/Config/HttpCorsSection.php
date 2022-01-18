@@ -15,7 +15,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\Provider\HttpGalaxy;
+namespace Rade\DI\Extensions\Config;
 
 use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
 use Symfony\Component\Config\Definition\Builder\BooleanNodeDefinition;
@@ -25,7 +25,7 @@ use Symfony\Component\Config\Definition\Builder\ScalarNodeDefinition;
  * @author Jordi Boggiano <j.boggiano@seld.be>
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
-class CorsConfiguration
+class HttpCorsSection
 {
     public static function getConfigNode(): ArrayNodeDefinition
     {
@@ -35,8 +35,8 @@ class CorsConfiguration
             ->canBeEnabled()
             ->addDefaultsIfNotSet()
             ->children()
+                ->booleanNode('allow_origin')->defaultFalse()->end()
                 ->append(self::getAllowCredentials())
-                ->append(self::getAllowOrigin())
                 ->append(self::getAllowHeaders())
                 ->append(self::getAllowMethods())
                 ->append(self::getExposeHeaders())
@@ -97,13 +97,8 @@ class CorsConfiguration
 
         $node
             ->beforeNormalization()
-                ->always(function ($v) {
-                    if ('*' === $v) {
-                        return ['*'];
-                    }
-
-                    return $v;
-                })
+                ->ifString()
+                ->then(fn ($v) => [$v])
             ->end()
             ->prototype('scalar')->end();
 
@@ -114,7 +109,12 @@ class CorsConfiguration
     {
         $node = new ArrayNodeDefinition('allow_methods');
 
-        $node->prototype('scalar')->end();
+        $node
+            ->beforeNormalization()
+                ->ifString()
+                ->then(fn ($v) => [$v])
+            ->end()
+            ->prototype('scalar')->end();
 
         return $node;
     }
@@ -123,7 +123,12 @@ class CorsConfiguration
     {
         $node = new ArrayNodeDefinition('expose_headers');
 
-        $node->prototype('scalar')->end();
+        $node
+            ->beforeNormalization()
+                ->ifString()
+                ->then(fn ($v) => [$v])
+            ->end()
+            ->prototype('scalar')->end();
 
         return $node;
     }
@@ -147,7 +152,12 @@ class CorsConfiguration
     {
         $node = new ArrayNodeDefinition('hosts');
 
-        $node->prototype('scalar')->end();
+        $node
+            ->beforeNormalization()
+                ->ifString()
+                ->then(fn ($v) => [$v])
+            ->end()
+            ->prototype('scalar')->end();
 
         return $node;
     }
