@@ -19,5 +19,8 @@
     <file>tests/</file>
 
     <!-- Include full PSR-12 Coding Standard -->
-    <rule ref="PSR12" />
+    <rule ref="PSR12">
+        <exclude name="PSR2.Classes.PropertyDeclaration.Multiple"/>
+        <exclude name="PSR12.Namespaces.CompoundNamespaceDepth.TooDeep"/>
+    </rule>
 </ruleset>
