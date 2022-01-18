@@ -21,8 +21,8 @@ use Composer\InstalledVersions;
 use Laminas\Escaper\Escaper;
 use Nette\Utils\FileSystem;
 use Rade\DI\Exceptions\ContainerResolutionException;
+use Rade\DI\Extensions\ConfigExtension;
 use Rade\DI\Extensions\ExtensionBuilder;
-use Rade\Provider\ConfigServiceProvider;
 use Symfony\Component\Config\Exception\LoaderLoadException;
 use Symfony\Component\Config\Loader\LoaderResolverInterface;
 
@@ -53,25 +53,25 @@ trait HelperTrait
     }
 
     /**
-     * The the delegated config loaders instance.
+     * The delegated config loaders instance.
      */
     public function getConfigLoader(): LoaderResolverInterface
     {
-        $configLoader = $this->services['config.loader_resolver'] ?? $this->privates['builder.loader_resolver'] ?? null;
+        $configLoader = $this->services['config.loader_resolver'] ?? $this->privates['config.builder.loader_resolver'] ?? null;
 
         if (null === $configLoader) {
             if ($this->has('config.loader_resolver')) {
                 return $this->get('config.loader_resolver');
             }
 
-            if (isset($this->definitions['builder.loader_resolver'])) {
-                $configLoader = $this->definitions['builder.loader_resolver'];
-                unset($this->definitions['builder.loader_resolver']);
+            if (isset($this->definitions['config.builder.loader_resolver'])) {
+                $configLoader = $this->definitions['config.builder.loader_resolver'];
+                unset($this->definitions['config.builder.loader_resolver']);
 
-                return $this->privates['builder.loader_resolver'] = $configLoader;
+                return $this->privates['config.builder.loader_resolver'] = $configLoader;
             }
 
-            throw new ContainerResolutionException(\sprintf('Did you forgot to register the "%s" class?', ConfigServiceProvider::class));
+            throw new ContainerResolutionException(\sprintf('Did you forgot to register the "%s" class?', ConfigExtension::class));
         }
 
         return $configLoader;

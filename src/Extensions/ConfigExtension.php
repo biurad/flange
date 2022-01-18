@@ -23,6 +23,7 @@ use Rade\DI\Definition;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Loader\{ClosureLoader, DirectoryLoader, GlobFileLoader, PhpFileLoader, YamlFileLoader};
 use Rade\DI\Services\AliasedInterface;
+use Symfony\Component\Config\ConfigCacheFactory;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Config\FileLocator;
@@ -55,7 +56,7 @@ class ConfigExtension implements AliasedInterface, ConfigurationInterface, Exten
      */
     public function getConfigTreeBuilder(): TreeBuilder
     {
-        $treeBuilder = new TreeBuilder($this->getAlias());
+        $treeBuilder = new TreeBuilder(__CLASS__);
 
         $treeBuilder->getRootNode()
             ->addDefaultsIfNotSet()
@@ -80,7 +81,7 @@ class ConfigExtension implements AliasedInterface, ConfigurationInterface, Exten
     public function register(AbstractContainer $container, array $configs = []): void
     {
         // The default configs ...
-        $container->parameters['locale'] = $configs['locale'] ?? null;
+        $container->parameters['default_locale'] = $configs['locale'] ?? 'en';
         $container->parameters['debug'] = $configs['debug'] ?? false;
         $container->parameters['project_dir'] = $this->rootDir;
 
@@ -95,7 +96,7 @@ class ConfigExtension implements AliasedInterface, ConfigurationInterface, Exten
                 $builderResolver->addLoader(new $builderLoader($container, $fileLocator));
             }
 
-            $container->set('builder.loader_resolver', $builderResolver);
+            $container->set('config.builder.loader_resolver', $builderResolver);
         }
 
         foreach ($configLoaders as &$configLoader) {
@@ -103,6 +104,7 @@ class ConfigExtension implements AliasedInterface, ConfigurationInterface, Exten
         }
 
         $container->autowire('config.loader_locator', new Definition(FileLocator::class, [\array_map([$container, 'parameter'], $configs['paths'])]));
-        $container->set('config.loader_resolver', new Definition(LoaderResolver::class, [$configLoaders]));
+        $container->set('config_loader_resolver', new Definition(LoaderResolver::class, [$configLoaders]));
+        $container->autowire('config_cache_factory', new Definition(ConfigCacheFactory::class, ['%debug%']));
     }
 }

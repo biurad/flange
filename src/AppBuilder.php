@@ -21,6 +21,7 @@ use Flight\Routing\Interfaces\RouteMatcherInterface;
 use Flight\Routing\Route;
 use Flight\Routing\RouteCollection;
 use Flight\Routing\Router;
+use Rade\DI\Exceptions\ServiceCreationException;
 use Symfony\Component\Config\ConfigCache;
 
 /**
@@ -197,7 +198,11 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface
      */
     protected function doAnalyse(array $definitions, bool $onlyDefinitions = false): array
     {
-        unset($this->parameters['routes'], $definitions['builder.loader_resolver']);
+        unset($definitions['config.builder.loader_resolver']);
+
+        if (isset($this->parameters['routes'])) {
+            throw new ServiceCreationException(\sprintf('The %s extension needs to be registered before adding routes.', DI\Extensions\RoutingExtension::class));
+        }
 
         return parent::doAnalyse($definitions, $onlyDefinitions);
     }
