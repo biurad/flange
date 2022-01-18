@@ -78,7 +78,7 @@ class ContainerPanel implements Tracy\IBarPanel
 
         return Nette\Utils\Helpers::capture(function () use ($types, $wiring, $rc): void {
             $file = $rc->getFileName();
-            $instances = $this->getContainerProperty('definitions', $rc);
+            $instances = $this->getContainerProperty('definitions', $rc) + $this->getContainerProperty('methodsMap', $rc);
             $services = $this->getContainerProperty('services', $rc);
             $configs = $this->getContainerProperty('parameters', $rc);
 
