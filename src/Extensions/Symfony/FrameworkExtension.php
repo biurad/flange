@@ -55,8 +55,8 @@ class FrameworkExtension implements AliasedInterface, DependenciesInterface, Ext
             PropertyInfoExtension::class,
             PropertyAccessExtension::class,
             TranslationExtension::class,
-            FormExtension::class,
             ValidatorExtension::class,
+            FormExtension::class,
             SerializerExtension::class,
             MailerExtension::class,
         ];

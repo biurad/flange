@@ -37,6 +37,7 @@ use Symfony\Component\Validator\Constraints\NotCompromisedPasswordValidator;
 use Symfony\Component\Validator\ContainerConstraintValidatorFactory;
 use Symfony\Component\Validator\Mapping\Loader\PropertyInfoLoader;
 use Symfony\Component\Validator\Validation;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Validator\ValidatorBuilder;
 
 /**
@@ -181,12 +182,13 @@ class ValidatorExtension implements AliasedInterface, BootExtensionInterface, Co
             }
         }
 
-        $container->autowire('validator', new Definition([new Reference('validator.builder'), 'getValidator']));
+        $container->set('validator', new Definition([new Reference('validator.builder'), 'getValidator']))->autowire([ValidatorInterface::class]);
         $container->set('validator.validator_factory', new Definition(ContainerConstraintValidatorFactory::class));
-        $container->set('validator.email', new Definition(EmailValidator::class, [$configs['email_validation_mode']]))->tag('validator.constraint_validator', ['alias' => EmailValidator::class]);
+        $container->set('validator.email', new Definition(EmailValidator::class, [$configs['email_validation_mode']]))->public(false)->tag('validator.constraint_validator', ['alias' => EmailValidator::class]);
 
         if (\class_exists(\Symfony\Component\HttpClient\HttpClient::class)) {
             $container->set('validator.not_compromised_password', new Definition(NotCompromisedPasswordValidator::class))
+                ->public(false)
                 ->arg(2, $configs['not_compromised_password']['enabled'])
                 ->arg(3, $configs['not_compromised_password']['endpoint'])
                 ->tag('validator.constraint_validator', ['alias' => NotCompromisedPasswordValidator::class]);
@@ -212,7 +214,7 @@ class ValidatorExtension implements AliasedInterface, BootExtensionInterface, Co
         }
 
         if ($container->hasExtension(PropertyInfoExtension::class)) {
-            $container->set('validator.property_info_loader', new Definition(PropertyInfoLoader::class))->tag('validator.auto_mapper');
+            $container->set('validator.property_info_loader', new Definition(PropertyInfoLoader::class))->public(false)->tag('validator.auto_mapper');
         }
     }
 
