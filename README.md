@@ -17,7 +17,8 @@
 
 Its also to note that, Rade has support for [PSR-11], built with [Rade DI][] library gracing the project with an advanced DI.
 
-![PHP Rade Framework Image](https://user-images.githubusercontent.com/53147395/142729210-3e6b8532-0909-4dcd-8850-9f0d71e6d013.png)
+![PHP Rade Framework Image](https://user-images.githubusercontent.com/53147395/150102570-ab6bdb12-a669-45c2-9dd2-d8d1d6f1ac1f.png)
+
 
 
 ## 📦 Installation & Basic Usage
