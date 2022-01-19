@@ -35,6 +35,7 @@ use Symfony\Component\Form\Form;
 use Symfony\Component\Validator\Constraints\EmailValidator;
 use Symfony\Component\Validator\Constraints\NotCompromisedPasswordValidator;
 use Symfony\Component\Validator\ContainerConstraintValidatorFactory;
+use Symfony\Component\Validator\Mapping\Factory\MetadataFactoryInterface;
 use Symfony\Component\Validator\Mapping\Loader\PropertyInfoLoader;
 use Symfony\Component\Validator\Validation;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -182,7 +183,7 @@ class ValidatorExtension implements AliasedInterface, BootExtensionInterface, Co
             }
         }
 
-        $container->set('validator', new Definition([new Reference('validator.builder'), 'getValidator']))->autowire([ValidatorInterface::class]);
+        $container->set('validator', new Definition([new Reference('validator.builder'), 'getValidator']))->autowire([ValidatorInterface::class, MetadataFactoryInterface::class]);
         $container->set('validator.validator_factory', new Definition(ContainerConstraintValidatorFactory::class));
         $container->set('validator.email', new Definition(EmailValidator::class, [$configs['email_validation_mode']]))->public(false)->tag('validator.constraint_validator', ['alias' => EmailValidator::class]);
 
