@@ -33,9 +33,9 @@
         "biurad/http-galaxy": "1.*",
         "divineniiquaye/flight-routing": "2.*",
         "divineniiquaye/rade-di": "dev-rade-best",
-        "psr/event-dispatcher": "^1.0",
         "symfony/config": "^5.4 || ^6.0",
         "symfony/console": "^5.4 || ^6.0",
+        "symfony/event-dispatcher-contracts": "^2|^3",
         "symfony/finder": "^5.4 || ^6.0",
         "symfony/process": "^5.4 || ^6.0"
     },
