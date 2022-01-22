@@ -1,0 +1,95 @@
+<?php
+
+declare(strict_types=1);
+
+/*
+ * This file is part of DivineNii opensource projects.
+ *
+ * PHP version 7.4 and above required
+ *
+ * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
+ * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @license   https://opensource.org/licenses/BSD-3-Clause License
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+namespace Rade\Debug\Tracy;
+
+use Tracy\Dumper;
+use Tracy\Helpers;
+
+?>
+<style class="tracy-debug">
+    #tracy-debug .nette-RoutingPanel table {
+        font: 9pt/1.5 Consolas, monospace;
+    }
+
+    #tracy-debug .nette-RoutingPanel .yes td {
+        background: #BDE678 !important;
+    }
+
+    #tracy-debug .nette-RoutingPanel .may td {
+        background: #C1D3FF !important;
+    }
+
+    #tracy-debug .nette-RoutingPanel td:first-child {
+        width: 20px;
+    }
+
+    #tracy-debug .nette-RoutingPanel td:nth-child(2) {
+        white-space: nowrap;
+    }
+
+    #tracy-debug .nette-RoutingPanel pre,
+    #tracy-debug .nette-RoutingPanel code {
+        display: inline;
+        background: transparent;
+    }
+
+    #tracy-debug .nette-RoutingPanel-rel {
+        background: #eee;
+        white-space: nowrap;
+    }
+
+    #tracy-debug .nette-RoutingPanel-center tr td,
+    #tracy-debug .nette-RoutingPanel-center tr th {
+        text-align: center;
+    }
+</style>
+
+<h1>Flight Routing</h1>
+
+<div class="tracy-inner nette-RoutingPanel">
+    <div class="tracy-inner-container">
+        <h2>Routes Metrics</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Uri Path</th>
+                    <th>Active</th>
+                    <th>Handler</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <?php foreach ($this->routes as $router) { ?>
+                <tr
+                    class="<?php echo $router['matched'] ? 'yes' : 'no'; ?>">
+                    <td><code
+                            title="<?php echo Helpers::escapeHtml(\get_class($router['route'])); ?>"> <?php echo Helpers::escapeHtml($router['name']); ?></code>
+                    </td>
+                    <td><?php echo $router['route']->getPath(); ?>
+                    </td>
+                    <td><?php echo $router['matched'] ? '✓ Yes' : '≈ No'; ?>
+                    </td>
+                    <td><?php echo Dumper::toHtml($router['route'], [Dumper::COLLAPSE => true, Dumper::LIVE => true]); ?>
+                    </td>
+                </tr>
+                <?php } ?>
+            </tbody>
+        </table>
+    </div>
+</div>
