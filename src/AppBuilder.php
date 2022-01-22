@@ -168,7 +168,6 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
      *
      * supported $options config (defaults):
      * - cacheDir => composer's vendor dir, The directory where compiled application class will live in.
-     * - strictAutowiring => true, Resolvable services which are not typed, will be resolved if false.
      * - shortArraySyntax => true, Controls whether [] or array() syntax should be used for an array.
      * - maxLineLength => 200, Max line of generated code in compiled container class.
      * - maxDefinitions => 500, Max definitions reach before splitting into traits.
@@ -188,8 +187,8 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
         if (!$cache->isFresh()) {
             $appBuilder = new static($debug);
 
-            if (isset($options['strictAutowiring'])) {
-                $appBuilder->getResolver()->setStrictAutowiring($options['strictAutowiring']);
+            if ($debug && \interface_exists(\Tracy\IBarPanel::class)) {
+                Debug\Tracy\ContainerPanel::$compilationTime = \microtime(true);
             }
 
             $application($appBuilder);
