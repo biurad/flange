@@ -1,0 +1,55 @@
+<?php
+
+declare(strict_types=1);
+
+/*
+ * This file is part of DivineNii opensource projects.
+ *
+ * PHP version 7.4 and above required
+ *
+ * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
+ * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @license   https://opensource.org/licenses/BSD-3-Clause License
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+namespace Rade\Debug\Tracy;
+
+use Tracy\Helpers;
+
+?>
+
+<style>
+    #tracy-debug .debug-tracy-template-bar tr td,
+    #tracy-debug .debug-tracy-template-bar tr th
+    {
+        text-align: center;
+    }
+</style>
+
+<h1>Templates Metrics</h1>
+<div class="tracy-inner tracy-template-bar">
+    <h2><strong>Templates Rendered: <?php echo (0 === $this->templateCount ? 'None' : $this->templateCount) ?></strong></h2>
+    <?php if ($this->templateCount > 0) : ?>
+        <table>
+            <tr>
+                <th scope="col">Template Name</th>
+                <th scope="col">Rendered By</th>
+                <th scope="col">Rendered At</th>
+            </tr>
+            <?php foreach ($this->templates as $tpl): ?>
+                <tr>
+                    <td><?php echo $tpl['name'] ?></td>
+                    <td><?php echo $tpl['render'] ?></td>
+                    <td>
+                        <a href="<?php echo Helpers::escapeHtml(Helpers::editorUri($tpl['path'])) ?>">
+                            <?php echo Helpers::encodeString($tpl['path'], 30) ?>
+                        </a>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        </table>
+    <?php endif; ?>
+</div>
