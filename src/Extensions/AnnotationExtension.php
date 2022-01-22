@@ -96,6 +96,10 @@ class AnnotationExtension implements AliasedInterface, BootExtensionInterface, C
      */
     public function register(AbstractContainer $container, array $configs = []): void
     {
+        if (!\class_exists(AnnotationLoader::class)) {
+            throw new \LogicException('Annotations/Attributes support cannot be enabled as the Annotation component is not installed. Try running "composer require biurad/annotations".');
+        }
+
         $loader = $container->autowire('annotation.loader', new Definition(AnnotationLoader::class));
 
         if (isset($configs['class_loader'])) {
