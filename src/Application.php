@@ -269,6 +269,10 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
      */
     protected function handleThrowable(\Throwable $e, ServerRequestInterface $request): ResponseInterface
     {
+        if ($request instanceof Request) {
+            $this->get('request_stack')->push($request->getRequest());
+        }
+
         $this->getDispatcher()->dispatch($event = new Event\ExceptionEvent($this, $request, $e));
 
         // a listener might have replaced the exception
