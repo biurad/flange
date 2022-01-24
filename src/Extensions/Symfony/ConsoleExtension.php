@@ -19,6 +19,7 @@ namespace Rade\DI\Extensions\Symfony;
 
 use Rade\Application as RadeApplication;
 use Rade\Commands\AboutCommand;
+use Rade\Commands\ServerCommand;
 use Rade\DI\AbstractContainer;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
@@ -56,6 +57,7 @@ class ConsoleExtension implements AliasedInterface, BootExtensionInterface, Exte
         }
 
         $container->type(AboutCommand::class, Command::class);
+        $container->set('console.command.server', new Definition(ServerCommand::class, ['%project_dir%', '%debug%']))->tag('console.command', 'serve');
         $container->set('console', new Definition(Application::class))
             ->args([
                 $container->parameters['console.name'] ?? 'PHP Rade Framework',
