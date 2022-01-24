@@ -13,9 +13,9 @@
 
 ---
 
-**divineniiquaye/php-rade** is incredibly fast, micro, compilable and scalable framework for [PHP] 7.4+ based on [PSR-7] and [PSR-15] with support for annotations/attributes, created by [Divine Niiquaye][@divineniiquaye] and inspired by [Silex]. This library seeks to help developers who are lazy, beginners, small businesses or people who want to build things fast with extremely less dependencies.
+**divineniiquaye/php-rade** is an incredibly fast, micro, compilable and scalable framework for [PHP] 7.4+ based on [PSR-7], [PSR-11], [PSR-14] and [PSR-15] with support for annotations/attributes, created by [Divine Niiquaye][@divineniiquaye].
 
-Its also to note that, Rade has support for [PSR-11], built with [Rade DI][] library gracing the project with an advanced DI.
+This library seeks to help developers who are lazy, beginners, small businesses or people who want to build things fast with extremely less dependencies.
 
 ![PHP Rade Framework Image](https://user-images.githubusercontent.com/53147395/150102570-ab6bdb12-a669-45c2-9dd2-d8d1d6f1ac1f.png)
 
@@ -29,7 +29,7 @@ This project requires [PHP] 7.4 or higher. The recommended way to install, is vi
 $ composer require divineniiquaye/php-rade 2.0.*
 ```
 
-Rade is built based on [Flight Routing][], [Symfony components][] and [Biurad libraries][]. Rade is a fully PSR complaint [PHP] framework, fully customizable and can even be used to develop from small to large projects:
+Rade is built based on [Flight Routing][], [Rade DI][], [Symfony components][] and [Biurad libraries][]. Rade is a fully PSR complaint [PHP] framework, fully customizable and can even be used to develop from small to large projects:
 
 ```php
 require_once __DIR__ . '/vendor/autoload.php';
@@ -192,6 +192,7 @@ The **divineniiquaye/php-rade** library is copyright © [Divine Niiquaye Ibok](h
 [PHP]: https://php.net
 [PSR-7]: http://www.php-fig.org/psr/psr-6/
 [PSR-11]: http://www.php-fig.org/psr/psr-11/
+[PSR-14]: http://www.php-fig.org/psr/psr-14/
 [PSR-15]: http://www.php-fig.org/psr/psr-15/
 [@divineniiquaye]: https://github.com/divineniiquaye
 [docs]: https://docs.divinenii.com/php-rade
@@ -205,6 +206,5 @@ The **divineniiquaye/php-rade** library is copyright © [Divine Niiquaye Ibok](h
 [message]: https://projects.biurad.com/message
 [Flight Routing]: https://github.com/divineniiquaye/flight-routing
 [Rade DI]: https://github.com/divineniiquaye/rade-di
-[Silex]: http://silex.sensiolabs.org
 [Symfony components]: https://github.com/symfony
 [Biurad libraries]: https://github.com/biurad
