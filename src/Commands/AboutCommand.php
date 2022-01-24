@@ -29,10 +29,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * A console command to display information about the current project.
  *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
- *
- * @final
  */
-class AboutCommand extends Command
+final class AboutCommand extends Command
 {
     protected static $defaultName = 'about';
 
@@ -94,6 +92,6 @@ EOT
 
         $io->table([], $rows);
 
-        return 0;
+        return self::SUCCESS;
     }
 }
