@@ -27,6 +27,7 @@ use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Extensions\ExtensionInterface;
 use Rade\DI\Services\AliasedInterface;
 use Symfony\Component\Cache\Adapter\AbstractAdapter;
+use Symfony\Component\Cache\Adapter\AdapterInterface;
 use Symfony\Component\Cache\Adapter\ApcuAdapter;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\Cache\Adapter\ChainAdapter;
@@ -199,7 +200,7 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
         }
 
         $container->set('cache.app', new Reference('cache.adapter.filesystem'))->autowire([CacheItemPoolInterface::class, CacheInterface::class])->tag('cache.pool');
-        $container->set('cache.system', new Reference('cache.adapter.system'))->tag('cache.pool');
+        $container->set('cache.system', new Reference('cache.adapter.system'))->autowire([AdapterInterface::class])->tag('cache.pool');
         $container->set('cache.app.taggable', new Definition(TagAwareAdapter::class, [new Reference('cache.app')]))->public(false);
 
         if (\class_exists(DefaultMarshaller::class)) {

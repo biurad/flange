@@ -56,8 +56,7 @@ The <info>%command.name%</info> command displays information about the current P
 The <info>PHP</info> section displays important configuration that could affect your application. The values might
 be different between web and CLI.
 EOT
-        )
-        ;
+        );
     }
 
     /**
