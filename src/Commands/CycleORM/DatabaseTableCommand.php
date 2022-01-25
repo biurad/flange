@@ -37,6 +37,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
  * Describes table schema for a database.
+ *
+ * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
 class DatabaseTableCommand extends Command
 {
