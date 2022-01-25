@@ -20,9 +20,14 @@ namespace Rade\DI\Extensions\CycleORM;
 use Cycle\Database\Config\DatabaseConfig;
 use Cycle\Database\DatabaseManager;
 use Cycle\Database\DatabaseProviderInterface;
+use Cycle\Migrations\Config\MigrationConfig;
+use Cycle\Migrations\FileRepository;
+use Cycle\Migrations\Migrator;
 use Rade\Commands\CycleORM\DatabaseListCommand;
 use Rade\Commands\CycleORM\DatabaseTableCommand;
+use Rade\Commands\CycleORM\MigrationCommand;
 use Rade\DI\AbstractContainer;
+use Rade\DI\ContainerBuilder;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
@@ -56,6 +61,7 @@ class DatabaseExtension implements AliasedInterface, ConfigurationInterface, Ext
         $treeBuilder = new TreeBuilder(__CLASS__);
 
         $treeBuilder->getRootNode()
+            ->addDefaultsIfNotSet()
             ->children()
                 ->scalarNode('default')->end()
                 ->arrayNode('aliases')
@@ -100,6 +106,15 @@ class DatabaseExtension implements AliasedInterface, ConfigurationInterface, Ext
                         ->end()
                     ->end()
                 ->end()
+                ->arrayNode('migrations')
+                    ->addDefaultsIfNotSet()
+                    ->children()
+                        ->scalarNode('directory')->end()
+                        ->scalarNode('table')->defaultValue('migrations')->end()
+                        ->booleanNode('safe')->defaultTrue()->end()
+                        ->scalarNode('namespace')->defaultValue('Migration')->end()
+                    ->end()
+                ->end()
             ->end()
         ;
 
@@ -140,12 +155,27 @@ class DatabaseExtension implements AliasedInterface, ConfigurationInterface, Ext
             $configs['connections'] = $connections;
         }
 
+        $migrateConfig = $configs['migrations'] ?? [];
+
+        if (\class_exists(Migrator::class)) {
+            $container->autowire('cycle.database.migrator', new Definition(Migrator::class, [
+                $migrateConfig = $container->call(MigrationConfig::class, [$migrateConfig]),
+                new Reference('cycle.database.factory'),
+                new Statement(FileRepository::class, [$migrateConfig]),
+            ]));
+        }
+        unset($configs['migrations']);
+
         $container->autowire('cycle.database.config', new Definition(DatabaseConfig::class, [$configs]))->public(false);
         $container->autowire('cycle.database.factory', new Definition(DatabaseManager::class, [new Reference('cycle.database.config')]));
         $container->autowire('cycle.database', new Definition([new Reference('cycle.database.factory'), 'database']));
 
         if ($container instanceof KernelInterface && $container->isRunningInConsole()) {
             $container->types([DatabaseTableCommand::class => Command::class, DatabaseListCommand::class => Command::class]);
+
+            if ($migrateConfig instanceof Statement) {
+                $container->type(MigrationCommand::class, Command::class);
+            }
         }
     }
 }
