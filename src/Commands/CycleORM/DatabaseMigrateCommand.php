@@ -32,7 +32,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
-class MigrationCommand extends Command
+class DatabaseMigrateCommand extends Command
 {
     protected static $defaultName = 'cycle:database:migrate';
 

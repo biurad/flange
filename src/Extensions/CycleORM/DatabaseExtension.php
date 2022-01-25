@@ -24,10 +24,9 @@ use Cycle\Migrations\Config\MigrationConfig;
 use Cycle\Migrations\FileRepository;
 use Cycle\Migrations\Migrator;
 use Rade\Commands\CycleORM\DatabaseListCommand;
+use Rade\Commands\CycleORM\DatabaseMigrateCommand;
 use Rade\Commands\CycleORM\DatabaseTableCommand;
-use Rade\Commands\CycleORM\MigrationCommand;
 use Rade\DI\AbstractContainer;
-use Rade\DI\ContainerBuilder;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
@@ -139,9 +138,9 @@ class DatabaseExtension implements AliasedInterface, ConfigurationInterface, Ext
                 }
 
                 $connections[$name] = new Statement(
-                    DriverConfig::class,
+                    Config\DriverConfig::class,
                     [
-                        new Statement(Connection::class, [$con['dsn'], $con['username'], $con['password'], $con['options'] ?? []]),
+                        new Statement(Config\Connection::class, [$con['dsn'], $con['username'], $con['password'], $con['options'] ?? []]),
                         $con['driver'],
                         $con['reconnect'],
                         $con['timezone'],
@@ -173,8 +172,8 @@ class DatabaseExtension implements AliasedInterface, ConfigurationInterface, Ext
         if ($container instanceof KernelInterface && $container->isRunningInConsole()) {
             $container->types([DatabaseTableCommand::class => Command::class, DatabaseListCommand::class => Command::class]);
 
-            if ($migrateConfig instanceof Statement) {
-                $container->type(MigrationCommand::class, Command::class);
+            if (!\is_array($migrateConfig)) {
+                $container->type(DatabaseMigrateCommand::class, Command::class);
             }
         }
     }
