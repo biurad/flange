@@ -31,7 +31,6 @@ class ContainerPanel implements Tracy\IBarPanel
     public static ?float $compilationTime = null;
 
     private Container $container;
-
     private ?float $elapsedTime;
 
     public function __construct(Container $container)

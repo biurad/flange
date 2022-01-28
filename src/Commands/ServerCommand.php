@@ -35,15 +35,11 @@ use Symfony\Component\Process\Process;
 final class ServerCommand extends Command
 {
     protected static $defaultName = 'serve';
-
     protected static $defaultDescription = 'Display information about the current project';
 
     private ?string $documentRoot;
-
     private string $router, $hostname, $address;
-
     private int $port;
-
     private bool $debug;
 
     public function __construct(string $documentRoot, bool $debug)

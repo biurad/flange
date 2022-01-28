@@ -33,15 +33,7 @@ final class RoutesPanel implements Tracy\IBarPanel
     use Nette\SmartObject;
 
     private int $routeCount = 0;
-
-    private int $renderCount = 0;
-
-    private int $memoryCount = 0;
-
-    private float $duration = 0;
-
     private Router $profiler;
-
     private ?Request $request;
 
     /** @var array<int,mixed> */

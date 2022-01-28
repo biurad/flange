@@ -35,7 +35,6 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
     use Traits\HelperTrait;
 
     private int $routeIndex = -1;
-
     private string $routesId = 'router.collection_a';
 
     public function __construct(bool $debug = true)

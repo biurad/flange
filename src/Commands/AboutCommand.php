@@ -33,7 +33,6 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 final class AboutCommand extends Command
 {
     protected static $defaultName = 'about';
-
     protected static $defaultDescription = 'Display information about the current project';
 
     private ContainerInterface $container;

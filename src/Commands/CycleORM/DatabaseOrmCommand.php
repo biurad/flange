@@ -39,7 +39,6 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class DatabaseOrmCommand extends Command
 {
     protected static $defaultName = 'cycle:database:orm';
-
     protected static $defaultDescription = 'Generate ORM schema migrations and run if possible';
 
     /**

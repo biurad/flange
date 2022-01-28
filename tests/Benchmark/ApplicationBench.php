@@ -30,11 +30,7 @@ class ApplicationBench
 {
     protected const CACHE_DIR = __DIR__ . '/caches';
 
-    protected static ?Process $simple = null;
-
-    protected static ?Process $noCache = null;
-
-    protected static ?Process $withCache = null;
+    protected static ?Process $simple = null, $noCache = null, $withCache = null;
 
     public static function tearDown(): void
     {

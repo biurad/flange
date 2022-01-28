@@ -24,7 +24,6 @@ use Biurad\UI\Template;
 final class TemplatesPanel implements IbarPanel
 {
     private Template $render;
-
     private int $templateCount = 0;
 
     /** @var array<int,string> */
