@@ -90,10 +90,15 @@ class PropertyAccessExtension implements AliasedInterface, ConfigurationInterfac
         $throw |= $configs['throw_exception_on_invalid_index'] ? PropertyAccessor::THROW_ON_INVALID_INDEX : 0;
         $throw |= $configs['throw_exception_on_invalid_property_path'] ? PropertyAccessor::THROW_ON_INVALID_PROPERTY_PATH : 0;
 
+
+        if ($container->hasExtension(CacheExtension::class)) {
+            $container->set($cacheId = 'cache.property_access', new Definition(PropertyAccessor::class . '::createCache'))->tag('cache.pool')->public(false);
+        }
+
         $container->set('property_accessor', new Definition(PropertyAccessor::class, [
             $magicMethods,
             $throw,
-            new Reference('cache.system'),
+            new Reference($cacheId, '?cache.system'),
             new Reference('?' . PropertyReadInfoExtractorInterface::class),
             new Reference('?' . PropertyWriteInfoExtractorInterface::class),
         ]));
