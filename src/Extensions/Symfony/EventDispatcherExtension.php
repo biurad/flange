@@ -23,6 +23,7 @@ use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Extensions\ExtensionInterface;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Contracts\EventDispatcher\Event;
@@ -58,7 +59,11 @@ class EventDispatcherExtension implements BootExtensionInterface, ExtensionInter
         $eventClass = $globalDispatcherDefinition instanceof DefinitionInterface ? $globalDispatcherDefinition->getEntity() : \get_class($globalDispatcherDefinition);
 
         if (!\is_subclass_of($eventClass, EventDispatcherInterface::class)) {
-            return;
+            if ($container->initialized('events.dispatcher')) {
+                throw new \InvalidArgumentException(\sprintf('The service "events.dispatcher" must be an instance of "%s".', EventDispatcherInterface::class));
+            }
+
+            $globalDispatcherDefinition->replace(EventDispatcher::class, true);
         }
 
         foreach ($container->tagged('event_listener') as $id => $events) {
