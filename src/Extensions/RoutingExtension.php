@@ -93,6 +93,8 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
 
         $treeBuilder->getRootNode()
             ->addDefaultsIfNotSet()
+            ->fixXmlConfig('pipe')
+            ->fixXmlConfig('route')
             ->children()
                 ->booleanNode('redirect_permanent')->defaultFalse()->end()
                 ->booleanNode('keep_request_method')->defaultFalse()->end()

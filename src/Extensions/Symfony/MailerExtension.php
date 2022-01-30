@@ -104,7 +104,7 @@ class MailerExtension implements AliasedInterface, BootExtensionInterface, Confi
                 ->arrayNode('headers')
                     ->normalizeKeys(false)
                     ->useAttributeAsKey('name')
-                    ->prototype('array')
+                    ->arrayPrototype()
                         ->normalizeKeys(false)
                         ->beforeNormalization()
                             ->ifTrue(function ($v) {

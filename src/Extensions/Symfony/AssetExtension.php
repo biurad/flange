@@ -100,7 +100,7 @@ class AssetExtension implements AliasedInterface, BootExtensionInterface, Config
                 ->arrayNode('packages')
                     ->normalizeKeys(false)
                     ->useAttributeAsKey('name')
-                    ->prototype('array')
+                    ->arrayPrototype()
                         ->fixXmlConfig('base_url')
                         ->children()
                             ->booleanNode('strict_mode')

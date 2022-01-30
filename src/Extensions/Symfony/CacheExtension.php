@@ -102,7 +102,7 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
                 ->scalarNode('default_pdo_provider')->defaultValue(null)->end()
                 ->arrayNode('pools')
                     ->useAttributeAsKey('name')
-                    ->prototype('array')
+                    ->arrayPrototype()
                         ->fixXmlConfig('adapter')
                         ->beforeNormalization()
                             ->ifTrue(function ($v) {

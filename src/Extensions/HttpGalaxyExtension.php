@@ -67,6 +67,8 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
 
         $treeBuilder->getRootNode()
             ->info('HTTP Galaxy configuration')
+            ->fixXmlConfig('policy')
+            ->fixXmlConfig('header')
             ->children()
                 ->scalarNode('psr17_factory')->end()
                 ->arrayNode('caching')

@@ -132,7 +132,7 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
                 ->arrayNode('providers')
                     ->info('Translation providers you can read/write your translations from')
                     ->useAttributeAsKey('name')
-                    ->prototype('array')
+                    ->arrayPrototype()
                         ->fixXmlConfig('domain')
                         ->fixXmlConfig('locale')
                         ->children()
