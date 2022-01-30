@@ -21,6 +21,7 @@ use Rade\DI\AbstractContainer;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
+use Rade\DI\Definitions\TaggedLocator;
 use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Extensions\ExtensionInterface;
 use Rade\DI\Services\AliasedInterface;
@@ -125,7 +126,7 @@ class SerializerExtension implements AliasedInterface, BootExtensionInterface, C
         }
 
         $serializerLoaders = [];
-        $container->autowire('serializer', new Definition(Serializer::class));
+        $container->autowire('serializer', new Definition(Serializer::class, [new TaggedLocator('serializer.normalizer'), new TaggedLocator('serializer.encoder')]));
         $container->autowire('serializer.mapping.class_discriminator_resolver', new Definition(ClassDiscriminatorFromClassMetadata::class, [new Reference('serializer.mapping.class_metadata_factory')]));
         $factory = $container->set('serializer.mapping.class_metadata_factory', new Definition(ClassMetadataFactory::class, [new Reference('serializer.mapping.chain_loader')]));
 
@@ -252,20 +253,13 @@ class SerializerExtension implements AliasedInterface, BootExtensionInterface, C
      */
     public function boot(AbstractContainer $container): void
     {
-        $defCallable = static fn ($v) => $container->has($v) ? new Reference($v) : new Statement($v);
-
-        if (!$normalizers = $container->findBy('serializer.normalizer', $defCallable)) {
+        if (!$container->tagged('serializer.normalizer')) {
             throw new \RuntimeException('You must tag at least one service as "serializer.normalizer" to use the "serializer" service.');
         }
 
-        $serializerDefinition = $container->definition('serializer');
-        $serializerDefinition->arg(0, $normalizers);
-
-        if (!$encoders = $container->findBy('serializer.encoder', $defCallable)) {
+        if (!$container->tagged('serializer.encoder')) {
             throw new \RuntimeException('You must tag at least one service as "serializer.encoder" to use the "serializer" service.');
         }
-
-        $serializerDefinition->arg(1, $encoders);
 
         if (($defaultContext = $container->parameters['serializer.default_context'] ?? null)) {
             foreach (\array_merge($container->findBy('serializer.normalizer'), $container->findBy('serializer.encoder')) as $service) {

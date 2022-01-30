@@ -22,6 +22,7 @@ use Rade\DI\ContainerBuilder;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
+use Rade\DI\Definitions\TaggedLocator;
 use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Extensions\ExtensionInterface;
 use Rade\DI\Services\AliasedInterface;
@@ -311,7 +312,7 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
         }
 
         $collection = $container->set('translation.provider_collection', new Definition([new Reference('translation.provider_collection_factory'), 'fromConfig']))->autowire([TranslationProviderCollection::class]);
-        $proFactory = $container->set('translation.provider_collection_factory', new Definition(TranslationProviderCollectionFactory::class));
+        $proFactory = $container->set('translation.provider_collection_factory', new Definition(TranslationProviderCollectionFactory::class, [new TaggedLocator('translation.provider_factory')]));
         $container->set('translation.provider_factory.null', new Definition(NullProviderFactory::class))->public(false)->tag('translation.provider_factory');
 
         if ($container->hasExtension(HttpClientExtension::class)) {
@@ -358,7 +359,6 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
         $reader = $container->definition('translation.reader');
         $extractor = $container->definition('translation.extractor');
         $translator = $container->definition('translator.default');
-        $container->definition('translation.provider_collection_factory')->arg(0, $container->findBy('translation.provider_factory', fn ($id) => new Reference($id)));
 
         foreach ($container->tagged('translation.dumper') as $id => $attributes) {
             $writer->bind('addDumper', [$attributes['alias'], new Reference($id)]);

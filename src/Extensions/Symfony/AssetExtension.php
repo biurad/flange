@@ -21,7 +21,7 @@ use Rade\DI\AbstractContainer;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
-use Rade\DI\Extensions\BootExtensionInterface;
+use Rade\DI\Definitions\TaggedLocator;
 use Rade\DI\Extensions\ExtensionInterface;
 use Rade\DI\Services\AliasedInterface;
 use Symfony\Component\Asset\Context\RequestStackContext;
@@ -39,7 +39,7 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
  *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
-class AssetExtension implements AliasedInterface, BootExtensionInterface, ConfigurationInterface, ExtensionInterface
+class AssetExtension implements AliasedInterface, ConfigurationInterface, ExtensionInterface
 {
     /**
      * {@inheritdoc}
@@ -170,7 +170,7 @@ class AssetExtension implements AliasedInterface, BootExtensionInterface, Config
         $container->parameters['asset.request_context.base_path'] = $configs['base_path'] ?? ($container->parameter('%project_dir%/public'));
         $container->parameters['asset.request_context.secure'] = $configs['secure_context'] ?? (isset($_SERVER['HTTPS']) ? true : false);
 
-        $packagesDef = $container->set('assets.packages', new Definition(Packages::class))->autowire([Packages::class]);
+        $packagesDef = $container->set('assets.packages', new Definition(Packages::class, [new TaggedLocator('assets.package', 'package')]))->autowire([Packages::class]);
         $container->autowire('assets.context', new Definition(RequestStackContext::class, [1 => '%asset.request_context.base_path%', 2 => '%asset.request_context.secure%']))->public(false);
 
         if ($configs['version_strategy']) {
@@ -196,22 +196,6 @@ class AssetExtension implements AliasedInterface, BootExtensionInterface, Config
         }
 
         $packagesDef->args([$this->createPackageDefinition($configs['base_path'] ?? '%asset.request_context.base_path%', $configs['base_urls'], $defaultVersion), $packages]);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function boot(AbstractContainer $container): void
-    {
-        $packages = [];
-
-        foreach ($container->tagged('assets.package') as $serviceId => $tag) {
-            if (isset($tag['package'])) {
-                $packages[$tag['package']] = new Reference($serviceId);
-            }
-        }
-
-        $container->definition('assets.packages')->arg(1, $packages);
     }
 
     /**

@@ -20,13 +20,11 @@ namespace Rade\DI\Extensions\Symfony;
 use Rade\DI\AbstractContainer;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
-use Rade\DI\Definitions\Statement;
-use Rade\DI\Extensions\BootExtensionInterface;
+use Rade\DI\Definitions\TaggedLocator;
 use Rade\DI\Extensions\ExtensionInterface;
 use Rade\DI\Services\AliasedInterface;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
-use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Mailer\Bridge\Amazon\Transport\SesTransportFactory;
 use Symfony\Component\Mailer\Bridge\Google\Transport\GmailTransportFactory;
 use Symfony\Component\Mailer\Bridge\Mailchimp\Transport\MandrillTransportFactory;
@@ -50,7 +48,7 @@ use Symfony\Component\Mime\Header\Headers;
  *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
-class MailerExtension implements AliasedInterface, BootExtensionInterface, ConfigurationInterface, ExtensionInterface
+class MailerExtension implements AliasedInterface, ConfigurationInterface, ExtensionInterface
 {
     /**
      * {@inheritdoc}
@@ -144,7 +142,7 @@ class MailerExtension implements AliasedInterface, BootExtensionInterface, Confi
 
         $transports = $configs['dsn'] ? ['main' => $configs['dsn']] : $configs['transports'];
         $mailer = $container->set('mailer.mailer', new Definition(Mailer::class, [new Reference('mailer.transports')]))->autowire([MailerInterface::class]);
-        $container->set('mailer.transport_factory', new Definition(Transport::class));
+        $container->set('mailer.transport_factory', new Definition(Transport::class, [new TaggedLocator('mailer.transport_factory')]));
         $container->set('mailer.transports', new Definition([new Reference('mailer.transport_factory'), 'fromStrings'], [$transports]));
         $container->set('mailer.default_transport', new Definition([new Reference('mailer.transport_factory'), 'fromString'], [\current($transports)]));
         $container->set('mailer.messenger.message_handler', new Definition(MessageHandler::class, [new Reference('mailer.transports')]))->tag('messenger.message_handler');
@@ -174,7 +172,7 @@ class MailerExtension implements AliasedInterface, BootExtensionInterface, Confi
             }
         }
 
-        if (\class_exists(EventDispatcher::class)) {
+        if ($container->hasExtension(EventDispatcherExtension::class)) {
             $container->set('mailer.envelope_listener', new Definition(EnvelopeListener::class, [$configs['envelope']['sender'] ?? null, $configs['envelope']['recipients'] ?? null]))->tag('event_subscriber')->public(false);
             $container->set('mailer.message_logger_listener', new Definition(MessageLoggerListener::class))->tag('event_subscriber')->public(false);
 
@@ -194,16 +192,5 @@ class MailerExtension implements AliasedInterface, BootExtensionInterface, Confi
                 $container->set('mailer.message_listener', new Definition(MessageListener::class, [new Reference(Headers::class)]))->tag('event_subscriber')->public(false);
             }
         }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function boot(AbstractContainer $container): void
-    {
-        $container->definition('mailer.transport_factory')->arg(0, $container->findBy(
-            'mailer.transport_factory',
-            fn ($id) => $container->has($id) ? new Reference($id) : new Statement($id)
-        ));
     }
 }

@@ -22,6 +22,7 @@ use Rade\DI\ContainerBuilder;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
+use Rade\DI\Definitions\TaggedLocator;
 use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Extensions\ExtensionInterface;
 use Rade\DI\Services\AliasedInterface;
@@ -264,7 +265,7 @@ class ValidatorExtension implements AliasedInterface, BootExtensionInterface, Co
             }
         }
 
-        $validatorBuilder->bind('addObjectInitializers', [$container->findBy('validator.initializer', fn (string $id) => new Reference($id))]);
+        $validatorBuilder->bind('addObjectInitializers', [new TaggedLocator('validator.initializer')]);
         $container->definition('validator.validator_factory')->arg(0, new Statement(ServiceLocator::class, $validators));
 
         unset($container->parameters['validator.auto_mapping']);
