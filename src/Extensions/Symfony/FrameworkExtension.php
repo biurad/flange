@@ -52,6 +52,8 @@ class FrameworkExtension implements AliasedInterface, DependenciesInterface, Ext
             CacheExtension::class,
             HttpClientExtension::class,
             AssetExtension::class,
+            LockExtension::class,
+            RateLimiterExtension::class,
             PropertyInfoExtension::class,
             PropertyAccessExtension::class,
             TranslationExtension::class,
