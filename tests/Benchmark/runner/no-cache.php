@@ -17,8 +17,6 @@ declare(strict_types=1);
 
 require __DIR__ . '/../../../vendor/autoload.php';
 
-\Tracy\Debugger::enable();
-
 function helloWorldFunc(): string
 {
     return 'Hello World';

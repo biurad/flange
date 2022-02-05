@@ -17,7 +17,9 @@ declare(strict_types=1);
 
 namespace Rade\DI\Extensions\Symfony;
 
+use Psr\EventDispatcher\EventDispatcherInterface as PsrEventDispatcherInterface;
 use Rade\DI\AbstractContainer;
+use Rade\DI\Definition;
 use Rade\DI\Definitions\DefinitionInterface;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
@@ -48,6 +50,18 @@ class EventDispatcherExtension implements BootExtensionInterface, ExtensionInter
      */
     public function register(AbstractContainer $container, array $configs): void
     {
+        $globalDispatcher = $container->definition('events.dispatcher');
+
+        if ($globalDispatcher instanceof PsrEventDispatcherInterface) {
+            if (!$globalDispatcher instanceof EventDispatcherInterface && $container->initialized('events.dispatcher')) {
+                throw new \RuntimeException(\sprintf('The service "%s" must implement "%s".', 'events.dispatcher', EventDispatcherInterface::class));
+            }
+
+            $container->removeDefinition('events.dispatcher');
+            $container->set('events.dispatcher', new Definition(EventDispatcher::class));
+        } elseif ($globalDispatcher instanceof DefinitionInterface) {
+            $globalDispatcher->replace(EventDispatcher::class, !\is_subclass_of($globalDispatcher->getEntity(), EventDispatcherInterface::class));
+        }
     }
 
     /**
@@ -56,15 +70,6 @@ class EventDispatcherExtension implements BootExtensionInterface, ExtensionInter
     public function boot(AbstractContainer $container): void
     {
         $globalDispatcherDefinition = $container->definition('events.dispatcher');
-        $eventClass = $globalDispatcherDefinition instanceof DefinitionInterface ? $globalDispatcherDefinition->getEntity() : \get_class($globalDispatcherDefinition);
-
-        if (!\is_subclass_of($eventClass, EventDispatcherInterface::class)) {
-            if ($container->initialized('events.dispatcher')) {
-                throw new \InvalidArgumentException(\sprintf('The service "events.dispatcher" must be an instance of "%s".', EventDispatcherInterface::class));
-            }
-
-            $globalDispatcherDefinition->replace(EventDispatcher::class, true);
-        }
 
         foreach ($container->tagged('event_listener') as $id => $events) {
             foreach ($events as $event) {
