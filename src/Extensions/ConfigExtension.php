@@ -60,6 +60,7 @@ class ConfigExtension implements AliasedInterface, ConfigurationInterface, Exten
 
         $treeBuilder->getRootNode()
             ->addDefaultsIfNotSet()
+            ->beforeNormalization()->ifString()->then(fn ($v) =>  ['paths' => [$v]])->end()
             ->children()
                 ->scalarNode('locale')->defaultValue('en')->end()
                 ->booleanNode('debug')->defaultNull()->end()
