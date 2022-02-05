@@ -22,19 +22,28 @@ use Rade\DI\AbstractContainer;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
+use Symfony\Component\Config\Definition\Builder\NodeDefinition;
 use Symfony\Component\Security\Core\User\MissingUserProvider;
 
 class FormLoginFactory extends AbstractFactory
 {
-    public function __construct()
-    {
-        $this->addOption('provider');
-        $this->addOption('erase_credentials', true);
-    }
-
     public function getKey(): string
     {
         return 'form-login';
+    }
+
+    public function addConfiguration(NodeDefinition $node): void
+    {
+        $node
+            ->beforeNormalization()
+                ->ifTrue(fn ($v) => null === $v || \is_string($v))
+                ->then(fn ($v) => ['provider' => $v])
+            ->end()
+            ->children()
+                ->scalarNode('provider')->end()
+                ->booleanNode('erase_credentials')->defaultTrue()->end()
+            ->end()
+        ;
     }
 
     public function create(AbstractContainer $container, string $id, array $config): void
