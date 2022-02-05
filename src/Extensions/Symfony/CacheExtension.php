@@ -79,7 +79,7 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
             ->addDefaultsIfNotSet()
             ->fixXmlConfig('pool')
             ->canBeEnabled()
-            ->beforeNormalization()->ifString()->then(fn ($v) => ['directory' => $v])->end()
+            ->beforeNormalization()->ifString()->then(fn ($v) => ['directory' => $v, 'enabled' => true])->end()
             ->children()
                 ->scalarNode('prefix_seed')
                     ->info('Used to namespace cache keys when using several apps with the same shared backend')
