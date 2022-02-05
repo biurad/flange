@@ -124,13 +124,12 @@ class RateLimiterExtension implements AliasedInterface, ConfigurationInterface, 
         if (!\interface_exists(LimiterInterface::class)) {
             throw new \LogicException('Rate limiter support cannot be enabled as the RateLimiter component is not installed. Try running "composer require symfony/rate-limiter".');
         }
-
-        $container->set('limiter', new Definition(RateLimiterFactory::class))->public(false)->abstract();
+        $nLimiters = \count($configs['limiters']);
 
         foreach ($configs['limiters'] as $name => $limiterConfig) {
             // default configuration (when used by other DI extensions)
             $limiterConfig += ['lock_factory' => 'lock.factory', 'cache_pool' => 'cache.app'];
-            $limiter = $container->set('limiter.' . $name, new Reference('limiter'))->public();
+            $limiter = $container->set('limiter.' . $name, new Definition(RateLimiterFactory::class))->public(false);
 
             if (null !== $limiterConfig['lock_factory']) {
                 if (!$container->hasExtension(LockExtension::class)) {
@@ -147,7 +146,7 @@ class RateLimiterExtension implements AliasedInterface, ConfigurationInterface, 
             $limiterConfig['id'] = $name;
             $limiter->arg(0, $limiterConfig);
 
-            if (1 === \count($configs['limiters'])) {
+            if (1 === $nLimiters) {
                 $limiter->autowire([RateLimiterFactory::class]);
             }
         }
