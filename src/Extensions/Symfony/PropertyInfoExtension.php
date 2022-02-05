@@ -23,7 +23,7 @@ use PHPStan\PhpDocParser\Parser\PhpDocParser;
 use Rade\DI\AbstractContainer;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
-use Rade\DI\Definitions\Statement;
+use Rade\DI\Definitions\TaggedLocator;
 use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Extensions\ExtensionInterface;
 use Rade\DI\Resolver;
@@ -82,7 +82,13 @@ class PropertyInfoExtension implements AliasedInterface, BootExtensionInterface,
             throw new \LogicException('PropertyInfo support cannot be enabled as the PropertyInfo component is not installed. Try running "composer require symfony/property-info".');
         }
 
-        $definition = $container->set('property_info', new Definition(PropertyInfoExtractor::class));
+        $definition = $container->set('property_info', new Definition(PropertyInfoExtractor::class, [
+            new TaggedLocator('property_info.list_extractor'),
+            new TaggedLocator('property_info.type_extractor'),
+            new TaggedLocator('property_info.description_extractor'),
+            new TaggedLocator('property_info.access_extractor'),
+            new TaggedLocator('property_info.initializable_extractor'),
+        ]));
         $container->set('property_info.reflection_extractor', new Definition(ReflectionExtractor::class))
             ->tag('property_info.list_extractor')
             ->tag('property_info.type_extractor')
@@ -113,30 +119,10 @@ class PropertyInfoExtension implements AliasedInterface, BootExtensionInterface,
      */
     public function boot(AbstractContainer $container): void
     {
-        $definition = $container->definition('property_info');
-        $defCallable = static fn ($v) => $container->has($v) ? new Reference($v) : new Statement($v);
-
-        $listExtractors = $container->findBy('property_info.list_extractor', $defCallable);
-        $definition->arg(0, $listExtractors);
-
-        $typeExtractors = $container->findBy('property_info.type_extractor', $defCallable);
-        $definition->arg(1, $typeExtractors);
-
-        $descriptionExtractors = $container->findBy('property_info.description_extractor', $defCallable);
-        $definition->arg(2, $descriptionExtractors);
-
-        $accessExtractors = $container->findBy('property_info.access_extractor', $defCallable);
-        $definition->arg(3, $accessExtractors);
-
-        $initializableExtractors = $container->findBy('property_info.initializable_extractor', $defCallable);
-        $definition->arg(4, $initializableExtractors);
-
         if (!$container->has('property_info.constructor_extractor')) {
             return;
         }
 
-        $definition = $container->definition('property_info.constructor_extractor');
-        $listExtractors = $container->findBy('property_info.constructor_extractor', $defCallable);
-        $definition->arg(0, $listExtractors);
+        $container->definition('property_info.constructor_extractor')->arg(0, new TaggedLocator('property_info.constructor_extractor'));
     }
 }

@@ -43,6 +43,7 @@
         "biurad/annotations": "1.*",
         "biurad/cache": "1.*",
         "biurad/flysystem": "1.*",
+        "biurad/security": "1.*",
         "biurad/templating": "1.*",
         "doctrine/annotations": "^1.12",
         "latte/latte": "^2.10",
