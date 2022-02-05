@@ -98,9 +98,9 @@ class PropertyAccessExtension implements AliasedInterface, ConfigurationInterfac
         $container->set('property_accessor', new Definition(PropertyAccessor::class, [
             $magicMethods,
             $throw,
-            new Reference($cacheId, '?cache.system'),
+            new Reference($cacheId ?? '?cache.system'),
             new Reference('?' . PropertyReadInfoExtractorInterface::class),
             new Reference('?' . PropertyWriteInfoExtractorInterface::class),
-        ]));
+        ]))->autowire();
     }
 }
