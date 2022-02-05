@@ -163,12 +163,12 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
                     ->arrayPrototype()
                         ->canBeUnset()
                         ->performNoDeepMerging()
-                        ->beforeNormalization()->ifString()->then(function ($v) { return ['algorithm' => $v]; })->end()
+                        ->beforeNormalization()->ifString()->then(fn ($v) => ['algorithm' => $v])->end()
                         ->children()
                             ->scalarNode('algorithm')
                                 ->cannotBeEmpty()
                                 ->validate()
-                                    ->ifTrue(function ($v) { return !\is_string($v); })
+                                    ->ifTrue(fn ($v) => !\is_string($v))
                                     ->thenInvalid('You must provide a string value.')
                                 ->end()
                             ->end()
@@ -208,18 +208,18 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
                             ->scalarNode('host')->defaultNull()->end()
                             ->integerNode('port')->defaultNull()->end()
                             ->arrayNode('ips')
-                                ->beforeNormalization()->ifString()->then(function ($v) { return [$v]; })->end()
+                                ->beforeNormalization()->ifString()->then(fn ($v) => [$v])->end()
                                 ->prototype('scalar')->end()
                             ->end()
                             ->arrayNode('methods')
-                                ->beforeNormalization()->ifString()->then(function ($v) { return \preg_split('/\s*,\s*/', $v); })->end()
+                                ->beforeNormalization()->ifString()->then(fn ($v) => \preg_split('/\s*,\s*/', $v))->end()
                                 ->prototype('scalar')->end()
                             ->end()
                         ->end()
                         ->fixXmlConfig('role')
                         ->children()
                             ->arrayNode('roles')
-                                ->beforeNormalization()->ifString()->then(function ($v) { return \preg_split('/\s*,\s*/', $v); })->end()
+                            ->beforeNormalization()->ifString()->then(fn ($v) => \preg_split('/\s*,\s*/', $v))->end()
                                 ->prototype('scalar')->end()
                             ->end()
                         ->end()
@@ -381,7 +381,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
         $container->autowire('security.authenticator', new Definition(Authenticator::class, [
             $authenticators ?? [],
             4 => new Reference('?' . ($configs['throttling']['limiter'] ?? 'security.authenticator_throttling')),
-            7 => $configs['hide_user_not_found']
+            7 => $configs['hide_user_not_found'],
         ]));
         $container->autowire('security.token_storage', new Definition(CacheableTokenStorage::class, [new Reference($tokenStorage ?? 'http.session')]));
         $container->set('security.access.authenticated_voter', new Definition(AuthenticatedVoter::class, [new Statement(AuthenticationTrustResolver::class)]))->public(false)->tag('security.voter', ['priority' => 250]);
@@ -448,11 +448,11 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
 
         $providerNodeBuilder
             ->validate()
-                ->ifTrue(function ($v) { return \count($v) > 1; })
+                ->ifTrue(fn ($v) => \count($v) > 1)
                 ->thenInvalid('You cannot set multiple provider types for the same provider')
             ->end()
             ->validate()
-                ->ifTrue(function ($v) { return 0 === \count($v); })
+                ->ifTrue(fn ($v) => 0 === \count($v))
                 ->thenInvalid('You must set a provider definition for the provider.')
             ->end()
         ;
