@@ -63,6 +63,7 @@ class ConfigExtension implements AliasedInterface, ConfigurationInterface, Exten
             ->children()
                 ->scalarNode('locale')->defaultValue('en')->end()
                 ->booleanNode('debug')->defaultNull()->end()
+                ->booleanNode('auto_configure')->defaultFalse()->end()
                 ->arrayNode('paths')
                     ->prototype('scalar')->isRequired()->cannotBeEmpty()->end()
                 ->end()
@@ -109,5 +110,11 @@ class ConfigExtension implements AliasedInterface, ConfigurationInterface, Exten
         $container->autowire('config.loader_locator', new Definition(FileLocator::class, [\array_map([$container, 'parameter'], $configs['paths'])]));
         $container->set('config_loader_resolver', new Definition(LoaderResolver::class, [$configLoaders]));
         $container->autowire('config_cache_factory', new Definition(ConfigCacheFactory::class, ['%debug%']));
+
+        if ($configs['auto_configure'] && $container instanceof \Rade\KernelInterface) {
+            foreach ($configs['paths'] as $path) {
+                $container->load($path, 'directory');
+            }
+        }
     }
 }
