@@ -298,7 +298,7 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
             $this->middlewares['a'] = new Reference('http.middleware.cache');
         }
 
-        if ($configs['resolve_route_paths']) {
+        if (true === ($configs['resolve_route_paths'] ?? false)) {
             $this->middlewares['b'] = new Statement(PathMiddleware::class, [$configs['redirect_permanent'], $configs['keep_request_method']]);
         }
 
