@@ -106,11 +106,17 @@ trait HelperTrait
      * ]
      *
      * @param array<int,mixed> $extensions
-     * @param array<string,mixed> $config the default configuration for all extensions
+     * @param array<string,mixed> $config    the default configuration for all extensions
+     * @param string|null         $outputDir Enable Generating ConfigBuilders to help create valid config
      */
-    public function loadExtensions(array $extensions, array $configs = []): void
+    public function loadExtensions(array $extensions, array $configs = [], string $outputDir = null): void
     {
-        (new ExtensionBuilder($this, $configs))->load($extensions);
+        $builder = new ExtensionBuilder($this, $configs);
+
+        if (null !== $outputDir) {
+            $builder->setConfigBuilderGenerator($outputDir);
+        }
+        $builder->load($extensions);
     }
 
     /**
