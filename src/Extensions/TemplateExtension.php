@@ -79,11 +79,11 @@ class TemplateExtension implements AliasedInterface, ConfigurationInterface, Ext
                         ->always(function (array $value) {
                             foreach ($value as $key => $val) {
                                 if (\is_string($val)) {
-                                    $value[$key] = [$val];
+                                    $value[$key] = $val;
                                 }
                             }
 
-                            return \array_merge(...$value);
+                            return $value;
                         })
                     ->end()
                     ->prototype('variable')->end()
@@ -158,7 +158,7 @@ class TemplateExtension implements AliasedInterface, ConfigurationInterface, Ext
                 throw new ServiceCreationException(\sprintf('The service "%s" is already defined.', $render));
             }
 
-            $renders[] = new Statement($render, [$extensions]);
+            $renders[] = new Statement($render, \compact('extensions'));
         }
 
         $template->bind('addRender', [$renders]);
