@@ -286,7 +286,7 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
             }
 
             $container->autowire('session.storage.native', service(NativeSessionStorage::class, [
-                \array_intersect_key($session, ['storage_id' => null, 'handler_id' => null, 'meta_storage_key' => null, 'metadata_update_threshold' => null]),
+                \array_diff_key($session, ['storage_id' => null, 'handler_id' => null, 'meta_storage_key' => null, 'metadata_update_threshold' => null]),
                 reference('session.handler'),
             ]))
                 ->arg(2, wrap(MetadataBag::class, [$session['meta_storage_key'], $session['metadata_update_threshold']]));
