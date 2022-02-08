@@ -77,13 +77,18 @@ class TemplateExtension implements AliasedInterface, ConfigurationInterface, Ext
                         ->ifTrue(fn ($v) => !\is_array($v) || \array_is_list($v))
                         ->thenInvalid('Expected renders config to be an associate array of string keys mapping to string or list string values.')
                         ->always(function (array $value) {
+                            $values = [];
+
                             foreach ($value as $key => $val) {
-                                if (\is_string($val)) {
-                                    $value[$key] = $val;
+                                if (\is_array($val)) {
+                                    $key = \key($val);
+                                    $val = \current($val);
                                 }
+
+                                $values[$key] = $val;
                             }
 
-                            return $value;
+                            return $values;
                         })
                     ->end()
                     ->prototype('variable')->end()
@@ -121,7 +126,7 @@ class TemplateExtension implements AliasedInterface, ConfigurationInterface, Ext
             return;
         }
 
-        if (!class_exists(Template::class)) {
+        if (!\class_exists(Template::class)) {
             throw new \LogicException('Templating support cannot be enabled as the Templating UI library is not installed. Try running "composer require biurad/templating".');
         }
 
