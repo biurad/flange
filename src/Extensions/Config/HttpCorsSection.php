@@ -46,7 +46,7 @@ class HttpCorsSection
                 ->arrayNode('allow_paths')
                     ->useAttributeAsKey('path')
                     ->normalizeKeys(false)
-                    ->prototype('array')
+                    ->arrayPrototype()
                         ->append(self::getAllowCredentials())
                         ->append(self::getAllowOrigin())
                         ->append(self::getAllowHeaders())
