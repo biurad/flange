@@ -335,10 +335,10 @@ EOF
             if ('*' === $this->hostname) {
                 $this->hostname = '0.0.0.0';
             }
-            $this->port = \mb_substr($address, $pos + 1);
+            $this->port = (int) \mb_substr($address, $pos + 1);
         } elseif (\ctype_digit($address)) {
             $this->hostname = '127.0.0.1';
-            $this->port = $address;
+            $this->port = (int) $address;
         } else {
             $this->hostname = $address;
             $this->port = $this->findBestPort();
