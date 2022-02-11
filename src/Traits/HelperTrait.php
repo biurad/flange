@@ -60,15 +60,15 @@ trait HelperTrait
         $configLoader = $this->services['config.loader_resolver'] ?? $this->privates['config.builder.loader_resolver'] ?? null;
 
         if (null === $configLoader) {
-            if ($this->has('config.loader_resolver')) {
-                return $this->get('config.loader_resolver');
-            }
-
             if (isset($this->definitions['config.builder.loader_resolver'])) {
                 $configLoader = $this->definitions['config.builder.loader_resolver'];
                 unset($this->definitions['config.builder.loader_resolver']);
 
                 return $this->privates['config.builder.loader_resolver'] = $configLoader;
+            }
+
+            if ($this->has('config.loader_resolver')) {
+                return $this->get('config.loader_resolver');
             }
 
             throw new ContainerResolutionException(\sprintf('Did you forgot to register the "%s" class?', ConfigExtension::class));

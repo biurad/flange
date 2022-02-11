@@ -91,7 +91,11 @@ class ConfigExtension implements AliasedInterface, ConfigurationInterface, Exten
         }
 
         // Configurations ...
-        $configLoaders = [...$configs['loaders'], ...[PhpFileLoader::class, YamlFileLoader::class, ClosureLoader::class, DirectoryLoader::class, GlobFileLoader::class]];
+        $configLoaders = [...$configs['loaders'], PhpFileLoader::class, ClosureLoader::class, DirectoryLoader::class, GlobFileLoader::class];
+
+        if (\class_exists('Symfony\Component\Yaml\Yaml')) {
+            $configLoaders[] = YamlFileLoader::class;
+        }
 
         if ($container instanceof AppBuilder) {
             $builderResolver = new LoaderResolver();
@@ -109,7 +113,7 @@ class ConfigExtension implements AliasedInterface, ConfigurationInterface, Exten
         }
 
         $container->autowire('config.loader_locator', new Definition(FileLocator::class, [\array_map([$container, 'parameter'], $configs['paths'])]));
-        $container->set('config_loader_resolver', new Definition(LoaderResolver::class, [$configLoaders]));
+        $container->set('config.loader_resolver', new Definition(LoaderResolver::class, [$configLoaders]));
         $container->autowire('config_cache_factory', new Definition(ConfigCacheFactory::class, ['%debug%']));
 
         if ($configs['auto_configure'] && $container instanceof \Rade\KernelInterface) {
