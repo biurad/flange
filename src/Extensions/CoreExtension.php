@@ -37,7 +37,7 @@ class CoreExtension implements AliasedInterface, ConfigurationInterface, Depende
 
     public function __construct(string $rootDir)
     {
-        $this->rootDir = \rtrim($rootDir, '\\/');
+        $this->rootDir = \rtrim(\realpath($rootDir), '\\/');
     }
 
     /**
