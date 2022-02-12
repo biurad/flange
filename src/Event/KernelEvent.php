@@ -22,7 +22,7 @@ use Rade\Application;
 use Symfony\Contracts\EventDispatcher\Event;
 
 /**
- * Base class for events thrown in the HttpKernel component.
+ * Base class for events thrown in the Application's class.
  *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
