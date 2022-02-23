@@ -1,15 +1,26 @@
-# Change Log
-All notable changes to this project will be documented in this file.
-Updates should follow the [Keep a CHANGELOG](https://keepachangelog.com/) principles.
+CHANGELOG
+=========
 
-## [Unreleased][unreleased]
+2.0
+---
 
-### Added
+* [BC BREAK] Improved application lifecycle
+* [BC BREAK] Set PHP minimum version requirement to 7.4
+* [BC BREAK] Improved application's performance and security
+* [BC BREAK] Updated application's dependency injection
+* [BC BREAK] Updated application's router for high performance
+* Added Nano support (building application from one php file)
+* Added PHP 8 and 8.1 support
 
-### Changed
+1.1
+---
 
-### Fixed
+* [BC BREAK] Renamed a few classes and removed a few classes as well
+* [BC BREAK] Improved template view and routing performance
 
-### Removed
+1.0
+---
 
-[unreleased]: https://github.com/divineniiquaye/php-rade/compare/v1.1.3...master
+
+
+* Initial release of project
