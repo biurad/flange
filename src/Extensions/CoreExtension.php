@@ -19,8 +19,6 @@ namespace Rade\DI\Extensions;
 
 use Rade\DI\AbstractContainer;
 use Rade\DI\Definition;
-use Rade\DI\Services\AliasedInterface;
-use Rade\DI\Services\DependenciesInterface;
 use Rade\Handler\EventHandler;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;

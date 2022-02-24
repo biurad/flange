@@ -28,7 +28,6 @@ use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Definitions\TaggedLocator;
 use Rade\DI\Extensions\Symfony\CacheExtension;
-use Rade\DI\Services\AliasedInterface;
 use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
@@ -251,6 +250,10 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
      */
     public function register(AbstractContainer $container, array $configs): void
     {
+        if (!\class_exists(Authenticator::class)) {
+            throw new \LogicException('Security support cannot be enabled as the Security library is not installed. Try running "composer require biurad/security".');
+        }
+
         if (isset($configs['access_decision_manager']['service'])) {
             $container->alias('security.access.decision_manager', $configs['access_decision_manager']['service']);
         } else {

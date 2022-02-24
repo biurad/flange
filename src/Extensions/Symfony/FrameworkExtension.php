@@ -18,9 +18,9 @@ declare(strict_types=1);
 namespace Rade\DI\Extensions\Symfony;
 
 use Rade\DI\AbstractContainer;
+use Rade\DI\Extensions\AliasedInterface;
+use Rade\DI\Extensions\DependenciesInterface;
 use Rade\DI\Extensions\ExtensionInterface;
-use Rade\DI\Services\AliasedInterface;
-use Rade\DI\Services\DependenciesInterface;
 
 /**
  * Symfony's framework bundle extension.

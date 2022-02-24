@@ -28,7 +28,6 @@ use Biurad\Http\Middlewares\HttpPolicyMiddleware;
 use Biurad\Http\Middlewares\SessionMiddleware;
 use Rade\DI\AbstractContainer;
 use Rade\DI\Definitions\Statement;
-use Rade\DI\Services\AliasedInterface;
 use Rade\KernelInterface;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;

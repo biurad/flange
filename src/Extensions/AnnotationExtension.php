@@ -29,7 +29,6 @@ use Rade\DI\AbstractContainer;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
-use Rade\DI\Services\AliasedInterface;
 use Spiral\Attributes\AttributeReader;
 use Spiral\Attributes\Composite\MergeReader;
 use Spiral\Attributes\Internal\{FallbackAttributeReader, NativeAttributeReader, DoctrineAnnotationReader};

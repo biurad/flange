@@ -21,14 +21,19 @@ use Rade\DI\AbstractContainer;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
+use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\ExtensionInterface;
-use Rade\DI\Services\AliasedInterface;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\RateLimiter\LimiterInterface;
 use Symfony\Component\RateLimiter\RateLimiterFactory;
 use Symfony\Component\RateLimiter\Storage\CacheStorage;
 
+/**
+ * Symfony component rate limiter extension.
+ *
+ * @author Divine Niiquaye Ibok <divineibok@gmail.com>
+ */
 class RateLimiterExtension implements AliasedInterface, ConfigurationInterface, ExtensionInterface
 {
     /**

@@ -23,6 +23,7 @@ use Rade\DI\Definition;
 use Rade\DI\Definitions\DefinitionInterface;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
+use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Extensions\ExtensionInterface;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -35,7 +36,7 @@ use Symfony\Contracts\EventDispatcher\Event;
  *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
-class EventDispatcherExtension implements BootExtensionInterface, ExtensionInterface
+class EventDispatcherExtension implements AliasedInterface, BootExtensionInterface, ExtensionInterface
 {
     /**
      * {@inheritdoc}
