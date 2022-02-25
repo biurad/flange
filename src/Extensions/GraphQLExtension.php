@@ -20,6 +20,8 @@ namespace Rade\DI\Extensions;
 use Rade\DI\AbstractContainer;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Statement;
+use Rade\GraphQL\Schema;
+use Rade\GraphQL\Types;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 
