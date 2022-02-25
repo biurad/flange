@@ -42,11 +42,11 @@
     "require-dev": {
         "biurad/annotations": "1.*",
         "biurad/cache": "1.*",
-        "biurad/flysystem": "1.*",
         "biurad/security": "1.*",
         "biurad/templating": "1.*",
         "doctrine/annotations": "^1.12",
         "latte/latte": "^2.10",
+        "league/flysystem": "^2.0 || ^3.0",
         "monolog/monolog": "^2",
         "phpunit/phpunit": "^9.5",
         "phpstan/phpstan": "^1.1",
@@ -61,19 +61,21 @@
         "symfony/rate-limiter": "^5.4 || ^6.0",
         "symfony/serializer": "^5.4 || ^6.0",
         "symfony/translation": "^5.4 || ^6.0",
-        "symfony/twig-bridge": "^5.2",
+        "symfony/twig-bridge": "^5.4 || ^6.0",
         "symfony/validator": "^5.4 || ^6.0",
         "symfony/var-dumper": "^5.4 || ^6.0",
         "symfony/workflow": "^5.4 || ^6.0",
         "symfony/yaml": "^5.4 || ^6.0",
         "tracy/tracy": "^2.8",
-        "vimeo/psalm": "^4.10"
+        "vimeo/psalm": "^4.10",
+        "webonyx/graphql-php": "^14.11"
     },
     "suggest": {
         "biurad/annotations": "A powerful annotations and attributes support for PHP 7.2+",
         "biurad/cache": "A powerful cache library for advanced caching using PSR-6 or PSR-16",
-        "biurad/flysystem": "A FileManager for handling filesystem on local disk and cloud storage",
-        "biurad/templating": "A library that provides all the tools needed in working with any kind of template system"
+        "league/flysystem": "A FileManager for handling filesystem on local disk and cloud storage",
+        "biurad/templating": "A library that provides all the tools needed in working with any kind of template system",
+        "tracy/tracy": "A library that makes PHP exceptions look friendly, and provides debugging support"
     },
     "autoload": {
         "psr-4": {
