@@ -21,6 +21,7 @@ use Composer\InstalledVersions;
 use Laminas\Escaper\Escaper;
 use Nette\Utils\FileSystem;
 use Rade\DI\Exceptions\ContainerResolutionException;
+use Rade\DI\Exceptions\ServiceCreationException;
 use Rade\DI\Extensions\ConfigExtension;
 use Rade\DI\Extensions\ExtensionBuilder;
 use Symfony\Component\Config\Exception\LoaderLoadException;
@@ -28,8 +29,7 @@ use Symfony\Component\Config\Loader\LoaderResolverInterface;
 
 trait HelperTrait
 {
-    /** @var array<string,string> */
-    private array $loadedExtensionPaths = [];
+    private array $loadedExtensionPaths = [], $loadedModules = [], $moduleExtensions = [];
 
     public function isDebug(): bool
     {
@@ -105,9 +105,9 @@ trait HelperTrait
      *    [ProjectExtension::class, ['%project.dir%']],
      * ]
      *
-     * @param array<int,mixed> $extensions
-     * @param array<string,mixed> $config    the default configuration for all extensions
-     * @param string|null         $outputDir Enable Generating ConfigBuilders to help create valid config
+     * @param array<int,mixed>    $extensions
+     * @param array<string,mixed> $config     the default configuration for all extensions
+     * @param string|null         $outputDir  Enable Generating ConfigBuilders to help create valid config
      */
     public function loadExtensions(array $extensions, array $configs = [], string $outputDir = null): void
     {
@@ -116,7 +116,49 @@ trait HelperTrait
         if (null !== $outputDir) {
             $builder->setConfigBuilderGenerator($outputDir);
         }
-        $builder->load($extensions);
+        $builder->load($extensions + $this->moduleExtensions);
+    }
+
+    /**
+     * Loads a set of modules from module directory.
+     *
+     * This method should be called before the loadExtensions method.
+     */
+    public function loadModules(string $moduleDir, string $prefix = null): void
+    {
+        // Get list modules available in application
+        foreach (\scandir($moduleDir) as $directory) {
+            if ('.' === $directory || '..' === $directory) {
+                continue;
+            }
+
+            // Check if file parsed is a directory (module need to be a directory)
+            if (!\is_dir($directoryPath = \rtrim($moduleDir, '\/') . '/' . $prefix . $directory)) {
+                continue;
+            }
+
+            // Load module configuration file
+            if (!\file_exists($configFile = $directoryPath . '/config.json')) {
+                continue;
+            }
+
+            // Load module
+            $moduleLoad = new \Rade\Module($directoryPath, \json_decode($configFile, true));
+
+            if (!\array_key_exists($directory, $this->loadedExtensionPaths)) {
+                $this->loadedExtensionPaths[$directory] = $directoryPath;
+            }
+
+            if (!$moduleLoad->isEnabled()) {
+                continue;
+            }
+
+            if (!empty($extensions = $moduleLoad->getExtensions())) {
+                $this->moduleExtensions = \array_merge($this->moduleExtensions, $extensions);
+            }
+
+            $this->loadedModules[$directory] = $moduleLoad;
+        }
     }
 
     /**
@@ -205,7 +247,7 @@ trait HelperTrait
                     $rootPath = \substr($rootPath, 0, $rPos);
 
                     if (!$pos = \strpos($directory, $rootPath)) {
-                        throw new \UnexpectedValueException(sprintf('Looks like package "%s" does not live in composer\'s directory "%s".', InstalledVersions::getRootPackage()['name'], $rootPath));
+                        throw new \UnexpectedValueException(\sprintf('Looks like package "%s" does not live in composer\'s directory "%s".', InstalledVersions::getRootPackage()['name'], $rootPath));
                     }
 
                     $parts = \explode('/', \substr($directory, $pos));
@@ -219,5 +261,19 @@ trait HelperTrait
         }
 
         throw new \InvalidArgumentException(\sprintf('Unable to find file "%s".', $path));
+    }
+
+    /**
+     * Load up a module(s) (A.K.A plugin).
+     *
+     * @return \Rade\Module|array<string,\Rade\Module>
+     */
+    public function getModule(string $directory = null)
+    {
+        if (null === $directory) {
+            return $this->loadedModules;
+        }
+
+        return $this->loadedModules[$directory] ?? throw new ServiceCreationException(\sprintf('Failed to load module %s, from modules root path.', $directory));
     }
 }

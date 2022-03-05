@@ -9,6 +9,7 @@ CHANGELOG
 * [BC BREAK] Improved application's performance and security
 * [BC BREAK] Updated application's dependency injection
 * [BC BREAK] Updated application's router for high performance
+* Added module/plugin support (It's left to the developer in choosing how to use them)
 * Added Nano support (building application from one php file)
 * Added PHP 8 and 8.1 support
 
