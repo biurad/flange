@@ -274,6 +274,10 @@ trait HelperTrait
             return $this->loadedModules;
         }
 
-        return $this->loadedModules[$directory] ?? throw new ServiceCreationException(\sprintf('Failed to load module %s, from modules root path.', $directory));
+        if (!isset($this->loadedModules[$directory])) {
+            throw new ServiceCreationException(\sprintf('Failed to load module %s, from modules root path.', $directory));
+        }
+
+        return $this->loadedModules[$directory];
     }
 }
