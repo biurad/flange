@@ -31,7 +31,7 @@
     "require": {
         "php": "^7.4 || ^8.0",
         "biurad/http-galaxy": "1.*",
-        "divineniiquaye/flight-routing": "2.*",
+        "divineniiquaye/flight-routing": "^1.4",
         "divineniiquaye/rade-di": "dev-rade-best",
         "symfony/config": "^5.4 || ^6.0",
         "symfony/console": "^5.4 || ^6.0",
