@@ -124,7 +124,7 @@ trait HelperTrait
      *
      * This method should be called before the loadExtensions method.
      */
-    public function loadModules(string $moduleDir, string $prefix = null): void
+    public function loadModules(string $moduleDir, string $prefix = null, string $configName = 'config'): void
     {
         // Get list modules available in application
         foreach (\scandir($moduleDir) as $directory) {
@@ -138,12 +138,12 @@ trait HelperTrait
             }
 
             // Load module configuration file
-            if (!\file_exists($configFile = $directoryPath . '/config.json')) {
+            if (!\file_exists($configFile = $directoryPath . '/' . $bundleName . '.json')) {
                 continue;
             }
 
             // Load module
-            $moduleLoad = new \Rade\Module($directoryPath, \json_decode($configFile, true));
+            $moduleLoad = new \Rade\Module($directoryPath, \json_decode(\file_get_contents($configFile), true) ?? []);
 
             if (!\array_key_exists($directory, $this->loadedExtensionPaths)) {
                 $this->loadedExtensionPaths[$directory] = $directoryPath;

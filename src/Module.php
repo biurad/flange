@@ -22,7 +22,7 @@ namespace Rade;
  *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
-class Module implements \JsonSerializable, \IteratorAggregate
+final class Module implements \JsonSerializable, \IteratorAggregate
 {
     private array $moduleConfig;
     private string $directory;
@@ -70,6 +70,7 @@ class Module implements \JsonSerializable, \IteratorAggregate
      *
      * @return mixed
      */
+    #[\ReturnTypeWillChange]
     public function jsonSerialize()
     {
         return $this->moduleConfig;
