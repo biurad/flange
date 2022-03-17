@@ -53,7 +53,7 @@ class TemplateExtension implements AliasedInterface, ConfigurationInterface, Ext
         $treeBuilder->getRootNode()
             ->addDefaultsIfNotSet()
             ->canBeEnabled()
-            ->fixXmlConfig('extension')
+            ->fixXmlConfig('namespace')
             ->fixXmlConfig('render')
             ->fixXmlConfig('global')
             ->children()
@@ -64,8 +64,8 @@ class TemplateExtension implements AliasedInterface, ConfigurationInterface, Ext
                     ->prototype('scalar')->end()
                     ->defaultValue([])
                 ->end()
-                ->arrayNode('extensions')
-                    ->beforeNormalization()->ifString()->then(fn ($v) => [$v])->end()
+                ->arrayNode('namespaces')
+                    ->arrayPrototype()
                     ->prototype('scalar')->end()
                 ->end()
                 ->arrayNode('renders')
@@ -149,6 +149,10 @@ class TemplateExtension implements AliasedInterface, ConfigurationInterface, Ext
 
         foreach ($configs['globals'] ?? [] as $gK => $gV) {
             $template->bind('addGlobal', [$gK, \is_string($gV) ? $container->parameter($gV) : $gV]);
+        }
+
+        foreach ($configs['namespaces'] ?? [] as $nsK => $nsV) {
+            $template->bind('addNamespace', [$nsK, $nsV]);
         }
 
         foreach ($configs['renders'] ?? [] as $render => $extensions) {
