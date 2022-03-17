@@ -192,6 +192,10 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
 
             $application($appBuilder);
 
+            // Autoload require hot paths ...
+            $requiredPaths = $appBuilder->parameters['project.require_paths'] ?? [];
+            unset($appBuilder->parameters['project.require_paths']);
+
             // Default node visitors.
             $appBuilder->addNodeVisitor(new DI\NodeVisitor\MethodsResolver());
             $appBuilder->addNodeVisitor(new DI\NodeVisitor\AutowiringResolver());
@@ -200,7 +204,7 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
             // Write the compiled application class to path.
             $cache->write($appBuilder->compile($options + \compact('containerClass')), $appBuilder->getResources());
 
-            require $splitter->buildTraits($cacheDir, $appBuilder->isDebug());
+            require $splitter->buildTraits($cacheDir, $appBuilder->isDebug(), $requiredPaths);
         } else {
             require_once $cacheDir . '/' . $defFile;
         }
