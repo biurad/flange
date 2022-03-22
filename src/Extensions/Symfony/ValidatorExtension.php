@@ -292,7 +292,7 @@ class ValidatorExtension implements AliasedInterface, BootExtensionInterface, Co
         if ($container instanceof KernelInterface) {
             foreach ($container->getExtensions() as $extension) {
                 try {
-                    $configDir = $container->getLocation('@' . $extension . '/');
+                    $configDir = $container->getLocation('@' . \get_class($extension) . '/');
                     $configDir = \is_dir($configDir . 'Resources/config') ? $configDir . 'Resources/config' : $configDir . 'config';
                 } catch (\InvalidArgumentException $e) {
                     continue;

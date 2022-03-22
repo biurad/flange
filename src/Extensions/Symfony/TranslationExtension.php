@@ -227,7 +227,7 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
         if ($container instanceof KernelInterface) {
             foreach ($container->getExtensions() as $extension) {
                 try {
-                    $configDir = $container->getLocation('@' . $extension . '/');
+                    $configDir = $container->getLocation('@' . \get_class($extension) . '/');
                 } catch (\InvalidArgumentException $e) {
                     continue;
                 }
