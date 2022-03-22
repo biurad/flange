@@ -133,12 +133,12 @@ trait HelperTrait
             }
 
             // Check if file parsed is a directory (module need to be a directory)
-            if (!\is_dir($directoryPath = \rtrim($moduleDir, '\/') . '/' . $prefix . $directory)) {
+            if (!\is_dir($directoryPath = \rtrim($moduleDir, '\/') . '/' . $prefix . $directory . '/')) {
                 continue;
             }
 
             // Load module configuration file
-            if (!\file_exists($configFile = $directoryPath . '/' . $bundleName . '.json')) {
+            if (!\file_exists($configFile = $directoryPath . $configName . '.json')) {
                 continue;
             }
 
