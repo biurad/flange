@@ -19,6 +19,7 @@ namespace Rade\Debug\Tracy;
 
 use Nette;
 use Rade\DI\Container;
+use Rade\DI\Resolver;
 use Tracy;
 
 /**
@@ -32,9 +33,11 @@ class ContainerPanel implements Tracy\IBarPanel
 
     private Container $container;
     private ?float $elapsedTime;
+    private array $keys;
 
-    public function __construct(Container $container)
+    public function __construct(Container $container, array $keys = [])
     {
+        $this->keys = $keys;
         $this->container = $container;
         $this->elapsedTime = self::$compilationTime ? \microtime(true) - self::$compilationTime : null;
     }
@@ -60,10 +63,12 @@ class ContainerPanel implements Tracy\IBarPanel
     public function getPanel(): string
     {
         $rc = new \ReflectionClass(Container::class);
-        $types = [];
+        $types = $methodsMap = [];
         $wiring = $this->getContainerProperty('types', $rc);
 
-        foreach ($this->container->keys() as $id) {
+        foreach ($this->keys as $id) {
+            $methodsMap[$id] = Resolver::createMethod($id);
+
             foreach ($wiring as $type => $names) {
                 if (\in_array($id, $names, true)) {
                     $types[$id] = $type;
@@ -75,9 +80,9 @@ class ContainerPanel implements Tracy\IBarPanel
 
         \ksort($types);
 
-        return Nette\Utils\Helpers::capture(function () use ($types, $wiring, $rc): void {
+        return Nette\Utils\Helpers::capture(function () use ($types, $wiring, $methodsMap, $rc): void {
             $file = $rc->getFileName();
-            $instances = $this->getContainerProperty('definitions', $rc) + $this->getContainerProperty('methodsMap', $rc);
+            $instances = $this->getContainerProperty('definitions', $rc) + $methodsMap;
             $services = $this->getContainerProperty('services', $rc);
             $configs = $this->getContainerProperty('parameters', $rc);
 
