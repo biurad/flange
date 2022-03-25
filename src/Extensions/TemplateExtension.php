@@ -101,7 +101,7 @@ class TemplateExtension implements AliasedInterface, ConfigurationInterface, Ext
                         ->thenInvalid('Expected arguments values to be an associate array of string keys mapping to mixed values.')
                         ->always(function (array $value) {
                             foreach ($value as $key => $val) {
-                                if (\is_array($val)) {
+                                if (\is_array($val) && \array_is_list($val)) {
                                     $value[$key] = \array_merge(...$val);
                                 }
                             }
