@@ -65,9 +65,9 @@ class TemplateExtension implements AliasedInterface, ConfigurationInterface, Ext
                     ->defaultValue([])
                 ->end()
                 ->arrayNode('namespaces')
-                    ->arrayPrototype()
-                        ->prototype('scalar')->end()
-                    ->end()
+                    ->normalizeKeys(false)
+                    ->useAttributeAsKey('name')
+                    ->prototype('scalar')->end()
                 ->end()
                 ->arrayNode('renders')
                     ->normalizeKeys(false)
@@ -99,15 +99,6 @@ class TemplateExtension implements AliasedInterface, ConfigurationInterface, Ext
                     ->beforeNormalization()
                         ->ifTrue(fn ($v) => !\is_array($v) || \array_is_list($v))
                         ->thenInvalid('Expected arguments values to be an associate array of string keys mapping to mixed values.')
-                        ->always(function (array $value) {
-                            foreach ($value as $key => $val) {
-                                if (\is_array($val) && \array_is_list($val)) {
-                                    $value[$key] = \array_merge(...$val);
-                                }
-                            }
-
-                            return $value;
-                        })
                     ->end()
                     ->prototype('variable')->end()
                 ->end()
