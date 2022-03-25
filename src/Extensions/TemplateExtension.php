@@ -135,11 +135,11 @@ class TemplateExtension implements AliasedInterface, ConfigurationInterface, Ext
         $renders = [];
 
         if (\file_exists($storageId)) {
-            $storage = new Statement(FilesystemStorage::class, [$storageId, ...$configs['paths']]);
+            $storage = new Statement(FilesystemStorage::class, [[$storageId, ...$configs['paths']]]);
         } elseif ($container->has($storageId)) {
             $storage = new Reference($storageId);
         } elseif ('' === $storageId && !empty($configs['paths'])) {
-            $storage = new Statement(FilesystemStorage::class, $configs['paths']);
+            $storage = new Statement(FilesystemStorage::class, [$configs['paths']]);
         }
 
         $template->arg(0, $storage ?? new Statement(ArrayStorage::class));
