@@ -134,13 +134,10 @@ class TemplateExtension implements AliasedInterface, ConfigurationInterface, Ext
         }
 
         $template->arg(0, $storage ?? new Statement(ArrayStorage::class));
+        $template->bind('$globals', $configs['globals'] ?? []);
 
         if (isset($configs['cache_dir'])) {
             $template->arg(1, $configs['cache_dir']);
-        }
-
-        foreach ($configs['globals'] ?? [] as $gK => $gV) {
-            $template->bind('addGlobal', [$gK, \is_string($gV) ? $container->parameter($gV) : $gV]);
         }
 
         foreach ($configs['namespaces'] ?? [] as $nsK => $nsV) {
