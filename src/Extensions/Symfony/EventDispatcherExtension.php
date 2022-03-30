@@ -59,9 +59,10 @@ class EventDispatcherExtension implements AliasedInterface, BootExtensionInterfa
             }
 
             $container->removeDefinition('events.dispatcher');
-            $container->set('events.dispatcher', new Definition(EventDispatcher::class));
+            $container->set('events.dispatcher', new Definition(EventDispatcher::class))->autowire();
         } elseif ($globalDispatcher instanceof DefinitionInterface) {
-            $globalDispatcher->replace(EventDispatcher::class, !\is_subclass_of($globalDispatcher->getEntity(), EventDispatcherInterface::class));
+            $container->removeType($entity = $globalDispatcher->getEntity());
+            $globalDispatcher->replace(EventDispatcher::class, !\is_subclass_of($entity, EventDispatcherInterface::class))->autowire();
         }
     }
 
