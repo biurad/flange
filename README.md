@@ -15,11 +15,7 @@
 
 **divineniiquaye/php-rade** is an incredibly fast, micro, compilable and scalable framework for [PHP] 7.4+ based on [PSR-7], [PSR-11], [PSR-14] and [PSR-15] with support for annotations/attributes, created by [Divine Niiquaye][@divineniiquaye].
 
-This library seeks to help developers who are lazy, beginners, small businesses or people who want to build things fast with extremely less dependencies.
-
-![PHP Rade Framework Image](https://user-images.githubusercontent.com/53147395/150102570-ab6bdb12-a669-45c2-9dd2-d8d1d6f1ac1f.png)
-
-
+This library is shipped with lots of features that suites developers needs in developing web applications. Rade is truly scalable, has less dependencies and has high performance.
 
 ## 📦 Installation & Basic Usage
 
