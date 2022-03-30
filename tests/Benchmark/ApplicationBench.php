@@ -55,19 +55,28 @@ class ApplicationBench
     public function createSimpleRequest(): void
     {
         static::$simple = Process::fromShellCommandline('php -S 127.0.0.1:8010 simple.php', __DIR__ . '/runner');
-        static::$simple->start();
+
+        if (!static::$simple->isStarted()) {
+            static::$simple->start();
+        }
     }
 
     public function createNoCacheRequest(): void
     {
         static::$noCache = Process::fromShellCommandline('php -S 127.0.0.1:8020 no-cache.php', __DIR__ . '/runner');
-        static::$noCache->start();
+
+        if (!static::$noCache->isStarted()) {
+            static::$noCache->start();
+        }
     }
 
     public function createRealRequest(): void
     {
         static::$withCache = Process::fromShellCommandline('php -S 127.0.0.1:8030 real-app.php', __DIR__ . '/runner');
-        static::$withCache->start();
+
+        if (!static::$withCache->isStarted()) {
+            static::$withCache->start();
+        }
     }
 
     /**
@@ -76,7 +85,7 @@ class ApplicationBench
     public function benchSimpleApplication(): void
     {
         if (null === self::$simple || !self::$simple->isRunning()) {
-            throw new \RuntimeException('Process is not running');
+            $this->createSimpleRequest();
         }
 
         HttpClient::create()->request('GET', 'http://127.0.0.1:8010/hello');
@@ -88,7 +97,7 @@ class ApplicationBench
     public function benchNoCacheApplication(): void
     {
         if (null === self::$noCache || !self::$noCache->isRunning()) {
-            throw new \RuntimeException('Process is not running');
+            $this->createNoCacheRequest();
         }
 
         HttpClient::create()->request('GET', 'http://127.0.0.1:8020/hello');
@@ -100,7 +109,7 @@ class ApplicationBench
     public function benchRealApplication(): void
     {
         if (null === self::$withCache || !self::$withCache->isRunning()) {
-            throw new \RuntimeException('Process is not running');
+            $this->createRealRequest();
         }
 
         HttpClient::create()->request('GET', 'http://127.0.0.1:8030/hello');

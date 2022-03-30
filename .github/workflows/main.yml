@@ -65,7 +65,6 @@ jobs:
         run: vendor/bin/phpcs
 
       - name: "Benchmark for Performance"
-        if: matrix.operating-system == 'windows-latest'
         run: composer require phpbench/phpbench -W && vendor/bin/phpbench run --report default --revs 1000 && composer remove phpbench/phpbench
 
       - name: Run unit tests (PHPUnit)
