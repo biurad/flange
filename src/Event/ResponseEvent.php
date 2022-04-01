@@ -37,7 +37,6 @@ final class ResponseEvent extends KernelEvent
     public function __construct(Application $app, Request $request, Response $response)
     {
         parent::__construct($app, $request);
-
         $this->setResponse($response);
     }
 

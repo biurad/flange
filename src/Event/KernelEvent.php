@@ -29,23 +29,16 @@ use Symfony\Contracts\EventDispatcher\Event;
 class KernelEvent extends Event
 {
     private Application $kernel;
-
     private Request $request;
 
-    /**
-     * @param Application $app
-     * @param Request     $request
-     */
     public function __construct(Application $app, Request $request)
     {
-        $this->kernel  = $app;
+        $this->kernel = $app;
         $this->request = $request;
     }
 
     /**
      * Returns the kernel in which this event was thrown.
-     *
-     * @return Application
      */
     public function getApplication(): Application
     {
@@ -54,8 +47,6 @@ class KernelEvent extends Event
 
     /**
      * Returns the request the kernel is currently processing.
-     *
-     * @return Request
      */
     public function getRequest(): Request
     {

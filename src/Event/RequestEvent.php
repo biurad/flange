@@ -34,8 +34,6 @@ class RequestEvent extends KernelEvent
 
     /**
      * Returns the response object.
-     *
-     * @return null|ResponseInterface
      */
     public function getResponse(): ?ResponseInterface
     {
@@ -48,7 +46,6 @@ class RequestEvent extends KernelEvent
     public function setResponse(ResponseInterface $response): void
     {
         $this->response = $response;
-
         $this->stopPropagation();
     }
 

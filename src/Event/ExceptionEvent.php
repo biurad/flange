@@ -19,7 +19,6 @@ namespace Rade\Event;
 
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Rade\Application;
-use Throwable;
 
 /**
  * Allows to create a response for a thrown exception.
@@ -36,18 +35,17 @@ use Throwable;
  */
 final class ExceptionEvent extends RequestEvent
 {
-    private Throwable $throwable;
-
+    private \Throwable $throwable;
     private bool $allowCustomResponseCode = false;
 
-    public function __construct(Application $kernel, Request $request, Throwable $e)
+    public function __construct(Application $kernel, Request $request, \Throwable $e)
     {
         parent::__construct($kernel, $request);
 
         $this->setThrowable($e);
     }
 
-    public function getThrowable(): Throwable
+    public function getThrowable(): \Throwable
     {
         return $this->throwable;
     }
@@ -57,7 +55,7 @@ final class ExceptionEvent extends RequestEvent
      *
      * This exception will be thrown if no response is set in the event.
      */
-    public function setThrowable(Throwable $exception): void
+    public function setThrowable(\Throwable $exception): void
     {
         $this->throwable = $exception;
     }

@@ -33,16 +33,27 @@ use Rade\Application;
  */
 final class ControllerEvent extends KernelEvent
 {
-    private $controller;
-
+    private \ReflectionFunctionAbstract $ref;
     private array $arguments;
 
-    public function __construct(Application $app, $controller, array $arguments, Request $request)
+    /** @var mixed */
+    private $controller;
+
+    /**
+     * @param mixed $controller
+     */
+    public function __construct(Application $app, $controller, \ReflectionFunctionAbstract $ref, array $arguments, Request $request)
     {
         parent::__construct($app, $request);
 
         $this->controller = $controller;
-        $this->arguments  = $arguments;
+        $this->arguments = $arguments;
+        $this->ref = $ref;
+    }
+
+    public function getReflection(): \ReflectionFunctionAbstract
+    {
+        return $this->ref;
     }
 
     /**
