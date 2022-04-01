@@ -50,22 +50,19 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
     {
         parent::__construct();
 
-        if (empty($this->methodsMap)) {
-            $this->definitions['http.router'] = Router::withCollection();
-            $this->definitions['request_stack'] = new RequestStack();
-            $this->definitions['psr17.factory'] = $psr17Factory = ($psr17Factory ?? new Psr17Factory());
-            $this->definitions['events.dispatcher'] = $dispatcher = ($dispatcher ?? new Handler\EventHandler());
-
-            $this->types(
-                [
-                    'http.router' => [Router::class, RouteMatcherInterface::class],
-                    'request_stack' => [RequestStack::class],
-                    'psr17.factory' => DI\Resolver::autowireService($psr17Factory),
-                    'events.dispatcher' => DI\Resolver::autowireService($dispatcher),
-                ]
-            );
-
-            unset($psr17Factory, $dispatcher);
+        if (!isset($this->parameters['project.compiled_container_class'])) {
+            $this->definitions = [
+                'http.router' => Router::withCollection(),
+                'request_stack' => new RequestStack(),
+                'psr17.factory' => $psr17Factory = $psr17Factory ?? new Psr17Factory(),
+                'events.dispatcher' => $dispatcher = $dispatcher ?? new Handler\EventHandler(),
+            ];
+            $this->types += [
+                RequestStack::class => ['request_stack'],
+                Router::class => ['http.router'],
+                RouteMatcherInterface::class => ['http.router'],
+            ];
+            $this->types(['psr17.factory' => DI\Resolver::autowireService($psr17Factory), 'events.dispatcher' => DI\Resolver::autowireService($dispatcher)]);
         }
 
         if (!isset($this->parameters['debug'])) {

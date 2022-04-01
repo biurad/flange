@@ -217,14 +217,15 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
     /**
      * {@inheritdoc}
      */
-    protected function doAnalyse(array $definitions, bool $onlyDefinitions = false): array
+    public function compile(array $options = [])
     {
-        unset($definitions['config.builder.loader_resolver']);
+        $this->parameters['project.compiled_container_class'] = $options['containerClass'];
+        unset($this->definitions['config.builder.loader_resolver']);
 
         if (isset($this->parameters['routes'])) {
             throw new ServiceCreationException(\sprintf('The %s extension needs to be registered before adding routes.', DI\Extensions\RoutingExtension::class));
         }
 
-        return parent::doAnalyse($definitions, $onlyDefinitions);
+        return parent::compile($options);
     }
 }
