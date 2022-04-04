@@ -19,7 +19,6 @@ namespace Rade\DI\Extensions\SecurityProvider;
 
 use Biurad\Security\Authenticator\RememberMeAuthenticator;
 use Biurad\Security\Handler\RememberMeHandler;
-use Monolog\SignalHandler;
 use Rade\DI\AbstractContainer;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
@@ -60,6 +59,7 @@ class RememberMeFactory extends AbstractFactory
         $builder
             ->scalarNode('secret')->isRequired()->cannotBeEmpty()->end()
             ->scalarNode('parameter')->defaultValue('_remember_me')->end()
+            ->booleanNode('allow_multiple_tokens')->defaultFalse()->end()
             ->integerNode('max_uses')->end()
             ->integerNode('signature_lifetime')->defaultValue(600)->end()
             ->arrayNode('signature_properties')
@@ -95,17 +95,10 @@ class RememberMeFactory extends AbstractFactory
             $tokenVerifier = isset($config['token_verifier']) ? new Reference($config['token_verifier']) : null;
             $tokenStorage = $container->has($config['token_provider']) ? new Reference($config['token_provider']) : new Statement($config['token_provider']);
 
-            if (null === $tokenVerifier) {
-                if (!$container->hasExtension(CacheExtension::class)) {
-                    throw new \RuntimeException(\sprintf('The %s class requires the %s extension.', CacheTokenVerifier::class, CacheExtension::class));
-                }
+            if (null === $tokenVerifier && $container->hasExtension(CacheExtension::class)) {
                 $tokenVerifier = new Statement(CacheTokenVerifier::class, [new Reference('cache.app')]);
             }
-        } else {
-            if (!$container->hasExtension(PropertyAccessExtension::class)) {
-                throw new \RuntimeException(\sprintf('The %s class requires the %s extension.', SignalHandler::class, PropertyAccessExtension::class));
-            }
-
+        } elseif ($container->hasExtension(PropertyAccessExtension::class)) {
             if ($container->hasExtension(CacheExtension::class)) {
                 $expireStorage = new Statement(ExpiredSignatureStorage::class, [new Reference('cache.app'), $config['signature_lifetime']]);
             }
@@ -116,10 +109,10 @@ class RememberMeFactory extends AbstractFactory
             $config['secret'],
             $tokenStorage ?? null,
             $tokenVerifier ?? null,
-            new Reference('security.authenticator.remember_me_signature_hasher'),
+            new Reference('?security.authenticator.remember_me_signature_hasher'),
             $config['parameter'],
             \array_intersect_key($config, $this->options),
         ]));
-        $container->autowire('security.authenticator.remember_me', new Definition(RememberMeAuthenticator::class, [new Reference('security.authenticator.remember_me_handler'), new Reference('security.token_storage')]));
+        $container->autowire('security.authenticator.remember_me', new Definition(RememberMeAuthenticator::class, [new Reference('security.authenticator.remember_me_handler'), 2 => $config['allow_multiple_tokens']]));
     }
 }

@@ -54,7 +54,6 @@ class FormLoginFactory extends AbstractFactory
 
         $container->set($id, new Definition(FormLoginAuthenticator::class, [
             $config['provider'] ?? new Statement(MissingUserProvider::class, ['main']),
-            new Reference('security.token_storage'),
             new Reference('security.password_hasher_factory'),
             5 => $config['erase_credentials'],
         ]));

@@ -107,6 +107,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
             ->fixXmlConfig('rule', 'access_control')
             ->children()
                 ->booleanNode('hide_user_not_found')->defaultTrue()->end()
+                ->booleanNode('include_authenticators')->defaultTrue()->end()
                 ->booleanNode('erase_credentials')->defaultTrue()->end()
                 ->enumNode('token_storage')->values(['session', 'cache'])->defaultValue('session')->end()
                 ->scalarNode('user_checker')
@@ -350,7 +351,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
                 }
             }
 
-            $authenticators = \array_map(fn (string $factory) => new Reference($factory), $authenticators);
+            $authenticators = $configs['include_authenticators'] ? \array_map(fn (string $factory) => new Reference($factory), $authenticators) : [];
         }
 
         if (!empty($configs['throttling']) && null === $configs['throttling']['limiter']) {
