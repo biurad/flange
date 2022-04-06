@@ -15,7 +15,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\DI\Extensions\CycleORM\Generator;
+namespace Rade\Database\Cycle\Generator;
 
 use Cycle\Schema\GeneratorInterface;
 use Cycle\Schema\Registry;

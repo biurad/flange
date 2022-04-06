@@ -26,6 +26,7 @@ use Cycle\Migrations\Migrator;
 use Rade\Commands\CycleORM\DatabaseListCommand;
 use Rade\Commands\CycleORM\DatabaseMigrateCommand;
 use Rade\Commands\CycleORM\DatabaseTableCommand;
+use Rade\Database\Cycle\Config;
 use Rade\DI\AbstractContainer;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
@@ -141,7 +142,7 @@ class DatabaseExtension implements AliasedInterface, ConfigurationInterface, Ext
                     Config\DriverConfig::class,
                     [
                         new Statement(Config\Connection::class, [$con['dsn'], $con['username'], $con['password'], $con['options'] ?? []]),
-                        $con['driver'],
+                        \class_exists($con['driver']) ? $con['driver'] :'Cycle\\Database\\Driver\\' . $con['driver'] . '\\' . $con['driver'] . 'Driver',
                         $con['reconnect'],
                         $con['timezone'],
                         $con['queryCache'],

@@ -25,7 +25,7 @@ use Cycle\Schema\Generator\Migrations\GenerateMigrations;
 use Cycle\Schema\Generator\SyncTables;
 use Cycle\Schema\GeneratorInterface;
 use Cycle\Schema\Registry;
-use Rade\DI\Extensions\CycleORM\Generator\ShowChanges;
+use Rade\Database\Cycle\Generator\ShowChanges;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;

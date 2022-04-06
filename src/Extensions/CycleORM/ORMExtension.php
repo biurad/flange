@@ -35,6 +35,7 @@ use Rade\DI\ContainerBuilder;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
+use Rade\DI\Exceptions\ServiceCreationException;
 use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\ExtensionInterface;
 use Rade\KernelInterface;
@@ -104,6 +105,10 @@ class ORMExtension implements AliasedInterface, ConfigurationInterface, Extensio
         $generators = [new Statement(Generator\ResetTables::class)]; // re-declared table schemas (remove columns)
 
         if (\class_exists(\Cycle\Annotated\Configurator::class)) {
+            if (!$container->has('annotation.reader')) {
+                throw new ServiceCreationException('The Spiral Annotation reader is required to use Cycle ORM annotations.');
+            }
+
             if ($container instanceof ContainerBuilder) {
                 $finder = new PhpLiteral(\sprintf('%s::create()->in(\'%s\')->name(\'*.php\');', Finder::class, $container->parameter($entityPath)));
             } else {
