@@ -28,6 +28,6 @@ $app = \Rade\AppBuilder::build(static function (\Rade\AppBuilder $creator): void
     $creator->addResource(new \Symfony\Component\Config\Resource\FileResource(__FILE__));
 
     $creator->loadExtensions(require __DIR__ . '/extensions.php', require __DIR__ . '/config.php');
-}, ['cacheDir' => __DIR__ . '/../caches']);
+}, ['cacheDir' => __DIR__ . '/var/app']);
 
 $app->run();

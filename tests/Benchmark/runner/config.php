@@ -16,14 +16,11 @@ declare(strict_types=1);
  */
 
 return [
-    'config' => [
-        'paths' => ['%project_dir%/config', '%project_dir%/../../../src/Resources/definitions'],
-    ],
     'routing' => [
         'pipes' => [
-            'web' => [Biurad\Http\Middlewares\ContentTypeOptionsMiddleware::class, Biurad\Http\Middlewares\ContentLengthMiddleware::class],
-            Biurad\Http\Middlewares\ContentTypeOptionsMiddleware::class,
-            Biurad\Http\Middlewares\ContentLengthMiddleware::class,
+            //'web' => [Biurad\Http\Middlewares\ContentTypeOptionsMiddleware::class, Biurad\Http\Middlewares\ContentLengthMiddleware::class],
+            //Biurad\Http\Middlewares\ContentTypeOptionsMiddleware::class,
+            //Biurad\Http\Middlewares\ContentLengthMiddleware::class,
         ],
         'routes' => [
             ['name' => 'homepage', 'path' => '/hello*<helloWorldFunc>', 'methods' => ['GET']],
@@ -31,7 +28,7 @@ return [
     ],
     'symfony' => [
         'cache' => [
-            'directory' => '%project_dir%/../caches',
+            'directory' => '%project.var_dir%/cache',
         ],
     ],
 ];
