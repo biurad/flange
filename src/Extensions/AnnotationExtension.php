@@ -24,13 +24,12 @@ use Doctrine\Common\Annotations\AnnotationRegistry;
 use Doctrine\Common\Annotations\PsrCachedReader;
 use Flight\Routing\Annotation\Route;
 use Flight\Routing\RouteCollection;
-use Psr\Cache\CacheItemPoolInterface;
 use Rade\DI\AbstractContainer;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
-use Spiral\Attributes\AttributeReader;
 use Spiral\Attributes\Composite\MergeReader;
+use Spiral\Attributes\Composite\SelectiveReader;
 use Spiral\Attributes\Internal\{FallbackAttributeReader, NativeAttributeReader, DoctrineAnnotationReader};
 use Spiral\Attributes\Internal\Instantiator\NamedArgumentsInstantiator;
 use Spiral\Attributes\Psr6CachedReader;
@@ -62,6 +61,7 @@ class AnnotationExtension implements AliasedInterface, BootExtensionInterface, C
         $treeBuilder->getRootNode()
             ->children()
                 ->scalarNode('use_reader')->end()
+                ->booleanNode('merge_readers')->defaultTrue()->end()
                 ->variableNode('class_loader')
                     ->beforeNormalization()
                         ->ifTrue(fn ($v): bool => !\is_callable($v))
@@ -110,25 +110,29 @@ class AnnotationExtension implements AliasedInterface, BootExtensionInterface, C
         }
 
         if ($useAttribute = $configs['use_reader'] ?? false) {
-            $attribute = 8 === \PHP_MAJOR_VERSION ? NativeAttributeReader::class : FallbackAttributeReader::class;
-            $hasCache = ($symfony = $container->hasExtension(Symfony\CacheExtension::class) || $container->hasExtension(Symfony\FrameworkExtension::class)) || $container->typed(CacheItemPoolInterface::class);
+            if (!\class_exists(NativeAttributeReader::class)) {
+                throw new \LogicException('Annotations/Attributes support cannot be enabled as the Spiral Attribute component is not installed. Try running "composer require spiral/attributes".');
+            }
 
-            if (!\in_array($useAttribute, [AttributeReader::class, 'attribute'], true)) {
-                $attributeArgs = [[new Statement($attribute, [new Statement(NamedArgumentsInstantiator::class)])]];
+            $attribute = 80000 <= \PHP_VERSION_ID ? NativeAttributeReader::class : FallbackAttributeReader::class;
+            $attributeArgs = [new Statement($attribute, [new Statement(NamedArgumentsInstantiator::class)])];
+            $hasCache = $container->hasExtension(Symfony\CacheExtension::class) || $container->hasExtension(Symfony\FrameworkExtension::class);
 
-                if (\in_array($useAttribute, [DoctrineReader::class, AnnotationReader::class, 'doctrine'], true) && \class_exists(AnnotationReader::class)) {
-                    $doctrineService = AnnotationReader::class;
+            if (\is_string($useAttribute)) {
+                $attribute = $configs['merge_readers'] ? MergeReader::class : SelectiveReader::class;
+
+                if (\in_array($useAttribute, [$doctrineService = AnnotationReader::class, 'doctrine'], true)) {
+                    if (!\class_exists($doctrineService)) {
+                        throw new \LogicException('Annotations support cannot be enabled as the Doctrine component is not installed. Try running "composer require doctrine/annotations".');
+                    }
 
                     if ($hasCache) {
-                        $doctrineArgs = [new Statement($doctrineService), 2 => '%debug%'];
+                        $doctrineArgs = [new Statement($doctrineService), new Reference('cache.system'), '%debug%'];
                         $doctrineService = PsrCachedReader::class;
-
-                        if ($symfony) {
-                            $doctrineArgs[1] = new Reference('cache.system');
-                        }
                     }
 
                     $doctrineService = $container->autowire('annotation.doctrine', new Definition($doctrineService, $doctrineArgs ?? []));
+                    $attributeArgs[] = new Statement(DoctrineAnnotationReader::class, [new Reference('annotation.doctrine')]);
 
                     foreach ($configs['doctrine_ignores'] as $doctrineExclude) {
                         $doctrineService->call(new Statement(AnnotationReader::class . '::addGlobalIgnoredName', [$doctrineExclude]));
@@ -138,21 +142,13 @@ class AnnotationExtension implements AliasedInterface, BootExtensionInterface, C
                     if (\method_exists(AnnotationRegistry::class, 'registerLoader')) {
                         $doctrineService->call(new Statement(AnnotationRegistry::class . '::registerUniqueLoader', ['class_exists']));
                     }
-
-                    $attributeArgs[0][] = new Statement(DoctrineAnnotationReader::class);
                 } else {
-                    $attributeArgs[0][] = $container->has($useAttribute) ? new Reference($useAttribute) : new Statement($useAttribute);
+                    $attributeArgs[] = $container->has($useAttribute) ? new Reference($useAttribute) : new Statement($useAttribute);
                 }
 
-                $attribute = MergeReader::class;
-
                 if ($hasCache) {
-                    $attributeArgs[0] = new Statement($attribute, $attributeArgs);
+                    $attributeArgs = [new Statement($attribute, [$attributeArgs]), new Reference('cache.system')];
                     $attribute = Psr6CachedReader::class;
-
-                    if ($symfony) {
-                        $attributeArgs[1] = new Reference('cache.system');
-                    }
                 }
             }
 
