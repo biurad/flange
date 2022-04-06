@@ -292,7 +292,7 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
             }
 
             if (isset($configs['cache'])) {
-                $router->arg(1, $container->has($configs['cache']) ? new Reference($configs['cache']) : $configs['cache']);
+                $router->arg(1, \str_starts_with($configs['cache'], 'cache.') ? new Reference($configs['cache']) : $configs['cache']);
             }
         }
 
