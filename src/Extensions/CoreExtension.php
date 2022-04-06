@@ -56,6 +56,7 @@ class CoreExtension implements AliasedInterface, ConfigurationInterface, Depende
         $treeBuilder->getRootNode()
             ->children()
                 ->scalarNode('events_dispatcher')->end()
+                ->scalarNode('var_path')->end()
             ->end()
         ;
 
@@ -75,6 +76,8 @@ class CoreExtension implements AliasedInterface, ConfigurationInterface, Depende
      */
     public function register(AbstractContainer $container, array $configs = []): void
     {
+        $container->parameters['project.var_dir'] = $configs['var_path'] ?? ($this->rootDir . '/var');
+
         if (!$container->has('events.dispatcher')) {
             $eventsDispatcher = $configs['events_dispatcher'] ?? EventHandler::class;
 
