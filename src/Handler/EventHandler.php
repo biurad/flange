@@ -34,15 +34,14 @@ class EventHandler implements EventDispatcherInterface, ListenerProviderInterfac
     public function dispatch(object $event): object
     {
         $stoppable = $event instanceof StoppableEventInterface;
-        $listeners = $this->calledEvents[\get_class($event)] ?? $this->getListenersForEvent($event);
 
         /** @var callable(object) $listener */
-        foreach ($listeners as $listener) {
-            if ($stoppable && $event->isPropagationStopped()) {
-                return $event;
-            }
-
+        foreach ($this->getListenersForEvent($event) as $listener) {
             $listener($event);
+
+            if ($stoppable && $event->isPropagationStopped()) {
+                break;
+            }
         }
 
         return $event;
@@ -53,19 +52,18 @@ class EventHandler implements EventDispatcherInterface, ListenerProviderInterfac
      */
     public function getListenersForEvent(object $event): iterable
     {
-        if (!\array_key_exists($eventName = \get_class($event), $this->calledEvents)) {
+        $eventName = \get_class($event);
+
+        if (null === $calledListeners = &$this->calledEvents[$eventName] ?? null) {
             if (empty($listeners = $this->listeners[$eventName] ?? [])) {
                 return [];
             }
 
             \krsort($listeners); // Sort Listeners by priority.
-
-            foreach ($listeners as $calledListeners) {
-                $this->calledEvents[$eventName] = $calledListeners;
-            }
+            $calledListeners = \array_merge(...$listeners);
         }
 
-        return $this->calledEvents[$eventName];
+        yield from $calledListeners;
     }
 
     /**
@@ -83,10 +81,10 @@ class EventHandler implements EventDispatcherInterface, ListenerProviderInterfac
     /**
      * Checks if listeners exist for an event, else in general if event name is null.
      */
-    public function hasListeners(string $eventName = null): bool
+    public function hasListener(string $eventClass = null): bool
     {
-        if (null !== $eventName) {
-            return !empty($this->listeners[$eventName]);
+        if (null !== $eventClass) {
+            return !empty($this->listeners[$eventClass]);
         }
 
         foreach ($this->listeners as $eventListeners) {
