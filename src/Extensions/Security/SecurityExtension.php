@@ -15,7 +15,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\DI\Extensions;
+namespace Rade\DI\Extensions\Security;
 
 use Biurad\Security\AccessMap;
 use Biurad\Security\Authenticator;
@@ -27,7 +27,11 @@ use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Definitions\TaggedLocator;
-use Rade\DI\Extensions\Symfony\CacheExtension;
+use Rade\DI\Extensions\AliasedInterface;
+use Rade\DI\Extensions\BootExtensionInterface;
+use Rade\DI\Extensions\ExtensionInterface;
+use Rade\DI\Extensions\HttpGalaxyExtension;
+use Rade\DI\Extensions\Symfony;
 use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
@@ -60,11 +64,10 @@ use Symfony\Component\Security\Core\User\ChainUserProvider;
 class SecurityExtension implements AliasedInterface, BootExtensionInterface, ConfigurationInterface, ExtensionInterface
 {
     /** @var array<int,SecurityProvider\ProviderFactoryInterface> */
-    private array $factoryProviders = [];
-    private array $userProviders = [];
+    private array $factoryProviders = [], $userProviders = [];
 
     /**
-     * @param array<int,SecurityProvider\ProviderFactoryInterface> $providers
+     * @param array<int,Provider\ProviderFactoryInterface> $providers
      */
     public function __construct(array $providers = [])
     {
@@ -76,9 +79,9 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
     /**
      * Add a provider factory.
      */
-    public function addProviderFactory(SecurityProvider\ProviderFactoryInterface $factory): void
+    public function addProviderFactory(Provider\ProviderFactoryInterface $factory): void
     {
-        if ($factory instanceof SecurityProvider\AbstractFactory) {
+        if ($factory instanceof Provider\AbstractFactory) {
             $this->factoryProviders[] = $factory;
         } else {
             $this->userProviders[] = $factory;
@@ -377,10 +380,10 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
 
         if ('cache' === $configs['token_storage']) {
             if (!($container->hasExtension(Symfony\CacheExtension::class) || $container->hasExtension(Symfony\FrameworkExtension::class))) {
-                throw new \LogicException(\sprintf('You cannot use the "cache" token storage without the "%s" extension.', CacheExtension::class));
+                throw new \LogicException(\sprintf('You cannot use the "cache" token storage without the "%s" extension.', Symfony\CacheExtension::class));
             }
             $tokenStorage = new Reference('cache.app');
-        } elseif (!$container->hasExtension(HttpGalaxyExtension::class) xor false === $container->getExtensionConfig(HttpGalaxyExtension::class)['session']['enabled'] ?? false) {
+        } elseif (false === ($container->getExtensionConfig(HttpGalaxyExtension::class)['session']['enabled'] ?? false)) {
             throw new \LogicException(\sprintf('You cannot use the "%s" token storage without the "%s" extension and session config disabled.', $configs['token_storage'], HttpGalaxyExtension::class));
         }
 

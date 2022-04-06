@@ -15,7 +15,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\DI\Extensions\SecurityProvider;
+namespace Rade\DI\Extensions\Security\Provider;
 
 use Rade\DI\AbstractContainer;
 use Rade\DI\Definition;
