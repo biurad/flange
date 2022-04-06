@@ -28,6 +28,7 @@ use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\ExtensionInterface;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
  * Theleague Flysystem Extension.
@@ -110,6 +111,10 @@ class FlysystemExtension implements AliasedInterface, ConfigurationInterface, Ex
     {
         if (!\class_exists(Filesystem::class)) {
             throw new \LogicException('Flysystem support cannot be enabled as the Flysystem library is not installed. Try running "composer require league/flysystem".');
+        }
+
+        if (!\class_exists(OptionsResolver::class)) {
+            throw new \LogicException('Flysystem support cannot be enabled as the OptionsResolver library is not installed. Try running "composer require symfony/options-resolver".');
         }
         $mounts = [];
 
