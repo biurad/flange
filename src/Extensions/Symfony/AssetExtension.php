@@ -192,10 +192,10 @@ class AssetExtension implements AliasedInterface, ConfigurationInterface, Extens
                 $version = $this->createVersion($version, $format, $package['json_manifest_path'], $package['strict_mode']);
             }
 
-            $packages[] = $this->createPackageDefinition($package['base_path'] ?? '%asset.request_context.base_path%', $package['base_urls'], $version);
+            $packages[] = $this->createPackageDefinition('%asset.request_context.base_path%', $package['base_urls'], $version);
         }
 
-        $packagesDef->args([$this->createPackageDefinition($configs['base_path'] ?? '%asset.request_context.base_path%', $configs['base_urls'], $defaultVersion), $packages]);
+        $packagesDef->args([$this->createPackageDefinition('%asset.request_context.base_path%', $configs['base_urls'], $defaultVersion), $packages]);
     }
 
     /**
