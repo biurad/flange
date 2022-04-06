@@ -95,7 +95,7 @@ class RouteHandler extends BaseRouteHandler
      */
     protected function resolveArguments(ServerRequestInterface $request, Route $route): array
     {
-        $route->getArguments();
+        $parameters = $route->getArguments();
         $parameters[ServerRequestInterface::class] = $request;
 
         return $parameters;
