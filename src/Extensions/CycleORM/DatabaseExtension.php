@@ -142,7 +142,7 @@ class DatabaseExtension implements AliasedInterface, ConfigurationInterface, Ext
                     Config\DriverConfig::class,
                     [
                         new Statement(Config\Connection::class, [$con['dsn'], $con['username'], $con['password'], $con['options'] ?? []]),
-                        \class_exists($con['driver']) ? $con['driver'] :'Cycle\\Database\\Driver\\' . $con['driver'] . '\\' . $con['driver'] . 'Driver',
+                        \class_exists($con['driver']) ? $con['driver'] : 'Cycle\\Database\\Driver\\' . $con['driver'] . '\\' . $con['driver'] . 'Driver',
                         $con['reconnect'],
                         $con['timezone'],
                         $con['queryCache'],
