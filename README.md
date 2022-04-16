@@ -34,7 +34,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 $app = new Rade\Application();
 
 // Add a route to application
-$app->match('/hello/{name:\w+}', fn (string $name): string => 'Hello ' . $app->escape()->escapeHtml($name));
+$app->match('/hello/{name:\w+}', to: fn (string $name): string => 'Hello ' . $app->escape()->escapeHtml($name));
 
 $extensions = [
     [Rade\DI\Extensions\CoreExtension::class, [__DIR__]],
@@ -75,7 +75,7 @@ $app = \Rade\AppBuilder::build(static function (\Rade\AppBuilder $creator): void
     ];
 
     //If you want to use extensions, here is an example as its recommended to use extensions to build your application.
-    $app->loadExtensions($extensions, ['config' => ['debug' => $creator->isDebug()]]);
+    $creator->loadExtensions($extensions, ['config' => ['debug' => $creator->isDebug()]]);
 
     // You can set custom pages for caught exceptions, using default event dispatcher, or your custom event dispatcher.
     $creator->definition('events.dispatcher')->bind('addListener', [Rade\Events::EXCEPTION, wrap(ErrorListener::class), -8]);
