@@ -28,7 +28,7 @@ use Symfony\Component\Process\Process;
  */
 class ApplicationBench
 {
-    protected const CACHE_DIR = __DIR__ . '/caches';
+    protected const CACHE_DIR = __DIR__ . '/var';
 
     protected static ?Process $simple = null, $noCache = null, $withCache = null;
 

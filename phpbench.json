@@ -9,12 +9,12 @@
         "opcache.enable_cli": true,
         "opcache.jit": 1235,
         "xdebug.mode": "off"
-      },
+    },
 
     "report.generators": {
         "default": {
             "extends": "expression",
-            "cols": [ "benchmark", "subject", "mem_peak", "best", "mean", "mode", "worst", "stdev", "rstdev" ]
+            "cols": [ "subject", "mem_peak", "best", "mean", "mode", "worst", "stdev", "rstdev" ]
         }
     }
 }
