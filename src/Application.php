@@ -52,10 +52,10 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
 
         if (!isset($this->parameters['project.compiled_container_class'])) {
             $this->definitions = [
-                'http.router' => Router::withCollection(),
-                'request_stack' => new RequestStack(),
-                'psr17.factory' => $psr17Factory = $psr17Factory ?? new Psr17Factory(),
-                'events.dispatcher' => $dispatcher = $dispatcher ?? new Handler\EventHandler(),
+                'http.router' => $this->services['http.router'] = Router::withCollection(),
+                'request_stack' => $this->services['request_stack'] = new RequestStack(),
+                'psr17.factory' => $this->services['psr17.factory'] = $psr17Factory = $psr17Factory ?? new Psr17Factory(),
+                'events.dispatcher' => $this->services['events.dispatcher'] = $dispatcher = $dispatcher ?? new Handler\EventHandler(),
             ];
             $this->types += [
                 RequestStack::class => ['request_stack'],
@@ -116,7 +116,7 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
      */
     public function match(string $pattern, array $methods = Route::DEFAULT_METHODS, $to = null): Route
     {
-        return ($this->services['http.router'] ?? $this->get('http.router'))->getCollection()->addRoute($pattern, $methods, $to)->getRoute();
+        return $this->get('http.router')->getCollection()->addRoute($pattern, $methods, $to)->getRoute();
     }
 
     /**
@@ -211,7 +211,7 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
     public function handle(ServerRequestInterface $request, bool $catch = true): ResponseInterface
     {
         if (!$this->has(RequestHandlerInterface::class)) {
-            $this->definitions[RequestHandlerInterface::class] = new Handler\RouteHandler($this);
+            $this->definitions[RequestHandlerInterface::class] = $this->services[RequestHandlerInterface::class] = new Handler\RouteHandler($this);
         }
 
         try {
