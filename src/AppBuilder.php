@@ -73,7 +73,7 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
      */
     public function generateUri(string $routeName, array $parameters = []): DI\Definitions\Statement
     {
-        return new Di\Definitions\Statement([new DI\Definitions\Reference('http.router'), 'generateUri'], \func_get_args());
+        return new DI\Definitions\Statement([new DI\Definitions\Reference('http.router'), 'generateUri'], \func_get_args());
     }
 
     /**

@@ -91,11 +91,6 @@ class ContainerPanel implements Tracy\IBarPanel
     }
 
     /**
-     * @param class-string $className
-     * @param object|null  $instance
-     *
-     * @throws \ReflectionException
-     *
      * @return mixed
      */
     private function getContainerProperty(string $property, \ReflectionClass $appRef)

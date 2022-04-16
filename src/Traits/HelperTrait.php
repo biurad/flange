@@ -106,7 +106,7 @@ trait HelperTrait
      * ]
      *
      * @param array<int,mixed>    $extensions
-     * @param array<string,mixed> $config     the default configuration for all extensions
+     * @param array<string,mixed> $configs     the default configuration for all extensions
      * @param string|null         $outputDir  Enable Generating ConfigBuilders to help create valid config
      */
     public function loadExtensions(array $extensions, array $configs = [], string $outputDir = null): void
@@ -197,8 +197,6 @@ trait HelperTrait
      * and the remaining part is the relative path to a file or directory.
      *
      * We recommend using composer v2, as this method depends on it or use $baseDir parameter.
-     *
-     * @param string $name
      *
      * @throws \InvalidArgumentException    if the file cannot be found or the name is not valid
      * @throws \RuntimeException            if the name contains invalid/unsafe characters

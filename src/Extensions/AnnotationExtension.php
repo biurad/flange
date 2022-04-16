@@ -96,7 +96,7 @@ class AnnotationExtension implements AliasedInterface, BootExtensionInterface, C
             throw new \LogicException('Annotations/Attributes support cannot be enabled as the Annotation component is not installed. Try running "composer require biurad/annotations".');
         }
 
-        $loader = $container->autowire('annotation.loader', new Definition(AnnotationLoader::class, [new Reference('annotation.reader')]));
+        $loader = $container->autowire('annotation.loader', new Definition(AnnotationLoader::class, [new Reference('?annotation.reader')]));
 
         if (isset($configs['class_loader'])) {
             $loader->arg(1, $configs['class_loader']);
@@ -148,7 +148,7 @@ class AnnotationExtension implements AliasedInterface, BootExtensionInterface, C
                     $attribute = Psr6CachedReader::class;
                 }
             }
-            $container->autowire('annotation.reader', new Definition($attribute, $attributeArgs ?? []));
+            $container->autowire('annotation.reader', new Definition($attribute, $attributeArgs));
         }
     }
 
