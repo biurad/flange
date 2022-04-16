@@ -18,12 +18,9 @@ declare(strict_types=1);
 namespace Rade\DI\Extensions;
 
 use Biurad\Annotations\AnnotationLoader;
-use Biurad\Annotations\ListenerInterface;
 use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Annotations\AnnotationRegistry;
 use Doctrine\Common\Annotations\PsrCachedReader;
-use Flight\Routing\Annotation\Route;
-use Flight\Routing\RouteCollection;
 use Rade\DI\AbstractContainer;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
@@ -99,7 +96,7 @@ class AnnotationExtension implements AliasedInterface, BootExtensionInterface, C
             throw new \LogicException('Annotations/Attributes support cannot be enabled as the Annotation component is not installed. Try running "composer require biurad/annotations".');
         }
 
-        $loader = $container->autowire('annotation.loader', new Definition(AnnotationLoader::class));
+        $loader = $container->autowire('annotation.loader', new Definition(AnnotationLoader::class, [new Reference('annotation.reader')]));
 
         if (isset($configs['class_loader'])) {
             $loader->arg(1, $configs['class_loader']);
@@ -151,7 +148,6 @@ class AnnotationExtension implements AliasedInterface, BootExtensionInterface, C
                     $attribute = Psr6CachedReader::class;
                 }
             }
-
             $container->autowire('annotation.reader', new Definition($attribute, $attributeArgs ?? []));
         }
     }
@@ -161,18 +157,19 @@ class AnnotationExtension implements AliasedInterface, BootExtensionInterface, C
      */
     public function boot(AbstractContainer $container): void
     {
-        $loader = $container->definition('annotation.loader');
-        $listeners = $container->findBy(ListenerInterface::class, fn (string $listenerId) => new Reference($listenerId));
-
-        if ($loader instanceof AnnotationLoader) {
-            $loader->listener(...$container->getResolver()->resolveArguments($listeners));
-        } else {
-            $loader->bind('listener', [$listeners]);
+        if (empty($listeners = $container->tagged('annotation.listener'))) {
+            return;
         }
+        $loader = $container->definition('annotation.loader');
 
-        if ($container->hasExtension(RoutingExtension::class)) {
-            $container->set('router.annotation.collection', new Definition([new Reference('annotation.loader'), 'load'], [Route::class, false]))
-                ->autowire([RouteCollection::class]);
+        foreach ($listeners as $listener => $value) {
+            $value = \is_string($value) ? $value : null;
+
+            if ($loader instanceof AnnotationLoader) {
+                $loader->listener($container->get($listener), $value);
+            } else {
+                $loader->bind('listener', [$container->has($listener) ? new Reference($listener) : new Statement($listener), $value]);
+            }
         }
     }
 }
