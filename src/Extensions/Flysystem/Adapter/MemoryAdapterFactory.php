@@ -19,6 +19,7 @@ namespace Rade\DI\Extensions\Flysystem\Adapter;
 
 use League\Flysystem\InMemory\InMemoryFilesystemAdapter;
 use Rade\DI\Definition;
+use Rade\DI\Extensions\RequiredPackagesInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
@@ -26,7 +27,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  *
  * @internal
  */
-class MemoryAdapterFactory extends AbstractFactory
+class MemoryAdapterFactory extends AbstractFactory implements RequiredPackagesInterface
 {
     protected const CLASS_NAME = InMemoryFilesystemAdapter::class;
 
@@ -35,7 +36,10 @@ class MemoryAdapterFactory extends AbstractFactory
         return 'memory';
     }
 
-    protected function getRequiredPackages(): array
+    /**
+     * {@inheritdoc}
+     */
+    public function getRequiredPackages(): array
     {
         return [
             InMemoryFilesystemAdapter::class => 'league/flysystem-memory',

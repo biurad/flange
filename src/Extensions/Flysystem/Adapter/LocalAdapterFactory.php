@@ -37,11 +37,6 @@ class LocalAdapterFactory extends AbstractFactory
         return 'local';
     }
 
-    protected function getRequiredPackages(): array
-    {
-        return [];
-    }
-
     protected function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setRequired('directory');

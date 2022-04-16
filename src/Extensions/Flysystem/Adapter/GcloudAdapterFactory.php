@@ -21,6 +21,7 @@ use League\Flysystem\GoogleCloudStorage\GoogleCloudStorageAdapter;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
+use Rade\DI\Extensions\RequiredPackagesInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
@@ -28,7 +29,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  *
  * @internal
  */
-class GcloudAdapterFactory extends AbstractFactory
+class GcloudAdapterFactory extends AbstractFactory implements RequiredPackagesInterface
 {
     protected const CLASS_NAME = GoogleCloudStorageAdapter::class;
 
@@ -37,7 +38,10 @@ class GcloudAdapterFactory extends AbstractFactory
         return 'gcloud';
     }
 
-    protected function getRequiredPackages(): array
+    /**
+     * {@inheritdoc}
+     */
+    public function getRequiredPackages(): array
     {
         return [
             GoogleCloudStorageAdapter::class => 'league/flysystem-google-cloud-storage',

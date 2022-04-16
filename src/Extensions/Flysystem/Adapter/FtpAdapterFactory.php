@@ -21,6 +21,7 @@ use League\Flysystem\Ftp\FtpAdapter;
 use League\Flysystem\Ftp\FtpConnectionOptions;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Statement;
+use Rade\DI\Extensions\RequiredPackagesInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
@@ -28,7 +29,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  *
  * @internal
  */
-class FtpAdapterFactory extends AbstractFactory
+class FtpAdapterFactory extends AbstractFactory implements RequiredPackagesInterface
 {
     protected const CLASS_NAME = FtpAdapter::class;
 
@@ -37,7 +38,10 @@ class FtpAdapterFactory extends AbstractFactory
         return 'ftp';
     }
 
-    protected function getRequiredPackages(): array
+    /**
+     * {@inheritdoc}
+     */
+    public function getRequiredPackages(): array
     {
         return [
             FtpAdapter::class => 'league/flysystem-ftp',

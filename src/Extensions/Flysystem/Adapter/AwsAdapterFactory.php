@@ -21,6 +21,7 @@ use League\Flysystem\AwsS3V3\AwsS3V3Adapter;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
+use Rade\DI\Extensions\RequiredPackagesInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
@@ -28,7 +29,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  *
  * @internal
  */
-class AwsAdapterFactory extends AbstractFactory
+class AwsAdapterFactory extends AbstractFactory implements RequiredPackagesInterface
 {
     protected const CLASS_NAME = AwsS3V3Adapter::class;
 
@@ -37,7 +38,10 @@ class AwsAdapterFactory extends AbstractFactory
         return 'aws';
     }
 
-    protected function getRequiredPackages(): array
+    /**
+     * {@inheritdoc}
+     */
+    public function getRequiredPackages(): array
     {
         return [
             AwsS3V3Adapter::class => 'league/flysystem-aws-s3-v3',

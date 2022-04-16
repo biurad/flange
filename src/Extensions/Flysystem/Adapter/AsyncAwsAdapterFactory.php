@@ -21,6 +21,7 @@ use League\Flysystem\AsyncAwsS3\AsyncAwsS3Adapter;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
+use Rade\DI\Extensions\RequiredPackagesInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
@@ -29,7 +30,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  *
  * @internal
  */
-class AsyncAwsAdapterFactory extends AbstractFactory
+class AsyncAwsAdapterFactory extends AbstractFactory implements RequiredPackagesInterface
 {
     protected const CLASS_NAME = AsyncAwsS3Adapter::class;
 
@@ -38,7 +39,10 @@ class AsyncAwsAdapterFactory extends AbstractFactory
         return 'asyncaws';
     }
 
-    protected function getRequiredPackages(): array
+    /**
+     * {@inheritdoc}
+     */
+    public function getRequiredPackages(): array
     {
         return [
             AsyncAwsS3Adapter::class => 'league/flysystem-async-aws-s3',

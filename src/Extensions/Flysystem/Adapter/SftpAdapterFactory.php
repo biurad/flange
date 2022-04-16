@@ -15,6 +15,7 @@ use League\Flysystem\PhpseclibV2\SftpAdapter;
 use League\Flysystem\PhpseclibV2\SftpConnectionProvider;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Statement;
+use Rade\DI\Extensions\RequiredPackagesInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
@@ -22,7 +23,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  *
  * @internal
  */
-class SftpAdapterFactory extends AbstractFactory
+class SftpAdapterFactory extends AbstractFactory implements RequiredPackagesInterface
 {
     protected const CLASS_NAME = SftpAdapter::class;
 
@@ -31,7 +32,10 @@ class SftpAdapterFactory extends AbstractFactory
         return 'sftp';
     }
 
-    protected function getRequiredPackages(): array
+    /**
+     * {@inheritdoc}
+     */
+    public function getRequiredPackages(): array
     {
         return [
             SftpAdapter::class => 'league/flysystem-sftp',

@@ -20,6 +20,7 @@ namespace Rade\DI\Extensions\Flysystem\Adapter;
 use Rade\DI\Definition;
 use Rade\DI\Exceptions\MissingPackageException;
 use Rade\DI\Extensions\Flysystem\AdapterFactoryInterface;
+use Rade\DI\Extensions\RequiredPackagesInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
@@ -31,16 +32,18 @@ abstract class AbstractFactory implements AdapterFactoryInterface
 
     final public function createDefinition(array $options): Definition
     {
-        $missingPackages = [];
+        if ($this instanceof RequiredPackagesInterface) {
+            $missingPackages = [];
 
-        foreach ($this->getRequiredPackages() as $requiredClass => $packageName) {
-            if (!\class_exists($requiredClass)) {
-                $missingPackages[] = $packageName;
+            foreach ($this->getRequiredPackages() as $requiredClass => $packageName) {
+                if (!\class_exists($requiredClass)) {
+                    $missingPackages[] = $packageName;
+                }
             }
-        }
 
-        if ($missingPackages) {
-            throw new MissingPackageException(\sprintf('Missing package%s, to use the "%s" adapter, run: composer require %s', \count($missingPackages) > 1 ? 's' : '', $this->getName(), \implode(' ', $missingPackages)));
+            if ($missingPackages) {
+                throw new MissingPackageException(\sprintf('Missing package%s, to use the "%s" adapter, run: composer require %s', \count($missingPackages) > 1 ? 's' : '', $this->getName(), \implode(' ', $missingPackages)));
+            }
         }
 
 
@@ -52,8 +55,6 @@ abstract class AbstractFactory implements AdapterFactoryInterface
 
         return $definition;
     }
-
-    abstract protected function getRequiredPackages(): array;
 
     abstract protected function configureOptions(OptionsResolver $resolver);
 
