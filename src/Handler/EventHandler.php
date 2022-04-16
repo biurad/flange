@@ -37,11 +37,10 @@ class EventHandler implements EventDispatcherInterface, ListenerProviderInterfac
 
         /** @var callable(object) $listener */
         foreach ($this->getListenersForEvent($event) as $listener) {
-            $listener($event);
-
             if ($stoppable && $event->isPropagationStopped()) {
                 break;
             }
+            $listener($event);
         }
 
         return $event;
