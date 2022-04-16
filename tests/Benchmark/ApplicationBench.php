@@ -28,17 +28,10 @@ use Symfony\Component\Process\Process;
  */
 class ApplicationBench
 {
-    protected const CACHE_DIR = __DIR__ . '/var';
-
     protected static ?Process $simple = null, $noCache = null, $withCache = null;
 
     public static function tearDown(): void
     {
-        if (\file_exists(self::CACHE_DIR)) {
-            $fs = new Filesystem();
-            $fs->remove(self::CACHE_DIR);
-        }
-
         if (self::$simple) {
             self::$simple->stop();
         }
