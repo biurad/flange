@@ -22,22 +22,19 @@ use Biurad\Http\Middlewares\PrepareResponseMiddleware;
 use Flight\Routing\Annotation\Listener;
 use Flight\Routing\Interfaces\RouteMatcherInterface;
 use Flight\Routing\Middlewares\PathMiddleware;
-use Flight\Routing\RouteCollection;
 use Flight\Routing\Router;
 use Flight\Routing\Route;
 use Laminas\Stratigility\Middleware\OriginalMessages;
-use Nette\Utils\Arrays;
-use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Rade\DI\AbstractContainer;
 use Rade\DI\Builder\PhpLiteral;
 use Rade\DI\Container;
-use Rade\DI\ContainerBuilder;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Exceptions\ServiceCreationException;
 use Rade\Handler\RouteHandler;
+use Rade\RouterInterface;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 
@@ -48,23 +45,8 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
  */
 class RoutingExtension implements AliasedInterface, BootExtensionInterface, ConfigurationInterface, DependenciesInterface, ExtensionInterface
 {
-    protected const ROUTE_DATA_TO_METHOD = [
-        'name' => 'bind',
-        'prefix' => 'prefix',
-        'hosts' => 'domain',
-        'schemes' => 'scheme',
-        'methods' => 'method',
-        'defaults' => 'defaults',
-        'arguments' => 'arguments',
-        'middlewares' => 'piped',
-        'patterns' => 'asserts',
-        'namespace' => 'namespace',
-    ];
-
     /** @var array<int,object> */
     private array $middlewares = [];
-
-    private ?string $routeNamespace;
 
     /**
      * {@inheritdoc}
@@ -98,7 +80,6 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
                 ->booleanNode('keep_request_method')->defaultFalse()->end()
                 ->booleanNode('response_error')->defaultValue(null)->end()
                 ->booleanNode('resolve_route_paths')->defaultTrue()->end()
-                ->scalarNode('namespace')->defaultValue(null)->end()
                 ->scalarNode('routes_handler')->end()
                 ->scalarNode('cache')->end()
                 ->arrayNode('pipes')
@@ -143,7 +124,6 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
                         ->children()
                             ->scalarNode('name')->defaultValue(null)->end()
                             ->scalarNode('path')->isRequired()->end()
-                            ->scalarNode('prefix')->defaultValue(null)->end()
                             ->scalarNode('to')->defaultValue(null)->end()
                             ->scalarNode('namespace')->defaultValue(null)->end()
                             ->booleanNode('debug')->defaultValue(null)->end()
@@ -169,14 +149,14 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
                                 ->end()
                                 ->prototype('scalar')->defaultValue([])->end()
                             ->end()
-                            ->arrayNode('middlewares')
+                            ->arrayNode('piped')
                                 ->beforeNormalization()
                                     ->ifString()
                                     ->then(fn (string $v): array => [$v])
                                 ->end()
                                 ->prototype('scalar')->defaultValue([])->end()
                             ->end()
-                            ->arrayNode('patterns')
+                            ->arrayNode('asserts')
                                 ->normalizeKeys(false)
                                 ->defaultValue([])
                                 ->beforeNormalization()
@@ -218,7 +198,6 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
     public function register(AbstractContainer $container, array $configs = []): void
     {
         $routeHandler = $configs['routes_handler'] ?? RouteHandler::class;
-        $this->routeNamespace = $configs['namespace'] ?? null;
         $pipesMiddleware = [];
 
         if ($container->has($routeHandler)) {
@@ -228,7 +207,11 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
         }
 
         if ($container->hasExtension(AnnotationExtension::class)) {
-            $container->autowire('router.annotation_listener', new Definition(Listener::class, [new Statement(RouteCollection::class)]));
+            $container->tag(Listener::class, 'annotation.listener', Listener::class);
+            $container->set('router.annotation.collection', new Definition([new Reference('annotation.loader'), 'load'], [Listener::class]))
+                ->public(false)
+                ->tag('router.collection')
+            ;
         }
 
         if (!$container->has('http.router')) {
@@ -258,7 +241,6 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
         foreach ($configs['pipes'] ?? [] as $m => $middleware) {
             if (\is_array($middleware)) {
                 $pipesMiddleware[$m] = \array_map(static fn (string $m): object => $container->has($m) ? new Reference($m) : new Statement($m), $middleware);
-
                 continue;
             }
 
@@ -296,7 +278,22 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
             }
         }
 
-        $container->parameters['routes'] = \array_merge($configs['routes'] ?? [], $container->parameters['routes'] ?? []);
+        foreach ($configs['routes'] as $routeData) {
+            if (isset($routeData['debug']) && $container->parameters['debug'] !== $routeData['debug']) {
+                continue;
+            }
+
+            if ($container instanceof RouterInterface) {
+                $route = $container->match($routeData['path'], $routeData['methods'], $routeData['to']);
+                unset($routeData['path'], $routeData['methods'], $routeData['to'], $routeData['debug']);
+
+                foreach ($routeData as $key => $value) {
+                    if (!empty($value)) {
+                        \call_user_func_array([$route, 'name' === $key ? 'bind' : $key], [$value]);
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -304,43 +301,39 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
      */
     public function boot(AbstractContainer $container): void
     {
-        [$collection, $groups] = $this->bootRoutes($container, $this->routeNamespace);
-
-        $routes = $container->findBy(RouteCollection::class, static function (string $routesId) use ($container, $groups) {
-            if (!empty($collection = $groups[$routesId] ?? [])) {
-                $grouped = $container->definition($routesId);
-
-                if ($grouped instanceof RouteCollection) {
-                    if (!$container instanceof Container) {
-                        throw new ServiceCreationException(\sprintf('Constructing a "%s" instance requires non-builder container.', RouteCollection::class));
-                    }
-
-                    return $grouped->prototype($collection)->end();
-                }
-
-                $grouped->bind('prototype', [$collection]);
-            }
-
-            return new Reference($routesId);
-        });
-        $middlewares = $container->findBy(MiddlewareInterface::class, function (string $middlewareId) use ($container) {
-            $middleware = $container->definition($middlewareId);
-
-            if ($middleware instanceof MiddlewareInterface) {
-                if (!$container instanceof Container) {
-                    throw new ServiceCreationException(\sprintf('Constructing a "%s" instance requires non-builder container.', MiddlewareInterface::class));
-                }
-
-                return $middleware;
-            }
-
-            return new Reference($middlewareId);
-        });
-
         $router = $container->definition('http.router');
-        $defaultMiddlewares = [];
+        $collection = $container->parameters['routes'] ?? null;
+        $routes = $groups = $defaultMiddlewares = $middlewares = $pipesMiddleware = [];
         $mIndex = -1;
         $mSorted = false;
+
+        if (null !== $collection) {
+            foreach ($collection->getRoutes() as $route) {
+                $routeData = $route->getData();
+                $routeData['methods'] = \array_keys($routeData['methods']);
+                unset($routeData['prefix']);
+                $routes[] = new PhpLiteral(Route::class . '::__set_state(\'??\');', [$routeData]);
+            }
+        }
+
+        foreach ($container->tagged('router.collection') as $routesId => $values) {
+            if ($router instanceof Router) {
+                $c = $router->getCollection();
+                \is_bool($values) ? $c->populate($container->get($routesId), $values) : $c->group(null, $container->get($routesId))->prototype($values);
+                continue;
+            }
+
+            $v = [new Reference($routesId), $values];
+            $groups[] = [\is_bool($values) ? "\$collection->populate('??', '??');" : "\$collection->group(null, '??')->prototype('??');", $v];
+        }
+
+        foreach ($container->tagged('router.middleware') as $pipeId => $pipeValue) {
+            if (\is_string($pipeValue)) {
+                $pipesMiddleware[$pipeId][] = new Reference($pipeId);
+                continue;
+            }
+            $middlewares[] = new Reference($pipeId);
+        }
 
         foreach ($this->middlewares as $mK => $middleware) {
             if (!$mSorted && \in_array($mK, ['a', 'b'], true)) {
@@ -354,123 +347,34 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
         }
 
         if ($router instanceof Router) {
-            if (!$container instanceof Container) {
-                throw new ServiceCreationException(\sprintf('Constructing a "%s" instance requires non-builder container.', Router::class));
-            }
-
             $router->pipe(...$container->getResolver()->resolveArguments($defaultMiddlewares));
 
-            if (!empty($collection)) {
-                $router->getCollection()->routes($collection[0]);
+            foreach ($pipesMiddleware as $key => $values) {
+                $router->pipes($key, ...$values);
             }
-
-            foreach ($routes as $group) {
-                $router->getCollection()->populate($group instanceof Reference ? $container->get((string) $group) : $group, true);
-                $container->removeDefinition((string) $group);
-            }
-
-            $container->removeType(RouteCollection::class);
         } else {
-            if ($container instanceof Container) {
-                throw new ServiceCreationException(\sprintf('Constructing a "%s" instance requires a builder container.', Router::class));
-            }
-
             $router->bind('pipe', [$defaultMiddlewares]);
             $groupedCollection = 'function (\Flight\Routing\RouteCollection $collection) {';
+            $groupArgs = [];
 
-            if (!empty($collection)) {
+            foreach ($pipesMiddleware as $key => $values) {
+                $router->bind('pipes', [$key, $values]);
+            }
+
+            if (!empty($routes)) {
                 $groupedCollection .= '$collection->routes(\'??\');';
+                $groupArgs[] = $routes;
             }
 
-            foreach ($routes as $group) {
-                $groupedCollection .= '$collection->populate(\'??\', true);';
-                $collection[] = $group;
+            foreach ($groups as [$group, $groupArg]) {
+                $groupedCollection .= $group;
+                $groupArgs = \array_merge($groupArgs, $groupArg);
             }
 
-            $router->bind('setCollection', new PhpLiteral($groupedCollection . '};', $collection));
+            $router->bind('setCollection', new PhpLiteral($groupedCollection . '};', $groupArgs));
         }
 
-        unset($container->parameters['routes'], $this->middlewares);
-    }
-
-    public function bootRoutes(AbstractContainer $container, ?string $routeNamespace): array
-    {
-        $collection = $groups = [];
-
-        foreach ($container->parameters['routes'] ?? [] as $routeData) {
-            if (isset($routeData['debug']) && $container->parameters['debug'] !== $routeData['debug']) {
-                continue;
-            }
-
-            if ('@' === $routeData['path'][0]) {
-                $routesId = \substr($routeData['path'], 1);
-
-                if (null !== $routeData['to'] ?? $routeData['run'] ?? null) {
-                    throw new ServiceCreationException(\sprintf('Route declared for collection with id "%s", must not include a handler.', $routesId));
-                }
-
-                if (null !== $routeData['name'] ?? null) {
-                    throw new ServiceCreationException(\sprintf('Route declared for collection with id "%s", must not include a name.', $routesId));
-                }
-
-                unset($routeData['to'], $routeData['run'], $routeData['path'], $routeData['name']);
-
-                foreach ($routeData as $key => $value) {
-                    if (!empty($value)) {
-                        if ($container instanceof Container) {
-                            $value = \is_array($value) && !\array_is_list($value) ? [$value] : $value;
-                        }
-
-                        $groups[$routesId][self::ROUTE_DATA_TO_METHOD[$key] ?? $key] = $value;
-                    }
-                }
-
-                continue;
-            }
-
-            /** @var array<int,mixed> $routeArgs */
-            $routeArgs = [
-                Arrays::pick($routeData, 'path'),
-                Arrays::pick($routeData, isset($routeData['methods']) ? 'methods' : 'method', []),
-                Arrays::pick($routeData, isset($routeData['to']) ? 'to' : 'run', null),
-            ];
-
-            $routeNamespace = (string) $routeNamespace . ($routeData['namespace'] ?? '');
-            unset($routeData['namespace']);
-
-            if ($container instanceof ContainerBuilder) {
-                $createRoute = Route::class . '::to(\'??\',\'??\', \'??\')';
-
-                if (!empty($routeNamespace)) {
-                    $createRoute .= '->namespace(\'??\')';
-                    $routeArgs[] = $routeNamespace;
-                }
-
-                foreach ($routeData as $key => $value) {
-                    if (!empty($value)) {
-                        $createRoute .= '->' . (self::ROUTE_DATA_TO_METHOD[$key] ?? $key) . \sprintf("(%s'??')", \is_array($value) && \array_is_list($value) ? '...' : '');
-                        $routeArgs[] = $value;
-                    }
-                }
-
-                $createRoute = new PhpLiteral($createRoute . ';', $routeArgs);
-            } else {
-                $createRoute = Route::to($routeArgs[0], $routeArgs[1], $routeArgs[2]);
-
-                if (!empty($routeNamespace)) {
-                    $createRoute->namespace($routeNamespace);
-                }
-
-                foreach ($routeData as $key => $value) {
-                    if (!empty($value)) {
-                        $container->getResolver()->resolveCallable([$createRoute, self::ROUTE_DATA_TO_METHOD[$key] ?? $key], [$value]);
-                    }
-                }
-            }
-
-            $collection[0][] = $createRoute;
-        }
-
-        return [$collection, $groups];
+        $this->middlewares = [];
+        unset($container->parameters['routes']);
     }
 }

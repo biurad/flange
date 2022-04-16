@@ -34,35 +34,12 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
 {
     use Traits\HelperTrait;
 
-    private int $routeIndex = -1;
-    private string $routesId = 'router.collection_a';
-
     public function __construct(bool $debug = true)
     {
         parent::__construct(Application::class);
 
         $this->parameters['debug'] = $debug;
         $this->set('http.router', new DI\Definition(Router::class))->autowire([Router::class, RouteMatcherInterface::class]);
-    }
-
-    /**
-     * @param array<int,mixed> $arguments
-     *
-     * @return $this
-     */
-    public function __call(string $name, array $arguments)
-    {
-        if (!(isset($this->parameters['routes'][$this->routeIndex]) || \method_exists(Route::class, $name))) {
-            throw new \BadMethodCallException(\sprintf('Call to undefined method %s::%s()', __CLASS__, $name));
-        }
-
-        if (1 === \count($arguments)) {
-            $arguments = $arguments[0];
-        }
-
-        $this->parameters['routes'][$this->routeIndex][$name] = $arguments;
-
-        return $this;
     }
 
     /**
@@ -77,7 +54,7 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
                 continue;
             }
 
-            $this->autowire('http.middleware.' . \spl_object_id($middleware), $middleware)->public(false);
+            $this->set('http.middleware.' . \spl_object_id($middleware), $middleware)->public(false)->tag('router.middleware');
         }
     }
 
@@ -104,9 +81,9 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
      */
     public function match(string $pattern, array $methods = Route::DEFAULT_METHODS, $to = null)
     {
-        $this->parameters['routes'][++$this->routeIndex] = ['path' => $pattern, 'method' => $methods, 'run' => $to];
+        $routes = $this->parameters['routes'] ??= new RouteCollection();
 
-        return $this;
+        return $routes->addRoute($pattern, $methods, $to)->getRoute();
     }
 
     /**
@@ -154,12 +131,9 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
      */
     public function group(string $prefix)
     {
-        $this->set($this->routesId, new DI\Definition(RouteCollection::class, [$prefix]));
-        $this->parameters['routes'][++$this->routeIndex] = ['bind' => '@' . $this->routesId];
+        $routes = $this->parameters['routes'] ??= new RouteCollection();
 
-        ++$this->routesId;
-
-        return $this;
+        return $routes->group($prefix);
     }
 
     /**
