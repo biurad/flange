@@ -17,12 +17,10 @@ declare(strict_types=1);
 
 namespace Rade\DI\Extensions\Symfony;
 
-use Psr\EventDispatcher\EventDispatcherInterface as PsrEventDispatcherInterface;
 use Rade\DI\AbstractContainer;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\DefinitionInterface;
 use Rade\DI\Definitions\Reference;
-use Rade\DI\Definitions\Statement;
 use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Extensions\ExtensionInterface;
@@ -51,19 +49,19 @@ class EventDispatcherExtension implements AliasedInterface, BootExtensionInterfa
      */
     public function register(AbstractContainer $container, array $configs): void
     {
-        $globalDispatcher = $container->definition('events.dispatcher');
+        $globalDispatcher = $container->definition($id = 'events.dispatcher');
 
-        if ($globalDispatcher instanceof PsrEventDispatcherInterface) {
-            if (!$globalDispatcher instanceof EventDispatcherInterface && $container->initialized('events.dispatcher')) {
-                throw new \RuntimeException(\sprintf('The service "%s" must implement "%s".', 'events.dispatcher', EventDispatcherInterface::class));
-            }
-
-            $container->removeDefinition('events.dispatcher');
-            $container->set('events.dispatcher', new Definition(EventDispatcher::class))->autowire();
-        } elseif ($globalDispatcher instanceof DefinitionInterface) {
-            $container->removeType($entity = $globalDispatcher->getEntity());
-            $globalDispatcher->replace(EventDispatcher::class, !\is_subclass_of($entity, EventDispatcherInterface::class))->autowire();
+        if (
+            $globalDispatcher instanceof EventDispatcherInterface ||
+            ($globalDispatcher instanceof DefinitionInterface && \is_subclass_of($globalDispatcher->getEntity(), EventDispatcherInterface::class))
+        ) {
+            return;
         }
+
+        $container->removeDefinition($id);
+        $container->set($inner = $id . '.inner', $globalDispatcher);
+        $container->tag($inner, 'container.decorated_services');
+        $container->set('events.dispatcher', new Definition(EventDispatcher::class))->autowire();
     }
 
     /**
@@ -72,6 +70,7 @@ class EventDispatcherExtension implements AliasedInterface, BootExtensionInterfa
     public function boot(AbstractContainer $container): void
     {
         $globalDispatcherDefinition = $container->definition('events.dispatcher');
+        $eventSubscribers = \array_merge($container->tagged('event_subscriber'), $container->findBy(EventSubscriberInterface::class));
 
         foreach ($container->tagged('event_listener') as $id => $events) {
             foreach ($events as $event) {
@@ -102,21 +101,12 @@ class EventDispatcherExtension implements AliasedInterface, BootExtensionInterfa
                     }
                 }
 
-                $dispatcherDefinition = $globalDispatcherDefinition;
-
-                if (isset($event['dispatcher'])) {
-                    $dispatcherDefinition = $container->definition($event['dispatcher']);
-                }
-
-                if ($dispatcherDefinition instanceof DefinitionInterface) {
-                    $dispatcherDefinition->bind('addListener', [$event['event'], [new Statement(new Reference($id), [], true), $event['method']], $priority]);
-                } else {
-                    $dispatcherDefinition->addListener($event['event'], [$container->get($id), $event['method']], $priority);
-                }
+                $this->addEventListener($container, isset($event['dispatcher']) ? $container->definition($event['dispatcher']) : $globalDispatcherDefinition, [$id, $priority, $event]);
             }
         }
 
-        foreach ($container->tagged('event_subscriber') as $id => $tags) {
+        foreach ($eventSubscribers as $id => $dispatcher) {
+            [$id, $dispatcher] = \is_int($id) ? [$dispatcher, null] : [$id, $dispatcher];
             $def = $container->definition($id);
 
             // We must assume that the class value has been correctly filled, even if the service is created by a factory
@@ -132,14 +122,8 @@ class EventDispatcherExtension implements AliasedInterface, BootExtensionInterfa
             $class = $r->name;
             $dispatcherDefinitions = [];
 
-            if (\is_array($tags)) {
-                foreach ($tags as $attributes) {
-                    if (!isset($attributes['dispatcher']) || isset($dispatcherDefinitions[$attributes['dispatcher']])) {
-                        continue;
-                    }
-
-                    $dispatcherDefinitions[$attributes['dispatcher']] = $container->definition($attributes['dispatcher']);
-                }
+            if (\is_string($dispatcher)) {
+                $dispatcherDefinitions[$dispatcher] = $container->definition($dispatcher);
             }
 
             if (!$dispatcherDefinitions) {
@@ -147,10 +131,16 @@ class EventDispatcherExtension implements AliasedInterface, BootExtensionInterfa
             }
 
             foreach ($dispatcherDefinitions as $dispatcherDefinition) {
-                if ($dispatcherDefinition instanceof EventDispatcherInterface) {
-                    $dispatcherDefinition->addSubscriber($container->get($id));
-                } else {
-                    $dispatcherDefinition->bind('addSubscriber', [new Reference($id)]);
+                foreach ($class::getSubscribedEvents() as $event => $params) {
+                    if (\is_string($params)) {
+                        $this->addEventListener($container, $dispatcherDefinition, [$id, 0, ['method' => $params, 'event' => $event]]);
+                    } elseif (\is_string($params[0])) {
+                        $this->addEventListener($container, $dispatcherDefinition, [$id, $params[1] ?? 0, ['method' => $params[0], 'event' => $event]]);
+                    } else {
+                        foreach ($params as $listener) {
+                            $this->addEventListener($container, $dispatcherDefinition, [$id, $listener[1] ?? 0, ['method' => $listener[0], 'event' => $event]]);
+                        }
+                    }
                 }
             }
         }
@@ -171,5 +161,19 @@ class EventDispatcherExtension implements AliasedInterface, BootExtensionInterfa
         }
 
         return $name;
+    }
+
+    /**
+     * @param Definition|EventDispatcherInterface $dispatcherDefinition
+     */
+    private function addEventListener(AbstractContainer $container, object $dispatcherDefinition, array $data): void
+    {
+        [$id, $priority, $event] = $data;
+
+        if ($dispatcherDefinition instanceof DefinitionInterface) {
+            $dispatcherDefinition->bind('addListener', [$event['event'], [new Reference($id), $event['method']], $priority]);
+        } else {
+            $dispatcherDefinition->addListener($event['event'], [$container->get($id), $event['method']], $priority);
+        }
     }
 }
