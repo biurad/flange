@@ -17,7 +17,8 @@ declare(strict_types=1);
 
 namespace Rade\GraphQL;
 
-use Biurad\Http\Response\JsonResponse;
+use GraphQL\Executor\ExecutionResult;
+use GraphQL\Executor\Promise\Promise;
 use GraphQL\Language\AST\DocumentNode;
 use GraphQL\Server\Helper;
 use GraphQL\Server\ServerConfig;
@@ -50,8 +51,10 @@ class GraphQL
 
     /**
      * @param mixed|callable $context
+     *
+     * @return ExecutionResult|ExecutionResult[]|Promise
      */
-    public function run(RequestInterface $request, $context): JsonResponse
+    public function run(RequestInterface $request, $context)
     {
         $config = new ServerConfig();
         $config->setSchema($this->schema);
@@ -64,6 +67,6 @@ class GraphQL
             $result = $helper->executeBatch($config, $parsedBody);
         }
 
-        return new JsonResponse($result ?? $helper->executeOperation($config, $parsedBody));
+        return $result ?? $helper->executeOperation($config, $parsedBody);
     }
 }
