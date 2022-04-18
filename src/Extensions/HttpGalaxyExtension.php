@@ -159,7 +159,7 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
                                 ->children()
                                     ->scalarNode('name')->isRequired()->end()
                                     ->scalarNode('value')->defaultNull()->end()
-                                    ->variableNode('expires')
+                                    ->variableNode('expire')
                                         ->beforeNormalization()
                                             ->always()
                                             ->then(fn ($v) => wrap('Nette\Utils\DateTime::from', [$v]))
@@ -171,7 +171,7 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
                                     ->booleanNode('secure')->defaultNull()->end()
                                     ->booleanNode('httpOnly')->defaultTrue()->end()
                                     ->booleanNode('raw')->defaultFalse()->end()
-                                    ->enumNode('cookie_samesite')
+                                    ->enumNode('sameSite')
                                         ->values([null, Cookie::SAMESITE_LAX, Cookie::SAMESITE_NONE, Cookie::SAMESITE_STRICT])
                                         ->defaultValue(Cookie::SAMESITE_LAX)
                                     ->end()
@@ -200,7 +200,7 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
                         ->scalarNode('cookie_lifetime')->defaultValue(\ini_get('session.gc_maxlifetime'))->end()
                         ->scalarNode('cookie_path')->end()
                         ->scalarNode('cookie_domain')->end()
-                        ->enumNode('cookie_secure')->values([true, false, 'auto'])->end()
+                        ->enumNode('cookie_secure')->values([true, false])->end()
                         ->booleanNode('cookie_httponly')->defaultTrue()->end()
                         ->enumNode('cookie_samesite')
                             ->values([null, Cookie::SAMESITE_LAX, Cookie::SAMESITE_NONE, Cookie::SAMESITE_STRICT])
@@ -285,7 +285,7 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
             }
 
             $container->autowire('session.storage.native', service(NativeSessionStorage::class, [
-                \array_diff_key($session, ['storage_id' => null, 'handler_id' => null, 'meta_storage_key' => null, 'metadata_update_threshold' => null]),
+                $sessionArgs = \array_diff_key($session, ['storage_id' => null, 'handler_id' => null, 'meta_storage_key' => null, 'metadata_update_threshold' => null]),
                 reference('session.handler'),
             ]))
                 ->arg(2, wrap(MetadataBag::class, [$session['meta_storage_key'], $session['metadata_update_threshold']]));
@@ -300,7 +300,7 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
                 $container->set('session.handler', service([wrap(SessionHandlerFactory::class), 'createHandler']))->args([$session['handler_id']])->autowire([AbstractSessionHandler::class]);
             }
 
-            $container->set('http.middleware.session', service(SessionMiddleware::class, [wrap(reference('http.session'), [], true)]));
+            $container->set('http.middleware.session', service(SessionMiddleware::class, [wrap(reference('http.session'), $sessionArgs, true)]));
             $container->autowire('http.session', service(Session::class, [reference($session['storage_id'])]));
         }
     }
