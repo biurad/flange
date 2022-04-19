@@ -34,7 +34,7 @@ trait FilesMappingTrait
     private function registerMappingFilesFromConfig(AbstractContainer $container, array $mappedPaths, callable $fileRecorder): void
     {
         foreach ($mappedPaths as $path) {
-            if (\is_dir($path)) {
+            if (\is_dir($path = $container->parameter($path))) {
                 $this->registerMappingFilesFromDir($path, $fileRecorder);
 
                 if ($container instanceof ContainerBuilder) {

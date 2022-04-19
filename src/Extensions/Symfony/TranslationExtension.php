@@ -241,7 +241,7 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
         }
 
         foreach ($configs['paths'] as $dir) {
-            if (\file_exists($dir)) {
+            if (\file_exists($dir = $container->parameter($dir))) {
                 if ($container instanceof ContainerBuilder) {
                     $container->addResource(new FileExistenceResource($dir));
                 }
