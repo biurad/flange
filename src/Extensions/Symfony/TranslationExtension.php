@@ -187,7 +187,7 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
         $translator = $container->set('translator.default', new Definition(Translator::class))
             ->bind('setFallbackLocales', [$configs['fallbacks'] ?: ['%default_locale%']])
             ->bind('setConfigCacheFactory', [new Reference('config_cache_factory')])
-            ->args(['%default_locale%', 2 => '%project.cache_dir%/translations', 3 => '%debug%']);
+            ->args(['%default_locale%', 2 => $configs['cache_dir'], 3 => '%debug%']);
 
         $container->set('translation.loader.php', new Definition(PhpFileLoader::class))->public(false)->tag('translation.loader', ['alias' => 'php']);
         $container->set('translation.loader.yml', new Definition(YamlFileLoader::class))->public(false)->tag('translation.loader', ['alias' => 'yaml', 'legacy-alias' => 'yml']);
