@@ -27,7 +27,6 @@ use Biurad\Http\Middlewares\HttpHeadersMiddleware;
 use Biurad\Http\Middlewares\HttpPolicyMiddleware;
 use Biurad\Http\Middlewares\SessionMiddleware;
 use Rade\DI\AbstractContainer;
-use Rade\DI\Definitions\Statement;
 use Rade\KernelInterface;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
@@ -35,6 +34,7 @@ use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpFoundation\Session\Storage\Handler\AbstractSessionHandler;
 use Symfony\Component\HttpFoundation\Session\Storage\Handler\NativeFileSessionHandler;
+use Symfony\Component\HttpFoundation\Session\Storage\Handler\NullSessionHandler;
 use Symfony\Component\HttpFoundation\Session\Storage\Handler\SessionHandlerFactory;
 use Symfony\Component\HttpFoundation\Session\Storage\Handler\StrictSessionHandler;
 use Symfony\Component\HttpFoundation\Session\Storage\MetadataBag;
@@ -248,7 +248,7 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
             $cookies = [];
 
             foreach ($configs['cookie']['cookies'] as $cookieData) {
-                $cookies[] = new Statement(Cookie::class, $cookieData);
+                $cookies[] = wrap(Cookie::class, $cookieData);
             }
 
             if (!empty($cookies)) {

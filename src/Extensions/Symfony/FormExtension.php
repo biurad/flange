@@ -114,7 +114,7 @@ class FormExtension implements AliasedInterface, BootExtensionInterface, Configu
         }
 
         $container->set('form.resolved_type_factory', new Definition(ResolvedFormTypeFactory::class))->autowire([ResolvedFormTypeFactoryInterface::class]);
-        $container->autowire('form.registry', new Definition(FormRegistry::class));
+        $container->autowire('form.registry', new Definition(FormRegistry::class, [[new Reference('form.extension')]]));
         $container->autowire('form.factory', new Definition(FormFactory::class));
         $container->autowire('form.extension', new Definition(DependencyInjectionExtension::class));
         $container->autowire($formChoiceId = 'form.choice_list_factory.default', new Definition(DefaultChoiceListFactory::class));
