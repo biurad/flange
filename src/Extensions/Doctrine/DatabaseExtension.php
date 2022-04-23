@@ -18,13 +18,17 @@ declare(strict_types=1);
 namespace Rade\DI\Extensions\Doctrine;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Tools\Console\ConnectionProvider\SingleConnectionProvider;
+use Doctrine\DBAL\Tools\Console\ConsoleRunner;
 use Doctrine\DBAL\Types\Type;
 use Rade\DI\AbstractContainer;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Extensions\AliasedInterface;
+use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Extensions\ExtensionInterface;
+use Rade\KernelInterface;
 use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
@@ -34,7 +38,7 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
  *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
-class DatabaseExtension implements AliasedInterface, ConfigurationInterface, ExtensionInterface
+class DatabaseExtension implements AliasedInterface, ConfigurationInterface, BootExtensionInterface, ExtensionInterface
 {
     /** @var bool */
     private $debug;
@@ -177,7 +181,7 @@ class DatabaseExtension implements AliasedInterface, ConfigurationInterface, Ext
         }
 
         foreach ($configs['connections'] as $name => $connectionConfig) {
-            $connection = $container->set('doctrine.database_connection.' . $name, new Definition('Doctrine\DBAL\DriverManager::getConnection', [$connectionConfig]));
+            $connection = $container->set('doctrine.dbal_connection.' . $name, new Definition('Doctrine\DBAL\DriverManager::getConnection', [$connectionConfig]));
 
             if (!empty($configs['types'])) {
                 $connection->call(new Statement(__CLASS__ . '::createConnectionTypes', [1 => $configs['types']]), true);
@@ -185,9 +189,23 @@ class DatabaseExtension implements AliasedInterface, ConfigurationInterface, Ext
 
             if ($name === $configs['default_connection']) {
                 $connection->autowire(['Doctrine\DBAL\Connection']);
-                $container->set('doctrine.database_platform', new Definition([$dc = new Reference('doctrine.database_connection.' . $name), 'getDatabasePlatform']))->autowire(['Doctrine\DBAL\Platforms\AbstractPlatform']);
-                $container->set('doctrine.database_query_builder', new Definition([$dc, 'createQueryBuilder']))->autowire(['Doctrine\DBAL\Query\QueryBuilder']);
+                $container->set('doctrine.dbal_platform', new Definition([$dc = new Reference('doctrine.dbal_connection.' . $name), 'getDatabasePlatform']))->autowire(['Doctrine\DBAL\Platforms\AbstractPlatform']);
+                $container->set('doctrine.dbal_query_builder', new Definition([$dc, 'createQueryBuilder']))->autowire(['Doctrine\DBAL\Query\QueryBuilder']);
+
+                if ($container instanceof KernelInterface && $container->isRunningInConsole()) {
+                    $container->set('doctrine.dbal.single_connection', new Definition(SingleConnectionProvider::class, [$dc, $configs['default_connection']]))->public(false);
+                }
             }
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function boot(AbstractContainer $container): void
+    {
+        if ($container->has('console') && $container->has('doctrine.dbal.single_connection')) {
+            $container->definition('console')->call(new Statement(ConsoleRunner::class . '::addCommands', [1 => new Reference('doctrine.dbal.single_connection')]), true);
         }
     }
 
