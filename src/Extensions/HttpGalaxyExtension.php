@@ -290,9 +290,10 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
             ]))
                 ->arg(2, wrap(MetadataBag::class, [$session['meta_storage_key'], $session['metadata_update_threshold']]));
 
-            $container->set('session.handler.native_file', service(StrictSessionHandler::class, [
-                $container instanceof KernelInterface && $container->isRunningInConsole() ? wrap(NullSessionHandler::class) : wrap(NativeFileSessionHandler::class, [$session['save_path']]),
-            ]))->autowire([AbstractSessionHandler::class]);
+            $container->autowire(
+                'session.handler.native_file',
+                $container instanceof KernelInterface && $container->isRunningInConsole() ? service(NullSessionHandler::class) : service(NativeFileSessionHandler::class, [$session['save_path']])
+            );
 
             if ($container->has($session['handler_id'])) {
                 $container->alias('session.handler', $session['handler_id']);
