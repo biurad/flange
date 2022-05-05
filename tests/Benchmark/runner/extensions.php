@@ -18,5 +18,4 @@ declare(strict_types=1);
 return [
     [\Rade\DI\Extensions\CoreExtension::class, [__DIR__]],
     \Rade\DI\Extensions\Symfony\FrameworkExtension::class,
-    \Rade\DI\Extensions\Symfony\ConsoleExtension::class,
 ];

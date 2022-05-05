@@ -22,6 +22,7 @@ use Rade\DI\Definition;
 use Rade\Handler\EventHandler;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
+use Symfony\Component\Console\Event\ConsoleEvent;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
@@ -68,7 +69,13 @@ class CoreExtension implements AliasedInterface, ConfigurationInterface, Depende
      */
     public function dependencies(): array
     {
-        return [[ConfigExtension::class, [$this->rootDir]], RoutingExtension::class];
+        $dependencies = [[ConfigExtension::class, [$this->rootDir]], RoutingExtension::class];
+
+        if (\class_exists(ConsoleEvent::class)) {
+            $dependencies[] = Symfony\ConsoleExtension::class;
+        }
+
+        return $dependencies;
     }
 
     /**
