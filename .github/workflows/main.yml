@@ -14,14 +14,14 @@ jobs:
     runs-on: ${{ matrix.operating-system }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
       - name: Set git to use LF on Windows
         if: matrix.operating-system == 'windows-latest'
         run: |
           git config --global core.autocrlf false
           git config --global core.eol lf
+
+      - name: Checkout
+        uses: actions/checkout@v2
 
       - name: Setup PHP, with composer and extensions
         uses: shivammathur/setup-php@v2
@@ -46,19 +46,19 @@ jobs:
         run: composer install --no-progress --optimize-autoloader
 
       - name: Run unit tests (PHPUnit)
-        run: vendor/bin/phpunit --coverage-text --coverage-clover=coverage.clover
+        run: vendor/bin/phpunit --coverage-text --coverage-clover=coverage.xml
 
       - name: "Upload coverage report to Codecov"
         uses: codecov/codecov-action@v2
         continue-on-error: true
         with:
-          files: ./coverage.clover
+          files: ./coverage.xml
 
-      #- name: "Upload coverage report to CodeClimate"
-      #  uses: paambaati/codeclimate-action@v3.0.0
-      #  continue-on-error: true
-      #  env:
-      #    CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
+      - name: "Upload coverage report to CodeClimate"
+        uses: paambaati/codeclimate-action@v3.0.0
+        continue-on-error: true
+        env:
+          CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
 
       - name: Check coding standards (PHP_CodeSniffer)
         run: vendor/bin/phpcs
