@@ -64,7 +64,7 @@ use Tracy\Helpers;
                     <?= \is_numeric($id) ? "<span title='$id'>–</span>" : Helpers::escapeHtml($id) ?>
                 </td>
                 <td class="<?= isset($types[$id]) ? 'yes' : ''; ?>"><?= isset($types[$id]) ? 'yes' : 'no'; ?></td>
-                <td class="<?= $this->container->initialized($id) ? 'yes' : ''; ?>"><?= $this->container->initialized($id) ? 'yes' : 'no'; ?></td>
+                <td class="<?= $this->container->shared($id) ? 'yes' : ''; ?>"><?= $this->container->shared($id) ? 'yes' : 'no'; ?></td>
                 <td>
                     <?php if (isset($services[$id])): ?>
                         <?= Dumper::toHtml($services[$id] ?? $service, [Dumper::COLLAPSE => true, Dumper::LIVE => true]); ?>

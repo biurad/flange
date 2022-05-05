@@ -19,7 +19,6 @@ namespace Rade\Debug\Tracy;
 
 use Nette;
 use Rade\DI\Container;
-use Rade\DI\Resolver;
 use Tracy;
 
 /**
@@ -33,11 +32,9 @@ class ContainerPanel implements Tracy\IBarPanel
 
     private Container $container;
     private ?float $elapsedTime;
-    private array $keys;
 
-    public function __construct(Container $container, array $keys = [])
+    public function __construct(Container $container)
     {
-        $this->keys = $keys;
         $this->container = $container;
         $this->elapsedTime = self::$compilationTime ? \microtime(true) - self::$compilationTime : null;
     }
@@ -62,13 +59,12 @@ class ContainerPanel implements Tracy\IBarPanel
      */
     public function getPanel(): string
     {
-        $rc = new \ReflectionClass(Container::class);
-        $types = $methodsMap = [];
+        $rc = new \ReflectionClass($this->container);
+        $types = [];
         $wiring = $this->getContainerProperty('types', $rc);
+        $ids = \array_keys(($methodsMap = $this->getContainerProperty('methodsMap', $rc)) +  $this->container->definitions());
 
-        foreach ($this->keys as $id) {
-            $methodsMap[$id] = Resolver::createMethod($id);
-
+        foreach ($ids as $id) {
             foreach ($wiring as $type => $names) {
                 if (\in_array($id, $names, true)) {
                     $types[$id] = $type;
