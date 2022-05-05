@@ -18,7 +18,6 @@ declare(strict_types=1);
 namespace Rade\DI\Extensions\Symfony;
 
 use Rade\DI\AbstractContainer;
-use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Definitions\TaggedLocator;
@@ -90,6 +89,8 @@ use Symfony\Component\Notifier\Recipient\Recipient;
 use Symfony\Component\Notifier\Texter;
 use Symfony\Component\Notifier\Transport;
 use Symfony\Component\Notifier\Transport\NullTransportFactory;
+
+use function Rade\DI\Loader\service;
 
 /**
  * Symfony Notifier Extension.
@@ -171,18 +172,20 @@ class NotifierExtension implements AliasedInterface, ConfigurationInterface, Ext
             throw new \LogicException('Notifier support cannot be enabled as the component is not installed. Try running "composer require symfony/notifier".');
         }
 
-        $container->set('chatter.transport_factory', new Definition(Transport::class, [new TaggedLocator('chatter.transport_factory')]));
-        $container->set('chatter.transports', new Definition([new Reference('chatter.transport_factory'), 'fromStrings'], [$configs['chatter_transports'] ?? []]))->public(false);
-        $container->set('chatter.messenger.chat_handler', new Definition(MessageHandler::class, [$cts = new Reference('chatter.transports')]))->tag('messenger.message_handler', ['handles' => ChatMessage::class])->public(false);
-        $container->set('texter.transport_factory', new Definition(Transport::class, [new TaggedLocator('texter.transport_factory')]));
-        $container->set('texter.transports', new Definition([new Reference('texter.transport_factory'), 'fromStrings'], [$configs['texter_transports'] ?? []]))->public(false);
-        $container->set('texter.messenger.sms_handler', new Definition(MessageHandler::class, [$tt = new Reference('texter.transports')]))->tag('messenger.message_handler', ['handles' => SmsMessage::class])->public(false);
-        $container->set('texter.messenger.push_handler', new Definition(MessageHandler::class, [$tt]))->tag('messenger.message_handler', ['handles' => PushMessage::class])->public(false);
-        $container->set('notifier.channel.browser', new Definition(BrowserChannel::class))->public(false)->tag('notifier.channel', ['channel' => 'browser']);
-        $container->set('notifier.channel.chat', new Definition(ChatChannel::class, [$cts, $mds = new Reference('?messenger.default_bus')]))->public(false)->tag('notifier.channel', ['channel' => 'chat']);
-        $container->set('notifier.channel.sms', new Definition(SmsChannel::class, [$tt, $mds]))->public(false)->tag('notifier.channel', ['channel' => 'sms']);
-        $container->set('notifier.channel.push', new Definition(PushChannel::class, [$tt, $mds]))->public(false)->tag('notifier.channel', ['channel' => 'push']);
-        $notifier = $container->autowire('notifier', new Definition(Notifier::class, [new TaggedLocator('notifier.channel', 'channel'), new Statement(ChannelPolicy::class, [$configs['channel_policy']])]));
+        $definitions = [
+            'notifier.chatter.transport_factory' => service(Transport::class, [new TaggedLocator('chatter.transport_factory')])->public(false),
+            'notifier.chatter.transports' => service([new Reference('notifier.chatter.transport_factory'), 'fromStrings'], [$configs['chatter_transports'] ?? []])->public(false),
+            'notifier.chatter.messenger.chat_handler' => service(MessageHandler::class, [$ct = new Reference('notifier.chatter.transports')])->public(false)->tag('messenger.message_handler', ['handles' => ChatMessage::class]),
+            'notifier.texter.transport_factory' => service(Transport::class, [new TaggedLocator('notifier.texter.transport_factory')])->public(false),
+            'notifier.texter.transports' => service([new Reference('notifier.texter.transport_factory'), 'fromStrings'], [$configs['texter_transports'] ?? []])->public(false),
+            'notifier.texter.messenger.sms_handler' => service(MessageHandler::class, [$tt = new Reference('notifier.texter.transports')])->public(false)->tag('messenger.message_handler', ['handles' => SmsMessage::class]),
+            'notifier.texter.messenger.push_handler' => service(MessageHandler::class, [$tt])->public(false)->tag('messenger.message_handler', ['handles' => PushMessage::class]),
+            'notifier.channel.browser' => service(BrowserChannel::class)->public(false)->tag('notifier.channel', ['channel' => 'browser']),
+            'notifier.channel.chat' => $cc = service(ChatChannel::class, [$ct, $ms = new Reference('?messenger.default_bus')])->public(false)->tag('notifier.channel', ['channel' => 'chat']),
+            'notifier.channel.sms' => $sc = service(SmsChannel::class, [$tt, $ms])->public(false)->tag('notifier.channel', ['channel' => 'sms']),
+            'notifier.channel.push' => $pc = service(PushChannel::class, [$tt, $ms])->public(false)->tag('notifier.channel', ['channel' => 'push']),
+            'notifier' => $notifier = service(Notifier::class, [new TaggedLocator('notifier.channel', 'channel'), new Statement(ChannelPolicy::class, [$configs['channel_policy']])])->autowire(),
+        ];
 
         if (isset($configs['admin_recipients'])) {
             foreach ($configs['admin_recipients'] as $recipient) {
@@ -191,33 +194,33 @@ class NotifierExtension implements AliasedInterface, ConfigurationInterface, Ext
         }
 
         if ($configs['texter_transports']) {
-            $container->set('texter', new Definition(Texter::class, [$cts, $mds]))->autowire();
+            $definitions['notifier.texter'] = service(Texter::class, [$tt, $ms])->autowire();
         }
 
         if ($configs['chatter_transports']) {
-            $container->set('chatter', new Definition(Chatter::class, [$cts, $mds]))->autowire();
+            $definitions['notifier.chatter'] = service(Chatter::class, [$ct, $ms])->autowire();
         }
 
         if ($container->hasExtension(EventDispatcherExtension::class)) {
             if ($container->hasExtension(MailerExtension::class)) {
                 $sender = $container->definition('mailer.envelope_listener')->getArguments()[0] ?? null;
-                $container->set('notifier.channel.email', new Definition(EmailChannel::class, [new Reference('mailer.transports'), $mds, $sender]))->public(false)->tag('notifier.channel', ['channel' => 'email']);
+                $definitions['notifier.channel.email'] = $ec = service(EmailChannel::class, [new Reference('mailer.transports'), $ms, $sender])->public(false)->tag('notifier.channel', ['channel' => 'email']);
             }
 
-            if ($container->hasExtension(MessengerExtension::class)) {
-                $container->set('notifier.failed_message_listener', new Definition(SendFailedMessageToNotifierListener::class, [new Reference('notifier')]))->public(false)->tag('event_subscriber');
+            $definitions['notifier.listener.logger_notification'] = service(NotificationLoggerListener::class)->public(false)->tag('event_subscriber');
+        }
 
-                // as we have a bus, the channels don't need the transports
-                $container->definition('notifier.channel.chat')->arg(0, null);
+        if ($container->hasExtension(MessengerExtension::class)) {
+            $definitions['notifier.listener.failed_message'] = service(SendFailedMessageToNotifierListener::class, [new Reference('notifier')])->public(false)->tag('event_subscriber');
 
-                if ($container->has('notifier.channel.email')) {
-                    $container->definition('notifier.channel.email')->arg(0, null);
-                }
-                $container->definition('notifier.channel.sms')->arg(0, null);
-                $container->definition('notifier.channel.push')->arg(0, null);
+            // as we have a bus, the channels don't need the transports
+            $cc->args([null, $ms]);
+            $sc->args([null, $ms]);
+            $pc->args([null, $ms]);
+
+            if (isset($ec)) {
+                $ec->args([null, $ms]);
             }
-
-            $container->set('notifier.logger_notification_listener', new Definition(NotificationLoggerListener::class))->public(false)->tag('event_subscriber');
         }
 
         $classToServices = [
@@ -274,11 +277,10 @@ class NotifierExtension implements AliasedInterface, ConfigurationInterface, Ext
             if (!\class_exists($class)) {
                 continue;
             }
-            $classTags = \is_array($classTag) ? $classTag : [$classTag];
 
-            foreach ($classTags as $tag) {
-                $container->tag($class, $tag);
-            }
+            $container->tag($class, $classTag);
         }
+
+        $container->multiple($definitions);
     }
 }

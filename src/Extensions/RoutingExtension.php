@@ -312,7 +312,7 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
                 $routeData = $route->getData();
                 $routeData['methods'] = \array_keys($routeData['methods']);
                 unset($routeData['prefix']);
-                $routes[] = new PhpLiteral(Route::class . '::__set_state(\'??\');', [$routeData]);
+                $routes[] = new PhpLiteral(Route::class . '::__set_state(\'%?\');', [$routeData]);
             }
         }
 
@@ -324,7 +324,7 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
             }
 
             $v = [new Reference($routesId), $values];
-            $groups[] = [\is_bool($values) ? "\$collection->populate('??', '??');" : "\$collection->group(null, '??')->prototype('??');", $v];
+            $groups[] = [\is_bool($values) ? "\$collection->populate('%?', '%?');" : "\$collection->group(null, '%?')->prototype('%?');", $v];
         }
 
         foreach ($container->tagged('router.middleware') as $pipeId => $pipeValue) {
@@ -362,7 +362,7 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
             }
 
             if (!empty($routes)) {
-                $groupedCollection .= '$collection->routes(\'??\');';
+                $groupedCollection .= '$collection->routes(\'%?\');';
                 $groupArgs[] = $routes;
             }
 

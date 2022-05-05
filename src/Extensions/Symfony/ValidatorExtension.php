@@ -225,6 +225,10 @@ class ValidatorExtension implements AliasedInterface, BootExtensionInterface, Co
      */
     public function boot(AbstractContainer $container): void
     {
+        if (!$container->has('validator')) {
+            return;
+        }
+
         $files = ['xml' => [], 'yml' => []];
         $globalNamespaces = $servicesToNamespaces = $validators = [];
         $validatorBuilder = $container->definition('validator.builder');
@@ -265,9 +269,11 @@ class ValidatorExtension implements AliasedInterface, BootExtensionInterface, Co
             }
         }
 
-        $validatorBuilder->bind('addObjectInitializers', [new TaggedLocator('validator.initializer')]);
-        $container->definition('validator.validator_factory')->arg(0, new Statement(ServiceLocator::class, $validators));
+        if ($container->tagged('validator.initializer')) {
+            $validatorBuilder->bind('addObjectInitializers', [new TaggedLocator('validator.initializer')]);
+        }
 
+        $container->definition('validator.validator_factory')->arg(0, new Statement(ServiceLocator::class, $validators));
         unset($container->parameters['validator.auto_mapping']);
     }
 

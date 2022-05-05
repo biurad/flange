@@ -19,7 +19,6 @@ namespace Rade\DI\Extensions\Symfony;
 
 use Rade\DI\AbstractContainer;
 use Rade\DI\ContainerBuilder;
-use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Definitions\TaggedLocator;
@@ -35,6 +34,8 @@ use Symfony\Component\Form\Form;
 use Symfony\Component\Translation\Bridge\Crowdin\CrowdinProviderFactory;
 use Symfony\Component\Translation\Bridge\Loco\LocoProviderFactory;
 use Symfony\Component\Translation\Bridge\Lokalise\LokaliseProviderFactory;
+use Symfony\Component\Translation\Command\TranslationPullCommand;
+use Symfony\Component\Translation\Command\TranslationPushCommand;
 use Symfony\Component\Translation\Dumper\CsvFileDumper;
 use Symfony\Component\Translation\Dumper\IcuResFileDumper;
 use Symfony\Component\Translation\Dumper\IniFileDumper;
@@ -66,6 +67,8 @@ use Symfony\Component\Translation\Reader\TranslationReader;
 use Symfony\Component\Translation\Translator;
 use Symfony\Component\Translation\Writer\TranslationWriter;
 use Symfony\Component\Validator\Validation;
+
+use function Rade\DI\Loader\service;
 
 /**
  * Symfony component translation extension.
@@ -170,43 +173,54 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
             throw new \LogicException('Translation support cannot be enabled as the Translation component is not installed. Try running "composer require symfony/translation".');
         }
 
-        $container->set('translation.reader', new Definition(TranslationReader::class))->autowire();
-        $container->set('translation.extractor', new Definition(ChainExtractor::class))->autowire();
-        $container->set('translation.writer', new Definition(TranslationWriter::class))->autowire()
-            ->bind('addDumper', ['php', new Statement(PhpFileDumper::class)])
-            ->bind('addDumper', ['xlf', new Statement(XliffFileDumper::class)])
-            ->bind('addDumper', ['po', new Statement(PoFileDumper::class)])
-            ->bind('addDumper', ['mo', new Statement(MoFileDumper::class)])
-            ->bind('addDumper', ['yml', new Statement(YamlFileDumper::class)])
-            ->bind('addDumper', ['yaml', new Statement(YamlFileDumper::class, ['yaml'])])
-            ->bind('addDumper', ['ts', new Statement(QtFileDumper::class)])
-            ->bind('addDumper', ['csv', new Statement(CsvFileDumper::class)])
-            ->bind('addDumper', ['ini', new Statement(IniFileDumper::class)])
-            ->bind('addDumper', ['json', new Statement(JsonFileDumper::class)])
-            ->bind('addDumper', ['res', new Statement(IcuResFileDumper::class)]);
-        $translator = $container->set('translator.default', new Definition(Translator::class))
-            ->bind('setFallbackLocales', [$configs['fallbacks'] ?: ['%default_locale%']])
-            ->bind('setConfigCacheFactory', [new Reference('config_cache_factory')])
-            ->args(['%default_locale%', 2 => $configs['cache_dir'], 3 => '%debug%']);
-
-        $container->set('translation.loader.php', new Definition(PhpFileLoader::class))->public(false)->tag('translation.loader', ['alias' => 'php']);
-        $container->set('translation.loader.yml', new Definition(YamlFileLoader::class))->public(false)->tag('translation.loader', ['alias' => 'yaml', 'legacy-alias' => 'yml']);
-        $container->set('translation.loader.xliff', new Definition(XliffFileLoader::class))->public(false)->tag('translation.loader', ['alias' => 'xlf', 'legacy-alias' => 'xliff']);
-        $container->set('translation.loader.po', new Definition(PoFileLoader::class))->public(false)->tag('translation.loader', ['alias' => 'po']);
-        $container->set('translation.loader.mo', new Definition(MoFileLoader::class))->public(false)->tag('translation.loader', ['alias' => 'mo']);
-        $container->set('translation.loader.qt', new Definition(QtFileLoader::class))->public(false)->tag('translation.loader', ['alias' => 'ts']);
-        $container->set('translation.loader.csv', new Definition(CsvFileLoader::class))->public(false)->tag('translation.loader', ['alias' => 'csv']);
-        $container->set('translation.loader.res', new Definition(IcuResFileLoader::class))->public(false)->tag('translation.loader', ['alias' => 'res']);
-        $container->set('translation.loader.dat', new Definition(IcuDatFileLoader::class))->public(false)->tag('translation.loader', ['alias' => 'dat']);
-        $container->set('translation.loader.ini', new Definition(IniFileLoader::class))->public(false)->tag('translation.loader', ['alias' => 'ini']);
-        $container->set('translation.loader.json', new Definition(JsonFileLoader::class))->public(false)->tag('translation.loader', ['alias' => 'json']);
-        $container->set('translation.extractor.php', new Definition(PhpExtractor::class))->public(false)->tag('translation.extractor', ['alias' => 'php']);
-
-        // Use the "real" translator instead of the identity default
-        $container->alias('translator', 'translator.default');
-
         $container->parameters['translator.logging'] = $configs['logging'];
         $container->parameters['translator.default_path'] = $configs['default_path'];
+        $locales = $container->parameters['enabled_locales'] ?? ['en'];
+
+        if ($configs['providers']) {
+            foreach ($configs['providers'] as $provider) {
+                if ($provider['locales']) {
+                    $locales = \array_merge($locales, $provider['locales']);
+                }
+            }
+        }
+
+        $definitions = [
+            'translation.loader.php' => service(PhpFileLoader::class)->public(false)->tag('translation.loader', ['alias' => 'php']),
+            'translation.loader.yml' => service(YamlFileLoader::class)->public(false)->tag('translation.loader', ['alias' => 'yaml', 'legacy-alias' => 'yml']),
+            'translation.loader.xliff' => service(XliffFileLoader::class)->public(false)->tag('translation.loader', ['alias' => 'xlf', 'legacy-alias' => 'xliff']),
+            'translation.loader.po' => service(PoFileLoader::class)->public(false)->tag('translation.loader', ['alias' => 'po']),
+            'translation.loader.mo' => service(MoFileLoader::class)->public(false)->tag('translation.loader', ['alias' => 'mo']),
+            'translation.loader.qt' => service(QtFileLoader::class)->public(false)->tag('translation.loader', ['alias' => 'ts']),
+            'translation.loader.csv' => service(CsvFileLoader::class)->public(false)->tag('translation.loader', ['alias' => 'csv']),
+            'translation.loader.res' => service(IcuResFileLoader::class)->public(false)->tag('translation.loader', ['alias' => 'res']),
+            'translation.loader.dat' => service(IcuDatFileLoader::class)->public(false)->tag('translation.loader', ['alias' => 'dat']),
+            'translation.loader.ini' => service(IniFileLoader::class)->public(false)->tag('translation.loader', ['alias' => 'ini']),
+            'translation.loader.json' => service(JsonFileLoader::class)->public(false)->tag('translation.loader', ['alias' => 'json']),
+            'translation.extractor.php' => service(PhpExtractor::class)->public(false)->tag('translation.extractor', ['alias' => 'php']),
+            'translation.reader' => service(TranslationReader::class)->autowire(),
+            'translation.extractor' => service(ChainExtractor::class)->autowire(),
+            'translation.writer' => service(TranslationWriter::class)->autowire()
+                ->bind('addDumper', ['php', new Statement(PhpFileDumper::class)])
+                ->bind('addDumper', ['xlf', new Statement(XliffFileDumper::class)])
+                ->bind('addDumper', ['po', new Statement(PoFileDumper::class)])
+                ->bind('addDumper', ['mo', new Statement(MoFileDumper::class)])
+                ->bind('addDumper', ['yml', new Statement(YamlFileDumper::class)])
+                ->bind('addDumper', ['yaml', new Statement(YamlFileDumper::class, ['yaml'])])
+                ->bind('addDumper', ['ts', new Statement(QtFileDumper::class)])
+                ->bind('addDumper', ['csv', new Statement(CsvFileDumper::class)])
+                ->bind('addDumper', ['ini', new Statement(IniFileDumper::class)])
+                ->bind('addDumper', ['json', new Statement(JsonFileDumper::class)])
+                ->bind('addDumper', ['res', new Statement(IcuResFileDumper::class)]),
+            'translator.default' => $translator = service(Translator::class, ['%default_locale%', 2 => $configs['cache_dir'], 3 => '%debug%'])
+                ->binds([
+                    'setFallbackLocales' => [$configs['fallbacks'] ?: ['%default_locale%']],
+                    'setConfigCacheFactory' => [new Reference('config_cache_factory')],
+                ]),
+            'translation.provider_collection_factory' => service(TranslationProviderCollectionFactory::class, [new TaggedLocator('translation.provider_factory'), \array_unique($locales)])->public(false),
+            'translation.provider_collection' => service([new Reference('translation.provider_collection_factory'), 'fromConfig'], [$configs['providers']])->autowire([TranslationProviderCollection::class]),
+            'translation.provider_factory.null' => service(NullProviderFactory::class)->public(false)->tag('translation.provider_factory'),
+        ];
 
         // Discover translation directories
         $dirs = [];
@@ -249,14 +263,6 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
             } else {
                 throw new \UnexpectedValueException(\sprintf('"%s" defined in translator.paths does not exist or is not a directory.', $dir));
             }
-        }
-
-        if ($container->has('console.command.translation_debug')) {
-            $container->definition('console.command.translation_debug')->arg(5, $transPaths);
-        }
-
-        if ($container->has('console.command.translation_extract')) {
-            $container->definition('console.command.translation_extract')->arg(6, $transPaths);
         }
 
         if (null === $defaultDir) {
@@ -306,46 +312,53 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
             $options = $configs['pseudo_localization'];
             unset($options['enabled']);
 
-            $container->autowire('translator.pseudo', new Definition(PseudoLocalizationTranslator::class, [new Reference('translator'), $options]));
+            $definitions[$translatorId = 'translator.pseudo'] = service(PseudoLocalizationTranslator::class, [new Reference('translator'), $options])->autowire();
         } else {
             $translator->autowire();
         }
 
-        $collection = $container->set('translation.provider_collection', new Definition([new Reference('translation.provider_collection_factory'), 'fromConfig']))->autowire([TranslationProviderCollection::class]);
-        $proFactory = $container->set('translation.provider_collection_factory', new Definition(TranslationProviderCollectionFactory::class, [new TaggedLocator('translation.provider_factory')]));
-        $container->set('translation.provider_factory.null', new Definition(NullProviderFactory::class))->public(false)->tag('translation.provider_factory');
-
         if ($container->hasExtension(HttpClientExtension::class)) {
             $providerArgs = [
-                2 => '%default_locale%',
-                3 => new Reference('translation.loader.xliff'),
+                new Reference('http_client'),
+                new Reference('?logger'),
+                '%default_locale%',
+                $xliff = new Reference('translation.loader.xliff'),
             ];
 
             if (\class_exists(CrowdinProviderFactory::class)) {
-                $container->set('translation.provider_factory.crowdin', new Definition(CrowdinProviderFactory::class, $providerArgs + [4 => new Reference('translation.dumper.xliff')]))->public(false)->tag('translation.provider_factory');
+                $definitions['translation.provider_factory.crowdin'] = service(CrowdinProviderFactory::class, $providerArgs + [4 => $xliff])->public(false)->tag('translation.provider_factory');
             }
 
             if (\class_exists(LocoProviderFactory::class)) {
-                $container->set('translation.provider_factory.loco', new Definition(LocoProviderFactory::class, $providerArgs))->public(false)->tag('translation.provider_factory');
+                $definitions['translation.provider_factory.loco'] = service(LocoProviderFactory::class, $providerArgs + [new Reference($translatorId ?? 'translator.default')])->public(false)->tag('translation.provider_factory');
             }
 
             if (\class_exists(LokaliseProviderFactory::class)) {
-                $container->set('translation.provider_factory.lokalise', new Definition(LokaliseProviderFactory::class, $providerArgs))->public(false)->tag('translation.provider_factory');
+                $definitions['translation.provider_factory.lokalise'] = service(LokaliseProviderFactory::class, $providerArgs)->public(false)->tag('translation.provider_factory');
             }
         }
 
-        $locales = $container->parameters['enabled_locales'] ?? ['en'];
-
-        if ($configs['providers']) {
-            foreach ($configs['providers'] as $provider) {
-                if ($provider['locales']) {
-                    $locales += $provider['locales'];
-                }
-            }
+        if ($container->has('console')) {
+            $definitions += [
+                'console.command.translation_pull' => service(TranslationPullCommand::class, [
+                    new Reference('translation.provider_collection'),
+                    new Reference('translation.writer'),
+                    new Reference('translation.reader'),
+                    '%default_locale%',
+                    $transPaths,
+                    $locales,
+                ])->tag('console.command', ['command' => 'translation:pull']),
+                'console.command.translation_push' => service(TranslationPushCommand::class, [
+                    new Reference('translation.provider_collection'),
+                    new Reference('translation.reader'),
+                    $transPaths,
+                    $locales,
+                ])->tag('console.command', ['command' => 'translation:push']),
+            ];
         }
 
-        $proFactory->arg(1, \array_unique($locales));
-        $collection->arg(0, $configs['providers']);
+        $container->multiple($definitions);
+        $container->alias('translator', $translatorId ?? 'translator.default'); // Use the "real" translator instead of the identity default
     }
 
     /**
@@ -353,6 +366,10 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
      */
     public function boot(AbstractContainer $container): void
     {
+        if (!$container->has('translator')) {
+            return;
+        }
+
         $loaders = [];
         $loaderRefs = [];
         $writer = $container->definition('translation.writer');
@@ -385,30 +402,6 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
             foreach ($formats as $format) {
                 $reader->bind('addLoader', [$format, $loaderRefs[$id]]);
                 $translator->bind('addLoader', [$format, $loaderRefs[$id]]);
-            }
-        }
-
-        if (!isset($container->parameters['twig.default_path'])) {
-            return;
-        }
-
-        $paths = \array_keys($container->definition('twig.template_iterator')->getArguments()[1]);
-
-        if ($container->has('console.command.translation_debug')) {
-            $definition = $container->definition('console.command.translation_debug');
-            $definition->arg(4, '%twig.default_path%');
-
-            if (\count($definition->getArguments()) > 6) {
-                $definition->arg(6, $paths);
-            }
-        }
-
-        if ($container->has('console.command.translation_extract')) {
-            $definition = $container->definition('console.command.translation_extract');
-            $definition->arg(5, '%twig.default_path%');
-
-            if (\count($definition->getArguments()) > 7) {
-                $definition->arg(7, $paths);
             }
         }
     }

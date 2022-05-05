@@ -43,6 +43,8 @@ use Symfony\Component\Mailer\Messenger\MessageHandler;
 use Symfony\Component\Mailer\Transport;
 use Symfony\Component\Mime\Header\Headers;
 
+use function Rade\DI\Loader\service;
+
 /**
  * Symfony component mailer extension.
  *
@@ -141,12 +143,13 @@ class MailerExtension implements AliasedInterface, ConfigurationInterface, Exten
         }
 
         $transports = $configs['dsn'] ? ['main' => $configs['dsn']] : $configs['transports'];
-        $mailer = $container->set('mailer.mailer', new Definition(Mailer::class, [new Reference('mailer.transports')]))->autowire([MailerInterface::class]);
-        $container->set('mailer.transport_factory', new Definition(Transport::class, [new TaggedLocator('mailer.transport_factory')]));
-        $container->set('mailer.transports', new Definition([new Reference('mailer.transport_factory'), 'fromStrings'], [$transports]));
-        $container->set('mailer.default_transport', new Definition([new Reference('mailer.transport_factory'), 'fromString'], [\current($transports)]));
-        $container->set('mailer.messenger.message_handler', new Definition(MessageHandler::class, [new Reference('mailer.transports')]))->tag('messenger.message_handler');
-        $container->alias('mailer', 'mailer.mailer');
+        $definitions = [
+            'mailer' => $mailer = service(Mailer::class, [new Reference('mailer.transports')])->autowire([Mailer::class, MailerInterface::class]),
+            'mailer.transports' => service([new Reference('mailer.transport_factory'), 'fromStrings'], [$transports]),
+            'mailer.transport_factory' => service(Transport::class, [new TaggedLocator('mailer.transport_factory')])->public(false),
+            'mailer.default_transport' => service([new Reference('mailer.transport_factory'), 'fromString'], [\current($transports)]),
+            'mailer.messenger.message_handler' => service(MessageHandler::class, [new Reference('mailer.transports')])->public(false)->tag('messenger.message_handler'),
+        ];
 
         if (false === $messageBus = $configs['message_bus']) {
             $mailer->arg(1, null);
@@ -173,8 +176,10 @@ class MailerExtension implements AliasedInterface, ConfigurationInterface, Exten
         }
 
         if ($container->hasExtension(EventDispatcherExtension::class)) {
-            $container->set('mailer.envelope_listener', new Definition(EnvelopeListener::class, [$configs['envelope']['sender'] ?? null, $configs['envelope']['recipients'] ?? null]))->tag('event_subscriber')->public(false);
-            $container->set('mailer.message_logger_listener', new Definition(MessageLoggerListener::class))->tag('event_subscriber')->public(false);
+            $definitions += [
+                'mailer.envelope_listener' => service(EnvelopeListener::class, [$configs['envelope']['sender'] ?? null, $configs['envelope']['recipients'] ?? null])->public(false)->tag('event_subscriber'),
+                'mailer.message_logger_listener' => service(MessageLoggerListener::class)->public(false)->tag('event_subscriber'),
+            ];
 
             if ($configs['headers']) {
                 $headers = new Definition(Headers::class);
@@ -188,9 +193,13 @@ class MailerExtension implements AliasedInterface, ConfigurationInterface, Exten
                     $headers->bind('addHeader', [$name, $value]);
                 }
 
-                $container->set(Headers::class, $headers)->public(false);
-                $container->set('mailer.message_listener', new Definition(MessageListener::class, [new Reference(Headers::class)]))->tag('event_subscriber')->public(false);
+                $definitions += [
+                    'mailer.headers' => $headers,
+                    'mailer.message_listener' => service(MessageListener::class, [new Reference('mailer.headers')])->public(false)->tag('event_subscriber'),
+                ];
             }
         }
+
+        $container->multiple($definitions);
     }
 }

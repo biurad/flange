@@ -27,7 +27,6 @@ use Rade\DI\Definitions\TaggedLocator;
 use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Extensions\ExtensionInterface;
-use Rade\DI\Resolver;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
@@ -94,13 +93,13 @@ class PropertyInfoExtension implements AliasedInterface, BootExtensionInterface,
             ->tag('property_info.type_extractor')
             ->tag('property_info.access_extractor')
             ->tag('property_info.initializable_extractor')
-            ->autowire([PropertyReadInfoExtractorInterface::class, PropertyWriteInfoExtractorInterface::class]);
+            ->autowire([ReflectionExtractor::class, PropertyReadInfoExtractorInterface::class, PropertyWriteInfoExtractorInterface::class]);
 
         if ($container->hasExtension(CacheExtension::class)) {
             $definition->public(false);
             $container->autowire('property_info.cache', new Definition(PropertyInfoCacheExtractor::class, [new Reference('property_info'), new Reference('cache.system')]));
         } else {
-            $container->type('property_info', Resolver::autowireService($definition->getEntity()));
+            $definition->autowire();
         }
 
         if (\class_exists(PhpDocParser::class) && \class_exists(ContextFactory::class)) {

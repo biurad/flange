@@ -52,6 +52,8 @@ use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
 
+use function Rade\DI\Loader\service;
+
 /**
  * Symfony component cache extension.
  *
@@ -181,20 +183,21 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
         }
 
         $container->parameters['project.cache_dir'] = $container->parameter($configs['directory']);
-        $container->set('cache.default_marshaller', new Definition(DefaultMarshaller::class, [1 => '%debug%']))->autowire([MarshallerInterface::class]);
-
-        $container->set('cache.adapter.system', new Definition(AbstractAdapter::class . '::createSystemCache', [3 => '%project.cache_dir%' . '/pools/system']))->abstract()->public(false)->tag('cache.pool');
-        $container->set('cache.adapter.filesystem', new Definition(FilesystemAdapter::class, [2 => '%project.cache_dir%' . '/pools/app']))->abstract()->public(false)->tag('cache.pool');
-        $container->set('cache.adapter.pdo', new Definition(PdoAdapter::class))->public(false)->abstract()->tag('cache.pool', ['provider' => 'cache.default_pdo_provider']);
-        $container->set('cache.adapter.array', new Definition(ArrayAdapter::class))->public(false)->abstract()->tag('cache.pool');
-        $container->set('cache.adapter.psr6', new Definition(ProxyAdapter::class))->public(false)->abstract()->tag('cache.pool', ['provider' => 'cache.default_psr6_provider']);
-        $container->set('cache.adapter.apcu', new Definition(ApcuAdapter::class))->public(false)->abstract()->tag('cache.pool');
-        $container->set('cache.adapter.redis', new Definition(RedisAdapter::class))->public(false)->abstract()->tag('cache.pool', ['provider' => 'cache.default_redis_provider']);
-        $container->set('cache.adapter.redis_tag_aware', new Definition(RedisTagAwareAdapter::class))->public(false)->abstract()->tag('cache.pool', ['provider' => 'cache.default_redis_provider']);
-        $container->set('cache.adapter.memcached', new Definition(MemcachedAdapter::class))->public(false)->abstract()->tag('cache.pool', ['provider' => 'cache.default_memcached_provider']);
-        $container->set('cache.adapter.doctrine_dbal', new Definition(DoctrineDbalAdapter::class))->public(false)->abstract()->tag('cache.pool', ['provider' => 'default_doctrine_dbal_provider']);
-        $container->set('cache.adapter.couchbase_bucket', new Definition(CouchbaseBucketAdapter::class))->public(false)->abstract()->tag('cache.pool', ['provider' => 'cache.default_couch_provider']);
-        $container->set('cache.adapter.couchbase_collection', new Definition(CouchbaseCollectionAdapter::class))->public(false)->abstract()->tag('cache.pool', ['provider' => 'cache.default_couch_provider']);
+        $container->multiple([
+            'cache.default_matcher' => service(DefaultMarshaller::class, [1 => '%debug%'])->autowire([MarshallerInterface::class]),
+            'cache.adapter.system' => service(AbstractAdapter::class . '::createSystemCache', [3 => '%project.cache_dir%' . '/pools/system'])->abstract()->public(false)->tag('cache.pool'),
+            'cache.adapter.filesystem' => service(FilesystemAdapter::class, [2 => '%project.cache_dir%' . '/pools/app'])->abstract()->public(false)->tag('cache.pool'),
+            'cache.adapter.pdo' => service(PdoAdapter::class)->public(false)->abstract()->tag('cache.pool', ['provider' => 'cache.default_pdo_provider']),
+            'cache.adapter.array' => service(ArrayAdapter::class)->public(false)->abstract()->tag('cache.pool'),
+            'cache.adapter.psr6' => service(ProxyAdapter::class)->public(false)->abstract()->tag('cache.pool', ['provider' => 'cache.default_psr6_provider']),
+            'cache.adapter.apcu' => service(ApcuAdapter::class)->public(false)->abstract()->tag('cache.pool'),
+            'cache.adapter.redis' => service(RedisAdapter::class)->public(false)->abstract()->tag('cache.pool', ['provider' => 'cache.default_redis_provider']),
+            'cache.adapter.redis_tag_aware' => service(RedisTagAwareAdapter::class)->public(false)->abstract()->tag('cache.pool', ['provider' => 'cache.default_redis_provider']),
+            'cache.adapter.memcached' => service(MemcachedAdapter::class)->public(false)->abstract()->tag('cache.pool', ['provider' => 'cache.default_memcached_provider']),
+            'cache.adapter.doctrine_dbal' => service(DoctrineDbalAdapter::class)->public(false)->abstract()->tag('cache.pool', ['provider' => 'default_doctrine_dbal_provider']),
+            'cache.adapter.couchbase_bucket' => service(CouchbaseBucketAdapter::class)->public(false)->abstract()->tag('cache.pool', ['provider' => 'cache.default_couch_provider']),
+            'cache.adapter.couchbase_collection' => service(CouchbaseCollectionAdapter::class)->public(false)->abstract()->tag('cache.pool', ['provider' => 'cache.default_couch_provider']),
+        ]);
 
         if (isset($configs['prefix_seed'])) {
             $container->parameters['cache.prefix.seed'] = $configs['prefix_seed'];

@@ -18,16 +18,17 @@ declare(strict_types=1);
 namespace Rade\DI\Extensions\Symfony;
 
 use Rade\DI\AbstractContainer;
-use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Definitions\TaggedLocator;
 use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Extensions\ExtensionInterface;
+use Rade\DI\Extensions\RequiredPackagesInterface;
 use Rade\KernelInterface;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
+use Symfony\Component\PropertyAccess\PropertyAccess;
 use Symfony\Component\PropertyInfo\Extractor\SerializerExtractor;
 use Symfony\Component\Serializer\Encoder\CsvEncoder;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
@@ -59,12 +60,14 @@ use Symfony\Component\Serializer\Normalizer\UidNormalizer;
 use Symfony\Component\Serializer\Normalizer\UnwrappingDenormalizer;
 use Symfony\Component\Serializer\Serializer;
 
+use function Rade\DI\Loader\service;
+
 /**
  * Symfony component serializer extension.
  *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
-class SerializerExtension implements AliasedInterface, BootExtensionInterface, ConfigurationInterface, ExtensionInterface
+class SerializerExtension implements AliasedInterface, BootExtensionInterface, ConfigurationInterface, ExtensionInterface, RequiredPackagesInterface
 {
     use Traits\FilesMappingTrait;
 
@@ -115,79 +118,82 @@ class SerializerExtension implements AliasedInterface, BootExtensionInterface, C
     /**
      * {@inheritdoc}
      */
+    public function getRequiredPackages(): array
+    {
+        return [
+            Serializer::class => 'symfony/serializer',
+            PropertyAccess::class => 'symfony/property-access',
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function register(AbstractContainer $container, array $configs): void
     {
         if (!$configs['enabled']) {
             return;
         }
 
-        if (!\class_exists(\Symfony\Component\Serializer\Serializer::class)) {
-            throw new \LogicException('Serializer support cannot be enabled as the Serializer component is not installed. Try running "composer require symfony/serializer-pack".');
-        }
-
         $serializerLoaders = [];
-        $container->autowire('serializer', new Definition(Serializer::class, [new TaggedLocator('serializer.normalizer'), new TaggedLocator('serializer.encoder')]));
-        $container->autowire('serializer.mapping.class_discriminator_resolver', new Definition(ClassDiscriminatorFromClassMetadata::class, [new Reference('serializer.mapping.class_metadata_factory')]));
-        $factory = $container->set('serializer.mapping.class_metadata_factory', new Definition(ClassMetadataFactory::class, [new Reference('serializer.mapping.chain_loader')]));
+        $definitions = [
+            'serializer' => service(Serializer::class, [new TaggedLocator('serializer.normalizer'), new TaggedLocator('serializer.encoder')])->autowire(),
+            ($cM = 'serializer.mapping.class_metadata_factory') => service(ClassMetadataFactory::class, [new Reference('serializer.mapping.chain_loader')])->public(false),
+            'serializer.normalizer.constraint_violation_list' => service(ConstraintViolationListNormalizer::class, [1 => new Reference('serializer.name_converter.metadata_aware')])->public(false)->tag('serializer.normalizer', ['priority' => -915]),
+            'serializer.normalizer.mime_message' => service(MimeMessageNormalizer::class, [new Reference('serializer.normalizer.property')])->public(false)->tag('serializer.normalizer', ['priority' => -915]),
+            'serializer.normalizer.datetimezone' => service(DateTimeZoneNormalizer::class)->public(false)->tag('serializer.normalizer', ['priority' => -915]),
+            'serializer.normalizer.dateinterval' => service(DateIntervalNormalizer::class)->public(false)->tag('serializer.normalizer', ['priority' => -915]),
+            'serializer.normalizer.datetime' => service(DateTimeNormalizer::class)->public(false)->tag('serializer.normalizer', ['priority' => -910]),
+            'serializer.normalizer.data_uri' => service(DataUriNormalizer::class, [new Reference('?mime_types')])->public(false)->tag('serializer.normalizer', ['priority' => -920]),
+            'serializer.normalizer.json_serializable' => service(JsonSerializableNormalizer::class)->public(false)->tag('serializer.normalizer', ['priority' => -900]),
+            'serializer.normalizer.problem' => service(ProblemNormalizer::class, ['%debug%'])->public(false)->tag('serializer.normalizer', ['priority' => -890]),
+            'serializer.denormalizer.unwrapping' => service(UnwrappingDenormalizer::class, [new Reference('?property_accessor')])->public(false)->tag('serializer.normalizer', ['priority' => 1000]),
+            'serializer.normalizer.uid' => service(UidNormalizer::class)->public(false)->tag('serializer.normalizer', ['priority' => -890]),
+            'serializer.denormalizer.array' => service(ArrayDenormalizer::class)->public(false)->tag('serializer.normalizer', ['priority' => -990]),
+            'serializer.mapping.chain_loader' => $chainLoader = service(LoaderChain::class, [[]]),
+            'serializer.encoder.xml' => service(XmlEncoder::class)->public(false)->tag('serializer.encoder'),
+            'serializer.encoder.json' => service(JsonEncoder::class)->public(false)->tag('serializer.encoder'),
+            'serializer.encoder.csv' => service(CsvEncoder::class)->public(false)->tag('serializer.encoder'),
+        ];
 
         if ($container->hasExtension(CacheExtension::class)) {
-            $container->autowire('serializer.mapping.cache_class_metadata_factory', new Definition(CacheClassMetadataFactory::class, [new Reference('serializer.mapping.class_metadata_factory'), new Reference('cache.system')]));
-        } else {
-            $factory->autowire();
+            $definitions[$cM = 'serializer.mapping.cache_class_metadata_factory'] = service(CacheClassMetadataFactory::class, [new Reference('serializer.mapping.class_metadata_factory'), new Reference('cache.system')])->public(false);
         }
 
-        $container->set('serializer.normalizer.constraint_violation_list', new Definition(ConstraintViolationListNormalizer::class, [[], new Reference('serializer.name_converter.metadata_aware')]))->public(false)->tag('serializer.normalizer');
-        $container->set('serializer.normalizer.mime_message', new Definition(MimeMessageNormalizer::class, [new Reference('serializer.normalizer.property')]))->public(false)->tag('serializer.normalizer');
-        $container->set('serializer.normalizer.datetimezone', new Definition(DateTimeZoneNormalizer::class))->public(false)->tag('serializer.normalizer');
-        $container->set('serializer.normalizer.dateinterval', new Definition(DateIntervalNormalizer::class))->public(false)->tag('serializer.normalizer');
-        $container->set('serializer.normalizer.data_uri', new Definition(DataUriNormalizer::class))->public(false)->tag('serializer.normalizer');
-        $container->set('serializer.normalizer.datetime', new Definition(DateTimeNormalizer::class))->public(false)->tag('serializer.normalizer');
-        $container->set('serializer.normalizer.json_serializable', new Definition(JsonSerializableNormalizer::class))->public(false)->tag('serializer.normalizer');
-        $container->set('serializer.normalizer.problem', new Definition(ProblemNormalizer::class, ['%debug%']))->public(false)->tag('serializer.normalizer');
-        $container->set('serializer.normalizer.uid', new Definition(UidNormalizer::class))->public(false)->tag('serializer.normalizer');
-        $container->set('serializer.denormalizer.array', new Definition(ArrayDenormalizer::class))->public(false)->tag('serializer.normalizer');
-        $chainLoader = $container->set('serializer.mapping.chain_loader', new Definition(LoaderChain::class, [[]]))->public(false);
-
-        $container->set('serializer.encoder.xml', new Definition(XmlEncoder::class))->public(false)->tag('serializer.encoder');
-        $container->set('serializer.encoder.json', new Definition(JsonEncoder::class))->public(false)->tag('serializer.encoder');
-        $container->set('serializer.encoder.csv', new Definition(CsvEncoder::class))->public(false)->tag('serializer.encoder');
-
         if (\class_exists(Yaml::class)) {
-            $container->set('serializer.encoder.yaml', new Definition(YamlEncoder::class))->public(false)->tag('serializer.encoder');
+            $definitions['serializer.encoder.yaml'] = service(YamlEncoder::class)->public(false)->tag('serializer.encoder');
         }
 
         if ($container->hasExtension(FormExtension::class)) {
-            $container->set('serializer.normalizer.form_error', new Definition(FormErrorNormalizer::class))->public(false)->tag('serializer.normalizer');
+            $definitions['serializer.normalizer.form_error'] = service(FormErrorNormalizer::class)->public(false)->tag('serializer.normalizer', ['priority' => -915]);
         }
 
-        if ($container->hasExtension(PropertyAccessExtension::class)) {
-            $container->set('serializer.denormalizer.unwrapping', new Definition(UnwrappingDenormalizer::class))->public(false)->tag('serializer.normalizer');
-            $container->set('serializer.normalizer.object', new Definition(
+        $definitions += [
+            'property_info.serializer_extractor' => service(SerializerExtractor::class, [new Reference($cM)])->public(false)->tag('property_info.list_extractor', ['priority' => -999]),
+            'serializer.mapping.class_discriminator_resolver' => service(ClassDiscriminatorFromClassMetadata::class, [new Reference($cM)])->public(false),
+            'serializer.name_converter.metadata_aware' => $nameConverter = service(MetadataAwareNameConverter::class, [new Reference($cM), new Statement(CamelCaseToSnakeCaseNameConverter::class)])->autowire()->public(false),
+            'serializer.normalizer.object' => $sno = service(
                 ObjectNormalizer::class,
                 [
-                    new Reference('serializer.mapping.class_metadata_factory'),
+                    new Reference($cM),
                     new Reference('serializer.name_converter.metadata_aware'),
                     new Reference('?property_accessor'),
+                    new Reference('?property_info'),
                     new Reference('serializer.mapping.class_discriminator_resolver'),
                 ]
-            ))->public(false)->tag('serializer.normalizer')->autowire([ObjectNormalizer::class]);
-            $container->set('serializer.normalizer.property', new Definition(
-                PropertyNormalizer::class,
+            )->public(false)->tag('serializer.normalizer', ['priority' => 1000]),
+            'serializer.normalizer.property' => service(PropertyNormalizer::class,
                 [
-                    new Reference('serializer.mapping.class_metadata_factory'),
+                    new Reference($cM),
                     new Reference('serializer.name_converter.metadata_aware'),
-                    new Reference('?property_accessor'),
+                    new Reference('?property_info'),
                     new Reference('serializer.mapping.class_discriminator_resolver'),
                 ]
-            ))->public(false)->tag('serializer.normalizer')->autowire([PropertyNormalizer::class]);
-        }
-
-        $container->set('property_info.serializer_extractor', new Definition(SerializerExtractor::class, [new Reference('serializer.mapping.class_metadata_factory')]))->public(false)->tag('property_info.list_extractor');
-        $container->set('serializer.name_converter.camel_case_to_snake_case', new Definition(CamelCaseToSnakeCaseNameConverter::class))->public(false);
-        $nameConverter = $container->set('serializer.name_converter.metadata_aware', new Definition(MetadataAwareNameConverter::class, [new Reference('serializer.mapping.class_metadata_factory')]))->public(false);
+            )->public(false)->tag('serializer.normalizer'),
+        ];
 
         if (\interface_exists(\BackedEnum::class)) {
-            $container->set('serializer.normalizer.backed_enum', new Definition(BackedEnumNormalizer::class))->public(false)->tag('serializer.normalizer');
+            $definitions['serializer.normalizer.backed_enum'] = service(BackedEnumNormalizer::class)->public(false)->tag('serializer.normalizer', ['priority' => -915]);
         }
 
         if (isset($configs['enable_annotations']) && $configs['enable_annotations']) {
@@ -227,25 +233,26 @@ class SerializerExtension implements AliasedInterface, BootExtensionInterface, C
         $this->registerMappingFilesFromConfig($container, $configs['mapping']['paths'], $fileRecorder);
         $chainLoader->arg(0, $serializerLoaders);
 
-        if (isset($config['name_converter']) && $config['name_converter']) {
-            $nameConverter->arg(1, new Reference($config['name_converter']));
+        if (isset($configs['name_converter']) && $configs['name_converter']) {
+            $nameConverter->arg(1, new Reference($configs['name_converter']));
         }
 
-        if (isset($config['circular_reference_handler']) && $config['circular_reference_handler'] && $container->has('serializer.normalizer.object')) {
-            $arguments = $container->definition('serializer.normalizer.object')->getArguments();
-            $context = ($arguments[6] ?? []) + ['circular_reference_handler' => new Reference($config['circular_reference_handler'])];
-            $container->definition('serializer.normalizer.object')->args([5 => null, 6 => $context]);
+        if (isset($configs['circular_reference_handler']) && $configs['circular_reference_handler']) {
+            $context = ['circular_reference_handler' => new Reference($configs['circular_reference_handler'])];
+            $sno->args([5 => null, 6 => $context]);
         }
 
-        if ($config['max_depth_handler'] ?? false) {
-            $defaultContext = $container->definition('serializer.normalizer.object')->getArguments()[6] ?? [];
+        if ($configs['max_depth_handler'] ?? false) {
+            $defaultContext = $sno->getArguments()[6] ?? [];
             $defaultContext += ['max_depth_handler' => new Reference($configs['max_depth_handler'])];
-            $container->definition('serializer.normalizer.object')->arg(6, $defaultContext);
+            $sno->arg(6, $defaultContext);
         }
 
-        if (isset($config['default_context']) && $config['default_context']) {
+        if (isset($configs['default_context']) && $configs['default_context']) {
             $container->parameters['serializer.default_context'] = $configs['default_context'];
         }
+
+        $container->multiple($definitions);
     }
 
     /**
@@ -253,6 +260,10 @@ class SerializerExtension implements AliasedInterface, BootExtensionInterface, C
      */
     public function boot(AbstractContainer $container): void
     {
+        if (!$container->has('serializer')) {
+            return;
+        }
+
         if (!$container->tagged('serializer.normalizer')) {
             throw new \RuntimeException('You must tag at least one service as "serializer.normalizer" to use the "serializer" service.');
         }
@@ -264,7 +275,13 @@ class SerializerExtension implements AliasedInterface, BootExtensionInterface, C
         if (($defaultContext = $container->parameters['serializer.default_context'] ?? null)) {
             foreach (\array_merge($container->findBy('serializer.normalizer'), $container->findBy('serializer.encoder')) as $service) {
                 $definition = $container->definition($service);
-                $definition->arg('defaultContext', $defaultContext + $definition->getBindings());
+                $initialContext = [];
+
+                if ('serializer.normalizer.object' === $service) {
+                    $initialContext = $definition->getArguments()[6] ?? [];
+                }
+
+                $definition->arg('defaultContext', $defaultContext + $initialContext);
             }
 
             unset($container->parameters['serializer.default_context']);
