@@ -182,7 +182,8 @@ class SerializerExtension implements AliasedInterface, BootExtensionInterface, C
                     new Reference('serializer.mapping.class_discriminator_resolver'),
                 ]
             )->public(false)->tag('serializer.normalizer', ['priority' => 1000]),
-            'serializer.normalizer.property' => service(PropertyNormalizer::class,
+            'serializer.normalizer.property' => service(
+                PropertyNormalizer::class,
                 [
                     new Reference($cM),
                     new Reference('serializer.name_converter.metadata_aware'),
