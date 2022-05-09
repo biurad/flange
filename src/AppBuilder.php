@@ -19,6 +19,7 @@ namespace Rade;
 
 use Fig\Http\Message\RequestMethodInterface;
 use Flight\Routing\Interfaces\RouteMatcherInterface;
+use Flight\Routing\Interfaces\UrlGeneratorInterface;
 use Flight\Routing\Route;
 use Flight\Routing\RouteCollection;
 use Flight\Routing\Router;
@@ -39,7 +40,7 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
         parent::__construct(Application::class);
 
         $this->parameters['debug'] = $debug;
-        $this->set('http.router', new DI\Definition(Router::class))->autowire([Router::class, RouteMatcherInterface::class]);
+        $this->set('http.router', new DI\Definition(Router::class))->autowire([Router::class, RouteMatcherInterface::class, UrlGeneratorInterface::class]);
     }
 
     /**
@@ -83,7 +84,7 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
     {
         $routes = $this->parameters['routes'] ??= new RouteCollection();
 
-        return $routes->addRoute($pattern, $methods, $to)->getRoute();
+        return $routes->add(new Route($pattern, $methods, $to), false)->getRoute();
     }
 
     /**

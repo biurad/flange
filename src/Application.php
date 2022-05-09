@@ -22,7 +22,7 @@ use Biurad\Http\Factory\Psr17Factory;
 use Flight\Routing\{Exceptions\RouteNotFoundException, Route, RouteCollection, Router};
 use Fig\Http\Message\RequestMethodInterface;
 use Flight\Routing\Generator\GeneratedUri;
-use Flight\Routing\Interfaces\RouteMatcherInterface;
+use Flight\Routing\Interfaces\{RouteMatcherInterface, UrlGeneratorInterface};
 use Psr\Http\Message\{ResponseInterface, ServerRequestInterface};
 use Psr\Http\Server\{MiddlewareInterface, RequestHandlerInterface};
 use Laminas\Stratigility\Middleware\{CallableMiddlewareDecorator, RequestHandlerMiddleware};
@@ -61,6 +61,7 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
                 RequestStack::class => ['request_stack'],
                 Router::class => ['http.router'],
                 RouteMatcherInterface::class => ['http.router'],
+                UrlGeneratorInterface::class => ['http.router'],
             ];
             $this->types(['psr17.factory' => DI\Resolver::autowireService($psr17Factory), 'events.dispatcher' => DI\Resolver::autowireService($dispatcher)]);
         }
@@ -116,7 +117,7 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
      */
     public function match(string $pattern, array $methods = Route::DEFAULT_METHODS, $to = null): Route
     {
-        return $this->get('http.router')->getCollection()->addRoute($pattern, $methods, $to)->getRoute();
+        return $this->get('http.router')->getCollection()->add(new Route($pattern, $methods, $to), false)->getRoute();
     }
 
     /**

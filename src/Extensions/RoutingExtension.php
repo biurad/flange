@@ -21,6 +21,7 @@ use Biurad\Http\Middlewares\ErrorHandlerMiddleware;
 use Biurad\Http\Middlewares\PrepareResponseMiddleware;
 use Flight\Routing\Annotation\Listener;
 use Flight\Routing\Interfaces\RouteMatcherInterface;
+use Flight\Routing\Interfaces\UrlGeneratorInterface;
 use Flight\Routing\Middlewares\PathMiddleware;
 use Flight\Routing\Router;
 use Flight\Routing\Route;
@@ -215,7 +216,7 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
         }
 
         if (!$container->has('http.router')) {
-            $container->set('http.router', new Definition(Router::class))->autowire([Router::class, RouteMatcherInterface::class]);
+            $container->set('http.router', new Definition(Router::class))->autowire([Router::class, RouteMatcherInterface::class, UrlGeneratorInterface::class]);
         }
 
         if ($container->has('http.middleware.cookie')) {
@@ -310,9 +311,9 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
         if (null !== $collection) {
             foreach ($collection->getRoutes() as $route) {
                 $routeData = $route->getData();
-                $routeData['methods'] = \array_keys($routeData['methods']);
-                unset($routeData['prefix']);
-                $routes[] = new PhpLiteral(Route::class . '::__set_state(\'%?\');', [$routeData]);
+                $handler = $routeData['handler'] ?? null;
+                unset($routeData['handler']);
+                $routes[] = new PhpLiteral(Route::class . '::__set_state(\'%?\');', [['handler' => $handler, 'data' => $routeData]]);
             }
         }
 
@@ -362,7 +363,7 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
             }
 
             if (!empty($routes)) {
-                $groupedCollection .= '$collection->routes(\'%?\');';
+                $groupedCollection .= '$collection->routes(\'%?\', false);';
                 $groupArgs[] = $routes;
             }
 
