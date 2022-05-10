@@ -332,14 +332,13 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
             }
 
             if ($nbUserProviders > 1) {
-                $container->set('security.user_providers', new Definition(ChainUserProvider::class, [$userProviders]));
+                $container->autowire('security.user_providers', new Definition(ChainUserProvider::class, [$userProviders]));
 
                 foreach ($userProviders as $userProvider) {
-                    $container->definition((string) $userProvider)->public(false);
+                    $container->definition($userProvider)->public(false);
                 }
             } elseif (1 === $nbUserProviders) {
-                $container->alias('security.user_providers', (string) $userProviders[0]);
-                $container->definition((string) $userProviders[0])->autowire();
+                $container->definition($userProviders[0])->autowire();
             }
         }
 
@@ -420,11 +419,11 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
                             'memory' => [
                                 'users' => [
                                     'foo' => ['password' => 'foo', 'roles' => 'ROLE_USER'],
-                                    'bar' => ['password' => 'bar', 'roles' => '[ROLE_USER, ROLE_ADMIN]'],
+                                    'bar' => ['password' => 'bar', 'roles' => ['ROLE_USER', 'ROLE_ADMIN']],
                                 ],
                             ],
                         ],
-                        'my_entity_provider' => ['entity' => ['class' => 'SecurityBundle:User', 'property' => 'username']],
+                        'my_entity_provider' => ['entity' => ['class' => 'Security::User', 'property' => 'username']],
                     ])
                     ->requiresAtLeastOneElement()
                     ->useAttributeAsKey('name')
@@ -624,7 +623,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
             foreach ($provider['chain']['providers'] as $providerName) {
                 $providers[] = new Reference('security.user.provider.concrete.' . \strtolower($providerName));
             }
-            $container->set($name, new Definition(ChainUserProvider::class, [$providers]));
+            $container->set($name, new Definition(ChainUserProvider::class, [$providers]))->public(false);
 
             return new Reference($name);
         }
