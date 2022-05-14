@@ -17,8 +17,9 @@ declare(strict_types=1);
 
 namespace Rade;
 
-use Biurad\Http\{Interfaces\Psr17Interface, Request, Response, Response\HtmlResponse};
+use Biurad\Http\{Request, Response, Response\HtmlResponse};
 use Biurad\Http\Factory\Psr17Factory;
+use Biurad\Http\Interfaces\Psr17Interface;
 use Flight\Routing\{Exceptions\RouteNotFoundException, Route, RouteCollection, Router};
 use Fig\Http\Message\RequestMethodInterface;
 use Flight\Routing\Generator\GeneratedUri;
@@ -49,6 +50,7 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
     public function __construct(Psr17Interface $psr17Factory = null, EventDispatcherInterface $dispatcher = null, bool $debug = false)
     {
         parent::__construct();
+        $this->parameters['debug'] ??= $debug;
 
         if (!isset($this->parameters['project.compiled_container_class'])) {
             $this->definitions = [
@@ -65,10 +67,6 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
             ];
             $this->types(['psr17.factory' => DI\Resolver::autowireService($psr17Factory), 'events.dispatcher' => DI\Resolver::autowireService($dispatcher)]);
         }
-
-        if (!isset($this->parameters['debug'])) {
-            $this->parameters['debug'] = $debug;
-        }
     }
 
     /**
@@ -84,6 +82,11 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
         return $this->services['events.dispatcher'] ?? $this->get('events.dispatcher');
     }
 
+    public function getRouter(): Router
+    {
+        return $this->services['http.router'] ?? $this->get('http.router');
+    }
+
     /**
      * {@inheritdoc}
      *
@@ -91,7 +94,7 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
      */
     public function pipe(object ...$middlewares): void
     {
-        $this->get('http.router')->pipe(...$this->resolveMiddlewares($middlewares));
+        $this->getRouter()->pipe(...$this->resolveMiddlewares($middlewares));
     }
 
     /**
@@ -101,7 +104,7 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
      */
     public function pipes(string $named, object ...$middlewares): void
     {
-        $this->get('http.router')->pipes($named, ...$this->resolveMiddlewares($middlewares));
+        $this->getRouter()->pipes($named, ...$this->resolveMiddlewares($middlewares));
     }
 
     /**
@@ -109,7 +112,7 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
      */
     public function generateUri(string $routeName, array $parameters = []): GeneratedUri
     {
-        return $this->get('http.router')->generateUri($routeName, $parameters);
+        return $this->getRouter()->generateUri($routeName, $parameters);
     }
 
     /**
@@ -117,7 +120,7 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
      */
     public function match(string $pattern, array $methods = Route::DEFAULT_METHODS, $to = null): Route
     {
-        return $this->get('http.router')->getCollection()->add(new Route($pattern, $methods, $to), false)->getRoute();
+        return $this->getRouter()->getCollection()->add(new Route($pattern, $methods, $to), false)->getRoute();
     }
 
     /**
@@ -165,7 +168,7 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
      */
     public function group(string $prefix, $collection = null): RouteCollection
     {
-        return $this->get('http.router')->getCollection()->group($prefix, $collection);
+        return $this->getRouter()->getCollection()->group($prefix, $collection);
     }
 
     /**
@@ -195,11 +198,11 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
             return true;
         }
 
-        if (class_exists(SapiStreamEmitter::class)) {
-            return (new SapiStreamEmitter())->emit($response);
+        if (!\class_exists(SapiStreamEmitter::class)) {
+            throw new \RuntimeException(\sprintf('Unable to emit response onto the browser. Try running "composer require laminas/laminas-httphandlerrunner".'));
         }
 
-        throw new \RuntimeException(\sprintf('Unable to emit response onto the browser. Try running "composer require laminas/laminas-httphandlerrunner".'));
+        return (new SapiStreamEmitter())->emit($response);
     }
 
     /**
@@ -216,7 +219,7 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
         }
 
         try {
-            $response = $this->get('http.router')->process($request, $this->get(RequestHandlerInterface::class));
+            $response = $this->getRouter()->process($request, $this->get(RequestHandlerInterface::class));
 
             if ($request instanceof Request) {
                 $request = $request->withRequest($this->get('request_stack')->getMainRequest());

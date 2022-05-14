@@ -153,8 +153,7 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
      */
     public static function build(callable $application, array $options = []): Application
     {
-        $debug = $options['debug'] ?? $_SERVER['APP_DEBUG'] ?? $_ENV['APP_DEBUG'] ?? false;
-        $defFile = 'load_' . ($containerClass = 'App_' . ($debug ? 'Debug' : '') . 'Container') . '.php';
+        $defFile = 'load_' . ($containerClass = 'App_' . (($debug = $options['debug'] ?? false) ? 'Debug' : '') . 'Container') . '.php';
         $cacheDir = $options['cacheDir'] ?? \dirname((new \ReflectionClass(\Composer\Autoload\ClassLoader::class))->getFileName(), 2);
         $cache = new ConfigCache($cachePath = $cacheDir . '/' . $containerClass . '_' . \PHP_SAPI . '.php', $debug);
 
@@ -169,7 +168,6 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
 
             // Autoload require hot paths ...
             $requiredPaths = $appBuilder->parameters['project.require_paths'] ?? [];
-            unset($appBuilder->parameters['project.require_paths']);
 
             // Default node visitors.
             $appBuilder->addNodeVisitor(new DI\NodeVisitor\MethodsResolver());
@@ -195,7 +193,7 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
     public function compile(array $options = [])
     {
         $this->parameters['project.compiled_container_class'] = $options['containerClass'];
-        unset($this->definitions['config.builder.loader_resolver']);
+        unset($this->definitions['config.builder.loader_resolver'], $this->parameters['project.require_paths']);
 
         if (isset($this->parameters['routes'])) {
             throw new ServiceCreationException(\sprintf('The %s extension needs to be registered before adding routes.', DI\Extensions\RoutingExtension::class));
