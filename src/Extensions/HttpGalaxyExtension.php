@@ -36,9 +36,10 @@ use Symfony\Component\HttpFoundation\Session\Storage\Handler\AbstractSessionHand
 use Symfony\Component\HttpFoundation\Session\Storage\Handler\NativeFileSessionHandler;
 use Symfony\Component\HttpFoundation\Session\Storage\Handler\NullSessionHandler;
 use Symfony\Component\HttpFoundation\Session\Storage\Handler\SessionHandlerFactory;
-use Symfony\Component\HttpFoundation\Session\Storage\Handler\StrictSessionHandler;
 use Symfony\Component\HttpFoundation\Session\Storage\MetadataBag;
 use Symfony\Component\HttpFoundation\Session\Storage\NativeSessionStorage;
+use Symfony\Component\Security\Csrf\CsrfTokenManager;
+use Symfony\Component\Security\Csrf\TokenStorage\SessionTokenStorage;
 
 use function Rade\DI\Loader\{reference, service, wrap};
 
@@ -95,6 +96,15 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
                             ->defaultValue([])
                             ->prototype('scalar')->end()
                         ->end()
+                    ->end()
+                ->end()
+                ->arrayNode('csrf_protection')
+                    ->treatFalseLike(['enabled' => false])
+                    ->treatTrueLike(['enabled' => true])
+                    ->treatNullLike(['enabled' => true])
+                    ->addDefaultsIfNotSet()
+                    ->children()
+                        ->booleanNode('enabled')->defaultNull()->end()
                     ->end()
                 ->end()
                 ->arrayNode('policies')
@@ -237,14 +247,20 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
      */
     public function register(AbstractContainer $container, array $configs = []): void
     {
+        $definitions = [
+            'http.middleware.headers' => service(HttpHeadersMiddleware::class, [\array_diff_key($configs['headers'], ['cors' => []])])->public(false),
+        ];
+
         if (!$container->has('psr17.factory')) {
-            $container->autowire('psr17.factory', service($configs['psr17_factory'] ?? Psr17Factory::class));
+            $definitions['psr17.factory'] = service($configs['psr17_factory'] ?? Psr17Factory::class)->autowire();
         }
 
         if ($configs['cookie']['enabled']) {
             unset($configs['cookie']['enabled']);
-            $cookie = $container->set('http.cookie', service(CookieFactory::class))->typed([CookieFactory::class, CookieFactoryInterface::class]);
-            $cookieMiddleware = $container->set('http.middleware.cookie', service(CookiesMiddleware::class));
+            $definitions += [
+                'http.cookie' => $cookie = service(CookieFactory::class)->autowire([CookieFactory::class, CookieFactoryInterface::class]),
+                'http.middleware.cookie' => $cookieMiddleware = service(CookiesMiddleware::class)->public(false),
+            ];
             $cookies = [];
 
             foreach ($configs['cookie']['cookies'] as $cookieData) {
@@ -258,23 +274,21 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
             if (!empty($excludeCookies = $configs['cookie']['excludes_encryption'])) {
                 $cookieMiddleware->bind('excludeEncodingFor', $excludeCookies);
             }
-        }
-
-        $container->set('http.middleware.headers', service(HttpHeadersMiddleware::class, [\array_diff_key($configs['headers'], ['cors' => []])]));
+        };
 
         if ($configs['policies']['enabled']) {
             unset($configs['policies']['enabled']);
-            $container->set('http.middleware.policies', service(HttpPolicyMiddleware::class, [$configs['policies']]));
+            $definitions['http.middleware.policies'] = service(HttpPolicyMiddleware::class, [$configs['policies']])->public(false);
         }
 
         if ($configs['headers']['cors']['enabled']) {
             unset($configs['headers']['cors']['enabled']);
-            $container->set('http.middleware.cors', service(HttpCorsMiddleware::class, [$configs['headers']['cors']]));
+            $definitions['http.middleware.cors'] = service(HttpCorsMiddleware::class, [$configs['headers']['cors']])->public(false);
         }
 
         if ($configs['caching']['enabled']) {
             unset($configs['caching']['enabled']);
-            $container->set('http.middleware.cache', service(CacheControlMiddleware::class, [3 => $configs['caching']]));
+            $definitions['http.middleware.cache'] = service(CacheControlMiddleware::class, [3 => $configs['caching']])->public(false);
         }
 
         if (($session = $configs['session'])['enabled']) {
@@ -284,25 +298,38 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
                 throw new \LogicException('Session support cannot be enabled as the session extension is not installed. See https://php.net/session.installation for instructions.');
             }
 
-            $container->autowire('session.storage.native', service(NativeSessionStorage::class, [
-                $sessionArgs = \array_diff_key($session, ['storage_id' => null, 'handler_id' => null, 'meta_storage_key' => null, 'metadata_update_threshold' => null]),
-                reference('session.handler'),
-            ]))
-                ->arg(2, wrap(MetadataBag::class, [$session['meta_storage_key'], $session['metadata_update_threshold']]));
-
-            $container->autowire(
-                'session.handler.native_file',
-                $container instanceof KernelInterface && $container->isRunningInConsole() ? service(NullSessionHandler::class) : service(NativeFileSessionHandler::class, [$session['save_path']])
-            );
+            $definitions += [
+                'session.storage.native' => service(NativeSessionStorage::class, [
+                    $sessionArgs = \array_diff_key($session, ['storage_id' => null, 'handler_id' => null, 'meta_storage_key' => null, 'metadata_update_threshold' => null]),
+                    reference('session.handler'),
+                    wrap(MetadataBag::class, [$session['meta_storage_key'], $session['metadata_update_threshold']]),
+                ]),
+                'session.handler.native_file' => ($container instanceof KernelInterface && $container->isRunningInConsole() ? service(NullSessionHandler::class) : service(NativeFileSessionHandler::class, [$session['save_path']]))->autowire(),
+                'http.middleware.session' => service(SessionMiddleware::class, [wrap(reference('http.session'), $sessionArgs, true)])->public(false),
+                'http.session' => service(Session::class, [reference($session['storage_id'])])->autowire(),
+            ];
 
             if ($container->has($session['handler_id'])) {
                 $container->alias('session.handler', $session['handler_id']);
             } else {
-                $container->set('session.handler', service([wrap(SessionHandlerFactory::class), 'createHandler']))->args([$session['handler_id']])->autowire([AbstractSessionHandler::class]);
+                $definitions['session.handler'] = service([wrap(SessionHandlerFactory::class), 'createHandler'], [$session['handler_id']])->autowire([AbstractSessionHandler::class]);
+            }
+        }
+
+        if ($configs['csrf_protection']['enabled']) {
+            unset($configs['csrf_protection']['enabled']);
+
+            if (!\class_exists(\Symfony\Component\Security\Csrf\CsrfToken::class)) {
+                throw new \LogicException('CSRF support cannot be enabled as the Security CSRF component is not installed. Try running "composer require symfony/security-csrf".');
             }
 
-            $container->set('http.middleware.session', service(SessionMiddleware::class, [wrap(reference('http.session'), $sessionArgs, true)]));
-            $container->autowire('http.session', service(Session::class, [reference($session['storage_id'])]));
+            $definitions['http.csrf.token_manager'] = $csrf = service(CsrfTokenManager::class, [2 => reference('?request_stack')])->autowire();
+
+            if ($container->has('http.session')) {
+                $csrf->arg(0, wrap(SessionTokenStorage::class, [reference('request_stack')]));
+            }
         }
+
+        $container->multiple($definitions);
     }
 }
