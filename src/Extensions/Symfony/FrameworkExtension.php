@@ -62,6 +62,7 @@ class FrameworkExtension implements AliasedInterface, DependenciesInterface, Ext
             SerializerExtension::class,
             MailerExtension::class,
             NotifierExtension::class,
+            WorkflowExtension::class,
         ];
     }
 
