@@ -59,6 +59,7 @@ class RememberMeFactory extends AbstractFactory
         $builder
             ->scalarNode('secret')->isRequired()->cannotBeEmpty()->end()
             ->scalarNode('parameter')->defaultValue('_remember_me')->end()
+            ->scalarNode('user_parameter')->defaultValue('_remember_user_id')->end()
             ->booleanNode('allow_multiple_tokens')->defaultFalse()->end()
             ->integerNode('max_uses')->end()
             ->integerNode('signature_lifetime')->defaultValue(600)->end()
@@ -111,6 +112,7 @@ class RememberMeFactory extends AbstractFactory
             $tokenVerifier ?? null,
             new Reference('?security.authenticator.remember_me_signature_hasher'),
             $config['parameter'],
+            $config['user_parameter'],
             \array_intersect_key($config, $this->options),
         ]));
         $container->autowire('security.authenticator.remember_me', new Definition(RememberMeAuthenticator::class, [new Reference('security.authenticator.remember_me_handler'), 2 => $config['allow_multiple_tokens']]));

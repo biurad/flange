@@ -52,7 +52,7 @@ class FormLoginFactory extends AbstractFactory
             $config['provider'] = new Reference('security.user.provider.concrete.' . \strtolower($config['provider']));
         }
 
-        $container->set($id, new Definition(FormLoginAuthenticator::class, [
+        $container->autowire($id, new Definition(FormLoginAuthenticator::class, [
             $config['provider'] ?? new Statement(MissingUserProvider::class, ['main']),
             new Reference('security.password_hasher_factory'),
             5 => $config['erase_credentials'],
