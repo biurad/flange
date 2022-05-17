@@ -51,10 +51,10 @@ class EventDispatcherExtension implements AliasedInterface, BootExtensionInterfa
     {
         $globalDispatcher = $container->definition($id = 'events.dispatcher');
 
-        if (
-            !$globalDispatcher instanceof EventDispatcherInterface ||
-            ($globalDispatcher instanceof DefinitionInterface && !\is_subclass_of($globalDispatcher->getEntity(), EventDispatcherInterface::class))
-        ) {
+        if (!(
+            $globalDispatcher instanceof EventDispatcherInterface ||
+            ($globalDispatcher instanceof DefinitionInterface && \is_subclass_of($globalDispatcher->getEntity(), EventDispatcherInterface::class))
+        )) {
             $container->removeDefinition($id);
             $container->set($inner = $id . '.inner', $globalDispatcher);
             $container->tag($inner, 'container.decorated_services');
@@ -71,37 +71,35 @@ class EventDispatcherExtension implements AliasedInterface, BootExtensionInterfa
         $globalDispatcherDefinition = $container->definition('events.dispatcher');
         $eventSubscribers = \array_merge($container->tagged('event_subscriber'), $container->findBy(EventSubscriberInterface::class));
 
-        foreach ($container->tagged('event_listener') as $id => $events) {
-            foreach ($events as $event) {
-                $priority = $event['priority'] ?? 0;
+        foreach ($container->tagged('event_listener') as $id => $event) {
+            $priority = $event['priority'] ?? 0;
 
-                if (!isset($event['event'])) {
-                    if ($container->definition($id)->tagged('event_subscriber')) {
-                        continue;
-                    }
-
-                    $event['method'] = $event['method'] ?? '__invoke';
-                    $event['event'] = $this->getEventFromTypeDeclaration($container, $id, $event['method']);
+            if (!isset($event['event'])) {
+                if ($container->definition($id)->tagged('event_subscriber')) {
+                    continue;
                 }
 
-                $event['event'] = $aliases[$event['event']] ?? $event['event'];
+                $event['method'] = $event['method'] ?? '__invoke';
+                $event['event'] = $this->getEventFromTypeDeclaration($container, $id, $event['method']);
+            }
 
-                if (!isset($event['method'])) {
-                    $event['method'] = 'on' . \preg_replace_callback([
-                        '/(?<=\b|_)[a-z]/i',
-                        '/[^a-z0-9]/i',
-                    ], function ($matches) {
+            $event['event'] = $aliases[$event['event']] ?? $event['event'];
+
+            if (!isset($event['method'])) {
+                $event['method'] = 'on' . \preg_replace_callback([
+                    '/(?<=\b|_)[a-z]/i',
+                    '/[^a-z0-9]/i',
+                ], function ($matches) {
                         return \strtoupper($matches[0]);
                     }, $event['event']);
-                    $event['method'] = \preg_replace('/[^a-z0-9]/i', '', $event['method']);
+                $event['method'] = \preg_replace('/[^a-z0-9]/i', '', $event['method']);
 
-                    if (null !== ($class = $container->definition($id)->getEntity()) && ($r = new \ReflectionClass($class, false)) && !$r->hasMethod($event['method']) && $r->hasMethod('__invoke')) {
-                        $event['method'] = '__invoke';
-                    }
+                if (null !== ($class = $container->definition($id)->getEntity()) && ($r = new \ReflectionClass($class, false)) && !$r->hasMethod($event['method']) && $r->hasMethod('__invoke')) {
+                    $event['method'] = '__invoke';
                 }
-
-                $this->addEventListener($container, isset($event['dispatcher']) ? $container->definition($event['dispatcher']) : $globalDispatcherDefinition, [$id, $priority, $event]);
             }
+
+            $this->addEventListener($container, isset($event['dispatcher']) ? $container->definition($event['dispatcher']) : $globalDispatcherDefinition, [$id, $priority, $event]);
         }
 
         foreach ($eventSubscribers as $id => $dispatcher) {
