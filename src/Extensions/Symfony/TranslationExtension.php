@@ -31,6 +31,7 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Config\Resource\FileExistenceResource;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Form\Form;
+use Symfony\Component\Security\Core\Security;
 use Symfony\Component\Translation\Bridge\Crowdin\CrowdinProviderFactory;
 use Symfony\Component\Translation\Bridge\Loco\LocoProviderFactory;
 use Symfony\Component\Translation\Bridge\Lokalise\LokaliseProviderFactory;
@@ -236,6 +237,12 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
 
         if ($container->hasExtension(FormExtension::class)) {
             $r = new \ReflectionClass(Form::class);
+            $dirs[] = $transPaths[] = \dirname($r->getFileName()) . '/Resources/translations';
+            unset($r);
+        }
+
+        if (\class_exists(Security::class)) {
+            $r = new \ReflectionClass(Security::class);
             $dirs[] = $transPaths[] = \dirname($r->getFileName()) . '/Resources/translations';
             unset($r);
         }
