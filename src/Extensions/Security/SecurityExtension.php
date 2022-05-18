@@ -30,7 +30,6 @@ use Rade\DI\Definitions\TaggedLocator;
 use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Extensions\ExtensionInterface;
-use Rade\DI\Extensions\HttpGalaxyExtension;
 use Rade\DI\Extensions\Symfony;
 use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
@@ -45,6 +44,7 @@ use Symfony\Component\PasswordHasher\Hasher\PlaintextPasswordHasher;
 use Symfony\Component\PasswordHasher\Hasher\SodiumPasswordHasher;
 use Symfony\Component\RateLimiter\RateLimiterFactory;
 use Symfony\Component\Security\Core\Authentication\AuthenticationTrustResolver;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorage;
 use Symfony\Component\Security\Core\Authorization\AccessDecisionManager;
 use Symfony\Component\Security\Core\Authorization\Strategy\AffirmativeStrategy;
 use Symfony\Component\Security\Core\Authorization\Strategy\ConsensusStrategy;
@@ -112,7 +112,8 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
                 ->booleanNode('hide_user_not_found')->defaultTrue()->end()
                 ->booleanNode('include_authenticators')->defaultTrue()->end()
                 ->booleanNode('erase_credentials')->defaultTrue()->end()
-                ->enumNode('token_storage')->values(['session', 'cache'])->defaultValue('session')->end()
+                ->enumNode('token_storage')->values(['session', 'cache', null])->defaultValue('session')->end()
+                ->ScalarNode('token_storage_expiry')->defaultValue('+3 hours')->end()
                 ->scalarNode('user_checker')
                     ->defaultValue('security.user_checker')
                     ->treatNullLike('security.user_checker')
@@ -285,7 +286,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
 
         if (!empty($configs['access_control'])) {
             $accessMap = $container->autowire('security.access_map', new Definition(AccessMap::class));
-            $container->autowire('security.access_map_handler', new Definition(FirewallAccessHandler::class, [new Reference('security.access_map'), new Reference('security.access.decision_manager')]));
+            $container->autowire('security.access_map_handler', new Definition(FirewallAccessHandler::class, [new Reference('security.access_map'), new Reference('security.token_storage'), new Reference('security.access.decision_manager')]));
 
             foreach ($configs['access_control'] as $access) {
                 if (isset($access['request_matcher'])) {
@@ -381,9 +382,9 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
             if (!($container->hasExtension(Symfony\CacheExtension::class) || $container->hasExtension(Symfony\FrameworkExtension::class))) {
                 throw new \LogicException(\sprintf('You cannot use the "cache" token storage without the "%s" extension.', Symfony\CacheExtension::class));
             }
-            $tokenStorage = new Reference('cache.app');
-        } elseif (false === ($container->getExtensionConfig(HttpGalaxyExtension::class)['session']['enabled'] ?? false)) {
-            throw new \LogicException(\sprintf('You cannot use the "%s" token storage without the "%s" extension and session config disabled.', $configs['token_storage'], HttpGalaxyExtension::class));
+            $tokenType = new Reference('cache.app');
+        } elseif ($container->has('http.session')) {
+            $tokenType = new Reference('http.session');
         }
 
         $container->autowire('security.authenticator', new Definition(Authenticator::class, [
@@ -391,7 +392,9 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
             4 => new Reference('?' . ($configs['throttling']['limiter'] ?? 'security.authenticator_throttling')),
             7 => $configs['hide_user_not_found'],
         ]));
-        $container->autowire('security.token_storage', new Definition(CacheableTokenStorage::class, [new Reference($tokenStorage ?? 'http.session')]));
+        $container->autowire('security.token_storage', isset($tokenType)
+            ? new Definition(CacheableTokenStorage::class, [$tokenType, new Statement('Nette\Utils\DateTime::from', [$configs['token_storage_expiry']])])
+            : new Definition(TokenStorage::class));
         $container->set('security.access.authenticated_voter', new Definition(AuthenticatedVoter::class, [new Statement(AuthenticationTrustResolver::class)]))->public(false)->tag('security.voter', ['priority' => 250]);
     }
 
