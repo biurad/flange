@@ -231,11 +231,13 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
         if ($container->hasExtension(ValidatorExtension::class)) {
             $r = new \ReflectionClass(Validation::class);
             $dirs[] = $transPaths[] = \dirname($r->getFileName()) . '/Resources/translations';
+            unset($r);
         }
 
         if ($container->hasExtension(FormExtension::class)) {
             $r = new \ReflectionClass(Form::class);
             $dirs[] = $transPaths[] = \dirname($r->getFileName()) . '/Resources/translations';
+            unset($r);
         }
 
         if ($container instanceof KernelInterface) {

@@ -163,7 +163,7 @@ class FormExtension implements AliasedInterface, BootExtensionInterface, Configu
         }
 
         if ($container->has('console')) {
-            $definitions['console.command.form_debug'] = service(DebugCommand::class)->public(false)->tag('console.command');
+            $definitions['console.command.form_debug'] = service(DebugCommand::class)->tag('console.command');
         }
 
         $container->multiple($definitions);

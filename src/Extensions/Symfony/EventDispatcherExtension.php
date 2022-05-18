@@ -72,6 +72,7 @@ class EventDispatcherExtension implements AliasedInterface, BootExtensionInterfa
         $eventSubscribers = \array_merge($container->tagged('event_subscriber'), $container->findBy(EventSubscriberInterface::class));
 
         foreach ($container->tagged('event_listener') as $id => $event) {
+            $event = \is_array($event) ? $event : [];
             $priority = $event['priority'] ?? 0;
 
             if (!isset($event['event'])) {
