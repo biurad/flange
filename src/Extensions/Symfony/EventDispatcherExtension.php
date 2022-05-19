@@ -51,16 +51,18 @@ class EventDispatcherExtension implements AliasedInterface, BootExtensionInterfa
     {
         $globalDispatcher = $container->definition($id = 'events.dispatcher');
 
-        if (!(
+        if (
             $globalDispatcher instanceof EventDispatcherInterface ||
             ($globalDispatcher instanceof DefinitionInterface && \is_subclass_of($globalDispatcher->getEntity(), EventDispatcherInterface::class))
-        )) {
-            $container->removeDefinition($id);
-            $container->set($inner = $id . '.inner', $globalDispatcher);
-            $container->tag($inner, 'container.decorated_services');
-            $container->removeType('Psr\EventDispatcher\EventDispatcherInterface');
-            $container->set('events.dispatcher', new Definition(EventDispatcher::class))->autowire();
+        ) {
+            return;
         }
+
+        $container->removeDefinition($id);
+        $container->set($inner = $id . '.inner', $globalDispatcher);
+        $container->tag($inner, 'container.decorated_services');
+        $container->removeType('Psr\EventDispatcher\EventDispatcherInterface');
+        $container->set('events.dispatcher', new Definition(EventDispatcher::class))->autowire();
     }
 
     /**
@@ -91,8 +93,8 @@ class EventDispatcherExtension implements AliasedInterface, BootExtensionInterfa
                     '/(?<=\b|_)[a-z]/i',
                     '/[^a-z0-9]/i',
                 ], function ($matches) {
-                        return \strtoupper($matches[0]);
-                    }, $event['event']);
+                    return \strtoupper($matches[0]);
+                }, $event['event']);
                 $event['method'] = \preg_replace('/[^a-z0-9]/i', '', $event['method']);
 
                 if (null !== ($class = $container->definition($id)->getEntity()) && ($r = new \ReflectionClass($class, false)) && !$r->hasMethod($event['method']) && $r->hasMethod('__invoke')) {

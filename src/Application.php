@@ -54,7 +54,7 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
 
         if (!isset($this->parameters['project.compiled_container_class'])) {
             $this->definitions = [
-                'http.router' => $this->services['http.router'] = Router::withCollection(),
+                'http.router' => $this->services['http.router'] = new Router(),
                 'request_stack' => $this->services['request_stack'] = new RequestStack(),
                 'psr17.factory' => $this->services['psr17.factory'] = $psr17Factory = $psr17Factory ?? new Psr17Factory(),
                 'events.dispatcher' => $this->services['events.dispatcher'] = $dispatcher = $dispatcher ?? new Handler\EventHandler(),

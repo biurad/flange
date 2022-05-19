@@ -154,6 +154,6 @@ class ApplicationTest extends BaseTestCase
 
         $routes = $routes = $app['http.router']->getCollection()->getRoutes();
 
-        $this->assertEquals(['first', 'second', 'third'], \array_map(fn ($route) => $route->getName(), $routes));
+        $this->assertEquals(['first', 'third', 'second'], \array_map(fn ($route) => $route->getName(), $routes));
     }
 }
