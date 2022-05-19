@@ -298,7 +298,7 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
                 throw new \LogicException('Session support cannot be enabled as the session extension is not installed. See https://php.net/session.installation for instructions.');
             }
 
-            $definitions += [
+            $container->multiple([
                 'session.storage.native' => service(NativeSessionStorage::class, [
                     $sessionArgs = \array_diff_key($session, ['storage_id' => null, 'handler_id' => null, 'meta_storage_key' => null, 'metadata_update_threshold' => null]),
                     reference('session.handler'),
@@ -307,7 +307,7 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
                 'session.handler.native_file' => ($container instanceof KernelInterface && $container->isRunningInConsole() ? service(NullSessionHandler::class) : service(NativeFileSessionHandler::class, [$session['save_path']]))->autowire(),
                 'http.middleware.session' => service(SessionMiddleware::class, [wrap(reference('http.session'), $sessionArgs, true)])->public(false),
                 'http.session' => service(Session::class, [reference($session['storage_id'])])->autowire(),
-            ];
+            ]);
 
             if ($container->has($session['handler_id'])) {
                 $container->alias('session.handler', $session['handler_id']);
@@ -326,7 +326,7 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
             $definitions['http.csrf.token_manager'] = $csrf = service(CsrfTokenManager::class, [2 => reference('?request_stack')])->autowire();
 
             if ($container->has('http.session')) {
-                $csrf->arg(0, wrap(SessionTokenStorage::class, [reference('request_stack')]));
+                $csrf->arg(1, wrap(SessionTokenStorage::class, [reference('request_stack')]));
             }
         }
 
