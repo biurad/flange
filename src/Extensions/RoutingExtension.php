@@ -81,7 +81,6 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
                 ->booleanNode('keep_request_method')->defaultFalse()->end()
                 ->booleanNode('response_error')->defaultValue(null)->end()
                 ->booleanNode('resolve_route_paths')->defaultTrue()->end()
-                ->scalarNode('routes_handler')->end()
                 ->scalarNode('cache')->end()
                 ->arrayNode('pipes')
                     ->normalizeKeys(false)
@@ -198,13 +197,10 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
      */
     public function register(AbstractContainer $container, array $configs = []): void
     {
-        $routeHandler = $configs['routes_handler'] ?? RouteHandler::class;
         $pipesMiddleware = [];
 
-        if ($container->has($routeHandler)) {
-            $container->alias(RequestHandlerInterface::class, $routeHandler);
-        } else {
-            $container->set(RequestHandlerInterface::class, new Definition($routeHandler));
+        if (!$container->has(RequestHandlerInterface::class)) {
+            $container->set(RequestHandlerInterface::class, new Definition(RouteHandler::class));
         }
 
         if ($container->hasExtension(AnnotationExtension::class)) {

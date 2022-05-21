@@ -58,6 +58,7 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
                 'request_stack' => $this->services['request_stack'] = new RequestStack(),
                 'psr17.factory' => $this->services['psr17.factory'] = $psr17Factory = $psr17Factory ?? new Psr17Factory(),
                 'events.dispatcher' => $this->services['events.dispatcher'] = $dispatcher = $dispatcher ?? new Handler\EventHandler(),
+                RequestHandlerInterface::class => $this->services[RequestHandlerInterface::class] = new Handler\RouteHandler($this),
             ];
             $this->types += [
                 RequestStack::class => ['request_stack'],
@@ -214,15 +215,18 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
      */
     public function handle(ServerRequestInterface $request, bool $catch = true): ResponseInterface
     {
-        if (!$this->has(RequestHandlerInterface::class)) {
-            $this->definitions[RequestHandlerInterface::class] = $this->services[RequestHandlerInterface::class] = new Handler\RouteHandler($this);
-        }
-
         try {
-            $response = $this->getRouter()->process($request, $this->get(RequestHandlerInterface::class));
+            $this->getDispatcher()->dispatch($event = new Event\RequestEvent($this, $request));
+            $request = $event->getRequest();
 
-            if ($request instanceof Request) {
-                $request = $request->withRequest($this->get('request_stack')->getMainRequest());
+            if ($supportStack = $request instanceof Request) {
+                $this->get('request_stack')->push($request->getRequest());
+            }
+
+            $response = !$event->hasResponse() ? $this->getRouter()->process($request, $this->get(RequestHandlerInterface::class)) : $event->getResponse();
+
+            if ($supportStack) {
+                $request = $request->withRequest($this->get('request_stack')->getCurrentRequest());
             }
 
             $this->getDispatcher()->dispatch($event = new Event\ResponseEvent($this, $request, $response));

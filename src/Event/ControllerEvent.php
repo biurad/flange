@@ -33,7 +33,7 @@ use Rade\Application;
  */
 final class ControllerEvent extends KernelEvent
 {
-    private \ReflectionFunctionAbstract $ref;
+    /** @var array<int|string,mixed> */
     private array $arguments;
 
     /** @var mixed */
@@ -42,18 +42,12 @@ final class ControllerEvent extends KernelEvent
     /**
      * @param mixed $controller
      */
-    public function __construct(Application $app, $controller, \ReflectionFunctionAbstract $ref, array $arguments, Request $request)
+    public function __construct(Application $app, Request $request, $controller, array $arguments)
     {
         parent::__construct($app, $request);
 
         $this->controller = $controller;
         $this->arguments = $arguments;
-        $this->ref = $ref;
-    }
-
-    public function getReflection(): \ReflectionFunctionAbstract
-    {
-        return $this->ref;
     }
 
     /**

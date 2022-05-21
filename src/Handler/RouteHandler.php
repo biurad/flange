@@ -20,12 +20,8 @@ namespace Rade\Handler;
 use Biurad\Http\Request;
 use Flight\Routing\Handlers\RouteHandler as BaseRouteHandler;
 use Flight\Routing\Route;
-use Nette\Utils\Callback;
 use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Server\RequestHandlerInterface;
-use Rade\DI\Container;
 use Rade\Event\ControllerEvent;
-use Rade\Event\RequestEvent;
 
 /**
  * Default route's handler for rade framework.
@@ -34,57 +30,18 @@ use Rade\Event\RequestEvent;
  */
 class RouteHandler extends BaseRouteHandler
 {
-    public function __construct(Container $container)
+    public function __construct(\Rade\Application $container)
     {
         $handlerResolver = static function ($handler, array $parameters) use ($container) {
-            $request = $parameters[ServerRequestInterface::class] ?? null;
+            $event = new ControllerEvent($container, $parameters[ServerRequestInterface::class], $handler, $parameters);
+            $container->getDispatcher()->dispatch($event);
+            $request = $event->getRequest();
 
-            if (\is_string($handler)) {
-                if ($container->has($handler)) {
-                    $handler = $container->get($handler);
-                } elseif ($container->typed($handler)) {
-                    $handler = $container->autowired($handler);
-                } elseif (\class_exists($handler)) {
-                    $handler = $container->getResolver()->resolveClass($handler);
-                }
-            } elseif (\is_array($handler) && \count($handler) === 2) {
-                $handler[0] = \is_string($handler[0]) ? $container->get($handler[0]) : $handler[0];
-            }
-
-            $ref = !$handler instanceof RequestHandlerInterface ? Callback::toReflection($handler) : new \ReflectionMethod($handler, 'handle');
-
-            if ($ref->getNumberOfParameters() > 0) {
-                foreach (\class_implements($request) + (\class_parents($request) ?: []) as $psr7Interface) {
-                    if (\Stringable::class === $psr7Interface) {
-                        continue;
-                    }
-                    $parameters[$psr7Interface] = $request;
-                }
-                $parameters[\get_class($request)] = $request;
-                $args = $container->getResolver()->autowireArguments($ref, $parameters);
-            }
-
-            if ($container->has('events.dispatcher')) {
-                $container->get('events.dispatcher')->dispatch($event = new RequestEvent($container, $request));
-
-                if ($event->hasResponse()) {
-                    return $event->getResponse();
-                }
-
-                $request = $event->getRequest();
-                $container->get('events.dispatcher')->dispatch($event = new ControllerEvent($container, $handler, $ref, $args ?? [], $request));
-                [$handler, $ref, $args] = [$event->getController(), $event->getReflection(), $event->getArguments()];
-            }
-
-            if ($request instanceof Request && $container->has('request_stack')) {
+            if ($request instanceof Request) {
                 $container->get('request_stack')->push($request->getRequest());
             }
 
-            if ($ref instanceof \ReflectionMethod) {
-                return $ref->isStatic() ? $ref->invokeArgs(null, $args ?? []) : $ref->invokeArgs(!\is_object($handler) ? $handler[0] : $handler, $args ?? []);
-            }
-
-            return $ref->invokeArgs($args ?? []);
+            return $container->getResolver()->resolve($event->getController(), $event->getArguments());
         };
 
         parent::__construct($container->get('psr17.factory'), $handlerResolver);
@@ -96,7 +53,15 @@ class RouteHandler extends BaseRouteHandler
     protected function resolveArguments(ServerRequestInterface $request, Route $route): array
     {
         $parameters = $route->getArguments();
-        $parameters[ServerRequestInterface::class] = $request;
+        $requests = \array_merge([\get_class($request)], \class_implements($request) ?: [], (\class_parents($request) ?: []));
+
+        foreach ($requests as $psr7Interface) {
+            if (\Stringable::class === $psr7Interface) {
+                continue;
+            }
+
+            $parameters[$psr7Interface] = $request;
+        }
 
         return $parameters;
     }
