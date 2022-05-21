@@ -21,6 +21,9 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Tools\Console\ConnectionProvider\SingleConnectionProvider;
 use Doctrine\DBAL\Tools\Console\ConsoleRunner;
 use Doctrine\DBAL\Types\Type;
+use Doctrine\Persistence\ObjectManager;
+use Rade\Database\Doctrine\Form\DoctrineOrmTypeGuesser;
+use Rade\Database\Doctrine\Form\Type\EntityType;
 use Rade\DI\AbstractContainer;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
@@ -28,6 +31,8 @@ use Rade\DI\Definitions\Statement;
 use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Extensions\ExtensionInterface;
+use Rade\DI\Extensions\Symfony\FormExtension;
+use Rade\DI\Extensions\Symfony\FrameworkExtension;
 use Rade\KernelInterface;
 use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
@@ -196,6 +201,11 @@ class DatabaseExtension implements AliasedInterface, ConfigurationInterface, Boo
                     $container->set('doctrine.dbal.single_connection', new Definition(SingleConnectionProvider::class, [$dc, $configs['default_connection']]))->public(false);
                 }
             }
+        }
+
+        if ($container->typed(ObjectManager::class) && ($container->hasExtension(FormExtension::class) || $container->hasExtension(FrameworkExtension::class))) {
+            $container->set('form.type_guesser.doctrine', new Definition(DoctrineOrmTypeGuesser::class))->public(false)->tag('form.type_guesser');
+            $container->set('form.type.entity', new Definition(EntityType::class))->public(false)->tag('form.type');
         }
     }
 
