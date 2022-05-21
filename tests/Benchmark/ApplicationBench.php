@@ -17,7 +17,6 @@ declare(strict_types=1);
 
 namespace Rade\Tests\Benchmark;
 
-use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\Process\Process;
 

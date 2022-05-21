@@ -3,6 +3,7 @@
     "runner.bootstrap": "vendor/autoload.php",
     "runner.file_pattern": "*Bench.php",
     "runner.retry_threshold": 5,
+    "runner.warmup": 2,
     "runner.php_config": {
         "max_execution_time": 60,
         "opcache.enable": true,
