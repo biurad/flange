@@ -155,7 +155,7 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
     {
         $defFile = 'load_' . ($containerClass = 'App_' . (($debug = $options['debug'] ?? false) ? 'Debug' : '') . 'Container') . '.php';
         $cacheDir = $options['cacheDir'] ?? \dirname((new \ReflectionClass(\Composer\Autoload\ClassLoader::class))->getFileName(), 2);
-        $cachePath = $cacheDir . '/' . $containerClass . '_' . \PHP_SAPI . '.php';
+        $cachePath = $cacheDir . '/' . $containerClass . '_' . \PHP_SAPI . \PHP_OS . \PHP_VERSION_ID . '.php';
 
         // Silence E_WARNING to ignore "include" failures - don't use "@" to prevent silencing fatal errors
         $errorLevel = \error_reporting(\E_ALL ^ \E_WARNING);
