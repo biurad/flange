@@ -155,33 +155,64 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
     {
         $defFile = 'load_' . ($containerClass = 'App_' . (($debug = $options['debug'] ?? false) ? 'Debug' : '') . 'Container') . '.php';
         $cacheDir = $options['cacheDir'] ?? \dirname((new \ReflectionClass(\Composer\Autoload\ClassLoader::class))->getFileName(), 2);
-        $cache = new ConfigCache($cachePath = $cacheDir . '/' . $containerClass . '_' . \PHP_SAPI . '.php', $debug);
+        $cachePath = $cacheDir . '/' . $containerClass . '_' . \PHP_SAPI . '.php';
 
-        if (!$cache->isFresh()) {
-            $appBuilder = new static($debug);
+        // Silence E_WARNING to ignore "include" failures - don't use "@" to prevent silencing fatal errors
+        $errorLevel = \error_reporting(\E_ALL ^ \E_WARNING);
 
-            if ($debug && \interface_exists(\Tracy\IBarPanel::class)) {
-                Debug\Tracy\ContainerPanel::$compilationTime = \microtime(true);
+        try {
+            if (\is_file($cachePath)) {
+                include $cacheDir . '/' . $defFile;
+                include $cachePath;
+                $container = new $containerClass();
+
+                if (!$debug || ($cache = new ConfigCache($cachePath, $debug))->isFresh()) {
+                    \error_reporting($errorLevel);
+
+                    return $container;
+                }
+            } else {
+                \is_dir($cacheDir) ?: \mkdir($cacheDir, 0777, true);
             }
-
-            $application($appBuilder);
-
-            // Autoload require hot paths ...
-            $requiredPaths = $appBuilder->parameters['project.require_paths'] ?? [];
-
-            // Default node visitors.
-            $appBuilder->addNodeVisitor(new DI\NodeVisitor\MethodsResolver());
-            $appBuilder->addNodeVisitor(new DI\NodeVisitor\AutowiringResolver());
-            $appBuilder->addNodeVisitor($splitter = new DI\NodeVisitor\DefinitionsSplitter($options['maxDefinitions'] ?? 500, $defFile));
-
-            // Write the compiled application class to path.
-            $cache->write($appBuilder->compile($options + \compact('containerClass')), $appBuilder->getResources());
-
-            require $splitter->buildTraits($cacheDir, $appBuilder->isDebug(), $requiredPaths);
-        } else {
-            require_once $cacheDir . '/' . $defFile;
+        } catch (\Throwable $e) {
         }
 
+        if ($debug && \interface_exists(\Tracy\IBarPanel::class)) {
+            Debug\Tracy\ContainerPanel::$compilationTime = \microtime(true);
+        }
+
+        try {
+            if ($lock = \fopen($cachePath . '.lock', 'w')) {
+                \flock($lock, \LOCK_EX | \LOCK_NB, $wouldBlock);
+
+                if (!\flock($lock, $wouldBlock ? \LOCK_SH : \LOCK_EX)) {
+                    \fclose($lock);
+                    $lock = null;
+                } elseif (isset($container) && \is_file($cachePath)) {
+                    \flock($lock, \LOCK_UN);
+                    \fclose($lock);
+
+                    return new $containerClass();
+                }
+            }
+        } catch (\Throwable $e) {
+        } finally {
+            \error_reporting($errorLevel);
+        }
+
+        $application($container = new static($debug));
+        $requiredPaths = $container->parameters['project.require_paths'] ?? []; // Autoload require hot paths ...
+
+        $container->addNodeVisitor(new DI\NodeVisitor\MethodsResolver());
+        $container->addNodeVisitor(new DI\NodeVisitor\AutowiringResolver());
+        $container->addNodeVisitor($splitter = new DI\NodeVisitor\DefinitionsSplitter($options['maxDefinitions'] ?? 500, $defFile));
+
+        if (!isset($cache)) {
+            $cache = new ConfigCache($cachePath, $debug); // ... or create a new cache
+        }
+
+        $cache->write($container->compile($options + \compact('containerClass')), $container->getResources()); // Generate container class
+        require $splitter->buildTraits($cacheDir, $debug, $requiredPaths);
         require $cachePath;
 
         return new $containerClass();
