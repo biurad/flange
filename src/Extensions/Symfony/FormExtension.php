@@ -21,6 +21,7 @@ use Rade\DI\AbstractContainer;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
+use Rade\DI\Definitions\TaggedLocator;
 use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Extensions\ExtensionInterface;
@@ -124,9 +125,9 @@ class FormExtension implements AliasedInterface, BootExtensionInterface, Configu
 
         $definitions = [
             'form.resolved_type_factory' => service(ResolvedFormTypeFactory::class)->autowire([ResolvedFormTypeFactoryInterface::class]),
-            'form.registry' => service(FormRegistry::class, [[new Reference('form.extension')]])->autowire(),
+            'form.registry' => service(FormRegistry::class, [new TaggedLocator('form.extension')])->autowire(),
             'form.factory' => service(FormFactory::class)->autowire(),
-            'form.extension' => service(DependencyInjectionExtension::class)->autowire(),
+            'form.extension' => service(DependencyInjectionExtension::class)->autowire()->tag('form.extension'),
             'form.choice_list_factory.default' => service(DefaultChoiceListFactory::class)->public(false),
             'form.choice_list_factory.property_access' => service(PropertyAccessDecorator::class, [new Reference('form.choice_list_factory.default')])->public(false),
             'form.choice_list_factory.cached' => service(CachingFactoryDecorator::class, [new Reference('form.choice_list_factory.property_access')])->autowire(),

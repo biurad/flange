@@ -42,6 +42,7 @@ use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactory;
 use Symfony\Component\PasswordHasher\Hasher\Pbkdf2PasswordHasher;
 use Symfony\Component\PasswordHasher\Hasher\PlaintextPasswordHasher;
 use Symfony\Component\PasswordHasher\Hasher\SodiumPasswordHasher;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasher;
 use Symfony\Component\RateLimiter\RateLimiterFactory;
 use Symfony\Component\Security\Core\Authentication\AuthenticationTrustResolver;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorage;
@@ -55,6 +56,7 @@ use Symfony\Component\Security\Core\Authorization\Voter\RoleHierarchyVoter;
 use Symfony\Component\Security\Core\Authorization\Voter\RoleVoter;
 use Symfony\Component\Security\Core\Role\RoleHierarchy;
 use Symfony\Component\Security\Core\User\ChainUserProvider;
+use Symfony\Component\Security\Core\Validator\Constraints\UserPasswordValidator;
 
 /**
  * Biurad Security Extension.
@@ -322,6 +324,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
             }
 
             $container->autowire('security.password_hasher_factory', new Definition(PasswordHasherFactory::class, [$hasherMap]));
+            $container->autowire('security.user_password_hasher', new Definition(UserPasswordHasher::class, [new Reference('security.password_hasher_factory')]));
         }
 
         if (!empty($configs['providers'])) {
@@ -396,6 +399,10 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
             ? new Definition(CacheableTokenStorage::class, [$tokenType, new Statement('Nette\Utils\DateTime::from', [$configs['token_storage_expiry']])])
             : new Definition(TokenStorage::class));
         $container->set('security.access.authenticated_voter', new Definition(AuthenticatedVoter::class, [new Statement(AuthenticationTrustResolver::class)]))->public(false)->tag('security.voter', ['priority' => 250]);
+
+        if ($container->hasExtension(Symfony\ValidatorExtension::class)) {
+            $container->set('security.validator.user_password', new Definition(UserPasswordValidator::class))->public(false)->tag('validator.constraint_validator', ['alias' => 'security.validator.user_password']);
+        }
     }
 
     /**

@@ -212,7 +212,7 @@ class AssetExtension implements AliasedInterface, ConfigurationInterface, Extens
 
     private function createVersion(?string $version, ?string $format, ?string $jsonManifestPath, bool $strictMode): Statement
     {
-        if (!isset($version, $jsonManifestPath)) {
+        if (!$version && !$jsonManifestPath) {
             return new Statement(EmptyVersionStrategy::class);
         }
 

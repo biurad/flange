@@ -33,6 +33,7 @@ use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Config\Resource\FileExistenceResource;
 use Symfony\Component\Form\Form;
+use Symfony\Component\Validator\Command\DebugCommand;
 use Symfony\Component\Validator\Constraints\EmailValidator;
 use Symfony\Component\Validator\Constraints\NotCompromisedPasswordValidator;
 use Symfony\Component\Validator\ContainerConstraintValidatorFactory;
@@ -217,6 +218,10 @@ class ValidatorExtension implements AliasedInterface, BootExtensionInterface, Co
 
         if ($container->hasExtension(PropertyInfoExtension::class)) {
             $container->set('validator.property_info_loader', new Definition(PropertyInfoLoader::class))->public(false)->tag('validator.auto_mapper');
+        }
+
+        if ($container->has('console')) {
+            $container->set('console.command.validator_debug', new Definition(DebugCommand::class))->tag('console.command');
         }
     }
 

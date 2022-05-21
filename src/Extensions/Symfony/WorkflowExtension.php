@@ -401,7 +401,7 @@ class WorkflowExtension implements AliasedInterface, ConfigurationInterface, Ext
             }
             $container->set($transitionMetaId = \sprintf('%s.transition_meta', $workflowId), $transitionsMetadataDefinition)->public(false);
             $metadataStoreDefinition->arg(2, new Reference($transitionMetaId))->public(false);
-            $container->set($metaStoreId = \sprintf('%s.metadata_store', $workflowId), $metadataStoreDefinition);
+            $container->set($metaStoreId = \sprintf('%s.metadata_store', $workflowId), $metadataStoreDefinition)->public(false);
 
             // Create places
             $places = \array_column($workflow['places'], 'name');
