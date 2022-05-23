@@ -31,15 +31,15 @@ use Tracy\Helpers;
 
 <h1>Templates Metrics</h1>
 <div class="tracy-inner tracy-template-bar">
-    <h2><strong>Templates Rendered: <?php echo (0 === $this->templateCount ? 'None' : $this->templateCount) ?></strong></h2>
-    <?php if ($this->templateCount > 0) : ?>
+    <h2><strong>Templates Rendered: <?php echo ($c = \count($t = $this->templates)) ?></strong></h2>
+    <?php if ($c > 0) : ?>
         <table>
             <tr>
                 <th scope="col">Template Name</th>
                 <th scope="col">Rendered By</th>
                 <th scope="col">Rendered At</th>
             </tr>
-            <?php foreach ($this->templates as $tpl): ?>
+            <?php foreach ($t as $tpl): ?>
                 <tr>
                     <td><?php echo $tpl['name'] ?></td>
                     <td><?php echo $tpl['render'] ?></td>

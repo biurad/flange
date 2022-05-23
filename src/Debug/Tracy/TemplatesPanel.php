@@ -24,7 +24,6 @@ use Biurad\UI\Template;
 final class TemplatesPanel implements IbarPanel
 {
     private Template $render;
-    private int $templateCount = 0;
 
     /** @var array<int,string> */
     private array $templates = [];
@@ -50,14 +49,13 @@ final class TemplatesPanel implements IbarPanel
      */
     public function getTab(): string
     {
-        ($prop = new \ReflectionProperty($this->render, 'loadedTemplates'))->setAccessible(true);
+        ($prop = new \ReflectionProperty($render = $this->render, 'loadedTemplates'))->setAccessible(true);
 
-        foreach ($prop->getValue($this->render) as $name => $profile) {
-            ++$this->templateCount;
+        foreach ($prop->getValue($render) as $name => $profile) {
             $this->templates[] = [
                 'name' => $name,
-                'path' => \str_replace('html:', '', $profile[0]),
-                'render' => \get_class($this->render->getRenders()[$profile[1]]),
+                'path' => \str_replace('html:', '', $profile[0] ?? 'unknown'),
+                'render' => \get_class($render->getRenders()[$profile[1] ?? 0]),
             ];
         }
 
