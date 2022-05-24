@@ -19,6 +19,7 @@ namespace Rade\DI\Extensions\Symfony;
 
 use Rade\DI\AbstractContainer;
 use Rade\DI\Definition;
+use Rade\DI\Definitions\Parameter;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Definitions\TaggedLocator;
