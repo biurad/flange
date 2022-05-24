@@ -153,7 +153,7 @@ class FormExtension implements AliasedInterface, BootExtensionInterface, Configu
         }
 
         if ($container->hasExtension(TranslatorExtension::class)) {
-            $definitions['form.type_extension.upload.validator'] = service(UploadValidatorExtension::class, [1 => '%validator.translation_domain%'])->public(false)->tag('form.type_extension');
+            $definitions['form.type_extension.upload.validator'] = service(UploadValidatorExtension::class, [1 => new Parameter('validator.translation_domain')])->public(false)->tag('form.type_extension');
         }
 
         if ($container->typed(CsrfTokenManagerInterface::class)) {
