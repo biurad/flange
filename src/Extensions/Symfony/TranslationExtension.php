@@ -60,6 +60,7 @@ use Symfony\Component\Translation\Loader\PoFileLoader;
 use Symfony\Component\Translation\Loader\QtFileLoader;
 use Symfony\Component\Translation\Loader\XliffFileLoader;
 use Symfony\Component\Translation\Loader\YamlFileLoader;
+use Symfony\Component\Translation\LoggingTranslator;
 use Symfony\Component\Translation\Provider\NullProviderFactory;
 use Symfony\Component\Translation\Provider\TranslationProviderCollection;
 use Symfony\Component\Translation\Provider\TranslationProviderCollectionFactory;
@@ -320,7 +321,11 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
             $options = $configs['pseudo_localization'];
             unset($options['enabled']);
 
-            $definitions[$translatorId = 'translator.pseudo'] = service(PseudoLocalizationTranslator::class, [new Reference('translator'), $options])->autowire();
+            $definitions[$translatorId = 'translator.pseudo'] = $translator = service(PseudoLocalizationTranslator::class, [new Reference('translator'), $options]);
+        }
+
+        if ($configs['logging']) {
+            $definitions[$translatorId = 'translator.logger'] = service(LoggingTranslator::class, [new Reference($translatorId ?? 'translator.default'), new Reference('logger')])->autowire();
         } else {
             $translator->autowire();
         }
