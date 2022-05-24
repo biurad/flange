@@ -57,6 +57,7 @@ use Symfony\Component\Form\ResolvedFormTypeFactory;
 use Symfony\Component\Form\ResolvedFormTypeFactoryInterface;
 use Symfony\Component\Form\Util\ServerParams;
 use Symfony\Component\PropertyAccess\PropertyAccess;
+use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 
 use function Rade\DI\Loader\service;
 
@@ -92,7 +93,7 @@ class FormExtension implements AliasedInterface, BootExtensionInterface, Configu
                     ->treatNullLike(['enabled' => true])
                     ->addDefaultsIfNotSet()
                     ->children()
-                        ->booleanNode('enabled')->defaultNull()->end() // defaults to framework.csrf_protection.enabled
+                        ->booleanNode('enabled')->defaultTrue()->end()
                         ->scalarNode('field_name')->defaultValue('_token')->end()
                     ->end()
                 ->end()
@@ -155,13 +156,11 @@ class FormExtension implements AliasedInterface, BootExtensionInterface, Configu
             $definitions['form.type_extension.upload.validator'] = service(UploadValidatorExtension::class, [1 => '%validator.translation_domain%'])->public(false)->tag('form.type_extension');
         }
 
-        if ($configs['csrf_protection']['enabled']) {
-            $definitions['form.type_extension.csrf'] = service(FormTypeCsrfExtension::class)->public(false)->tag('form.type_extension');
-
-            $container->parameters['form.type_extension.csrf.enabled'] = true;
-            $container->parameters['form.type_extension.csrf.field_name'] = $configs['form']['csrf_protection']['field_name'];
-        } else {
-            $container->parameters['form.type_extension.csrf.enabled'] = false;
+        if ($container->typed(CsrfTokenManagerInterface::class)) {
+            $definitions['form.type_extension.csrf'] = service(FormTypeCsrfExtension::class)
+                ->args([1 => $configs['csrf_protection']['enabled'], 2 => $configs['csrf_protection']['field_name']])
+                ->tag('form.type_extension')
+                ->public(false);
         }
 
         if ($container->has('console')) {
