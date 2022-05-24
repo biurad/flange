@@ -222,7 +222,7 @@ class ValidatorExtension implements AliasedInterface, BootExtensionInterface, Co
         }
 
         if ($container->has('console')) {
-            $container->set('console.command.validator_debug', new Definition(DebugCommand::class))->tag('console.command');
+            $container->set('console.command.validator_debug', new Definition(DebugCommand::class))->public(false)->tag('console.command', 'debug:validator');
         }
     }
 

@@ -38,7 +38,6 @@ use Rade\DI\Definitions\Statement;
 use Rade\DI\Exceptions\ServiceCreationException;
 use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\ExtensionInterface;
-use Rade\KernelInterface;
 use Spiral\Tokenizer\ClassLocator;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
@@ -92,8 +91,8 @@ class ORMExtension implements AliasedInterface, ConfigurationInterface, Extensio
             [new Statement(Registry::class), $generators = $this->getGenerators($container, $configs['entities_path'])]
         )]));
 
-        if ($container->has('cycle.database.migrator') && ($container instanceof KernelInterface && $container->isRunningInConsole())) {
-            $container->set('console.command.cycle_orm', new Definition(DatabaseOrmCommand::class, [2 => $generators]))->tag('console.command');
+        if ($container->has('cycle.database.migrator') && $container->has('console')) {
+            $container->set('console.command.cycle_orm', new Definition(DatabaseOrmCommand::class, [2 => $generators]))->public(false)->tag('console.command');
         }
     }
 

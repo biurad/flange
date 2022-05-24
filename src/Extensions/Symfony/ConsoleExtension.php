@@ -30,7 +30,9 @@ use Rade\DI\Extensions\ExtensionInterface;
 use Rade\KernelInterface;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\CommandLoader\ContainerCommandLoader;
+use Symfony\Component\Console\CommandLoader\FactoryCommandLoader;
+
+use function Rade\DI\Loader\param;
 
 /**
  * Registers symfony console extension.
@@ -56,8 +58,8 @@ class ConsoleExtension implements AliasedInterface, BootExtensionInterface, Exte
             return;
         }
 
-        $container->type(AboutCommand::class, Command::class);
-        $container->set('console.command.server', new Definition(ServerCommand::class, ['%project_dir%', '%debug%']))->tag('console.command', 'serve');
+        $container->set('console.command.about', new Definition(AboutCommand::class))->public(false)->tag('console.command');
+        $container->set('console.command.server', new Definition(ServerCommand::class, [param('project_dir'), param('debug')]))->public(false)->tag('console.command');
         $container->set('console', new Definition(Application::class))
             ->args([
                 $container->parameters['console.name'] ?? 'PHP Rade Framework',
@@ -75,33 +77,64 @@ class ConsoleExtension implements AliasedInterface, BootExtensionInterface, Exte
             return;
         }
 
-        $serviceIds = $container->findBy(Command::class, fn ($v) => $container->has($v) ? new Reference($v) : new Statement($v));
-        $commandServices = $container->findBy('console.command', function (string $value) use ($container): array {
-            $commandTagged = $container->tagged('console.command', $value);
+        $commandServices = $lazyCommandMap = [];
 
-            if (!\is_string($commandTagged)) {
+        foreach ($container->tagged('console.command') as $commandId => $commandTagged) {
+            $definition = $container->definition($commandId);
+            $class = $definition->getEntity(); // Assumes the command is a class set right
+
+            if (!\is_array($commandTagged)) {
+                $commandTagged = \is_string($commandTagged) ? ['command' => $commandTagged] : [];
+            }
+            $description = $commandTagged['description'] ?? null;
+
+            if (isset($commandTagged['command'])) {
+                $aliases = $commandTagged['command'];
+            } else {
                 try {
-                    $r = new \ReflectionClass($c = $container->definition($value)->getEntity());
+                    $r = new \ReflectionClass($class);
                 } catch (\ReflectionException $e) {
-                    throw new \InvalidArgumentException(\sprintf('Class "%s" used for service "%s" cannot be found.', $c, $value));
+                    throw new \InvalidArgumentException(\sprintf('Class "%s" used for service "%s" cannot be found.', $class, $commandId));
                 }
 
                 if (!$r->isSubclassOf(Command::class)) {
-                    throw new \InvalidArgumentException(\sprintf('The service "%s" tagged "%s" must be a subclass of "%s".', $value, 'console.command', Command::class));
+                    throw new \InvalidArgumentException(\sprintf('The service "%s" tagged "%s" must be a subclass of "%s".', $commandId, 'console.command', Command::class));
                 }
 
-                return [$c::getDefaultName() => $value];
+                $aliases = $class::getDefaultName();
+
+                if (!$description) {
+                    $description = $class::getDefaultDescription();
+                }
             }
 
-            return [$commandTagged => $value];
-        });
+            if ($description) {
+                $definition->bind('setDescription', $description);
+            }
 
-        if (!empty($commandServices)) {
-            $container->definition('console')->bind('setCommandLoader', new Statement(ContainerCommandLoader::class, [1 => \array_merge(...$commandServices)]));
+            if (isset($commandTagged['hidden'])) {
+                $definition->bind('setHidden', $commandTagged['hidden']);
+            }
+
+            if (empty($aliases)) {
+                $commandServices[] = new Reference($commandId);
+            } else {
+                if (\count($aliases = \explode('|', $aliases)) > 1) {
+                    $definition->bind('setAliases', [$aliases]);
+                }
+
+                foreach ($aliases as $alias) {
+                    $lazyCommandMap[$alias] = new Statement(new Reference($commandId), [], true);
+                }
+            }
         }
 
-        if (!empty($serviceIds)) {
-            $container->definition('console')->bind('addCommands', [$serviceIds]);
+        if (!empty($lazyCommandMap)) {
+            $container->definition('console')->bind('setCommandLoader', new Statement(FactoryCommandLoader::class, [$lazyCommandMap]));
+        }
+
+        if (!empty($commandServices)) {
+            $container->definition('console')->bind('addCommands', [$commandServices]);
         }
     }
 }

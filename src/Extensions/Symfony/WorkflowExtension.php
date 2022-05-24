@@ -479,7 +479,7 @@ class WorkflowExtension implements AliasedInterface, ConfigurationInterface, Ext
         }
 
         if ($container->has('console')) {
-            $container->set('console.command.workflow_dump', service(WorkflowDumpCommand::class, [$workflows]))->tag('console.command');
+            $container->set('console.command.workflow_dump', service(WorkflowDumpCommand::class, [$workflows]))->public(false)->tag('console.command');
         }
     }
 }

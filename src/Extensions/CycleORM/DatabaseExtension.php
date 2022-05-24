@@ -33,7 +33,6 @@ use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\ExtensionInterface;
-use Rade\KernelInterface;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Console\Command\Command;
@@ -170,11 +169,13 @@ class DatabaseExtension implements AliasedInterface, ConfigurationInterface, Ext
         $container->autowire('cycle.database.factory', new Definition(DatabaseManager::class, [new Reference('cycle.database.config')]));
         $container->autowire('cycle.database', new Definition([new Reference('cycle.database.factory'), 'database']));
 
-        if ($container instanceof KernelInterface && $container->isRunningInConsole()) {
+        if ($container->has('console')) {
             $container->types([DatabaseTableCommand::class => Command::class, DatabaseListCommand::class => Command::class]);
+            $container->set('console.command.cycle.database.table', new Definition(DatabaseTableCommand::class))->public(false)->tag('console.command');
+            $container->set('console.command.cycle.database.list', new Definition(DatabaseListCommand::class))->public(false)->tag('console.command');
 
             if (!\is_array($migrateConfig)) {
-                $container->type(DatabaseMigrateCommand::class, Command::class);
+                $container->set('console.command.cycle.database.migrate', new Definition(DatabaseMigrateCommand::class))->public(false)->tag('console.command');
             }
         }
     }

@@ -360,13 +360,13 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
                     $lParam,
                     $transPaths,
                     $locales,
-                ])->tag('console.command', ['command' => 'translation:pull']),
+                ])->public(false)->tag('console.command', 'translation:pull'),
                 'console.command.translation_push' => service(TranslationPushCommand::class, [
                     new Reference('translation.provider_collection'),
                     new Reference('translation.reader'),
                     $transPaths,
                     $locales,
-                ])->tag('console.command', ['command' => 'translation:push']),
+                ])->public(false)->tag('console.command', 'translation:push'),
             ];
         }
 
