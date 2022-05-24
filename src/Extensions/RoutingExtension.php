@@ -49,6 +49,9 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
     /** @var array<int,object> */
     private array $middlewares = [];
 
+    /** @var array<string,mixed> */
+    private array $defaults = [];
+
     /**
      * {@inheritdoc}
      */
@@ -281,13 +284,20 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
             }
 
             if ($container instanceof RouterInterface) {
+                if ('_defaults' === $routeData['name'] ?? null) {
+                    unset($routeData['name']);
+                    $this->defaults = $routeData;
+                    continue;
+                }
+
                 $route = $container->match($routeData['path'], $routeData['methods'], $routeData['to']);
-                unset($routeData['path'], $routeData['methods'], $routeData['to'], $routeData['debug']);
 
                 foreach ($routeData as $key => $value) {
-                    if (!empty($value)) {
-                        \call_user_func_array([$route, 'name' === $key ? 'bind' : $key], [$value]);
+                    if (empty($value) || \in_array($key, ['path', 'methods', 'to', 'debug'], true)) {
+                        continue;
                     }
+
+                    \call_user_func_array([$route, 'name' === $key ? 'bind' : $key], [$value]);
                 }
             }
         }
@@ -349,6 +359,8 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
             foreach ($pipesMiddleware as $key => $values) {
                 $router->pipes($key, ...$values);
             }
+
+            $router->getCollection()->prototype($this->defaults);
         } else {
             $router->bind('pipe', [$defaultMiddlewares]);
             $groupedCollection = 'function (\Flight\Routing\RouteCollection $collection) {';
@@ -356,6 +368,11 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
 
             foreach ($pipesMiddleware as $key => $values) {
                 $router->bind('pipes', [$key, $values]);
+            }
+
+            if (!empty($this->defaults)) {
+                $groupedCollection .= '$collection->prototype("%?");';
+                $groupArgs[] = $this->defaults;
             }
 
             if (!empty($routes)) {
