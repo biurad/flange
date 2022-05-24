@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace Rade\Commands\Symfony;
 
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Completion\CompletionInput;
 use Symfony\Component\Console\Completion\CompletionSuggestions;
@@ -37,10 +38,11 @@ use Symfony\Component\Workflow\Marking;
  *
  * @final
  */
+#[AsCommand('workflow:dump', 'Dumps a workflow definition')]
 class WorkflowDumpCommand extends Command
 {
     protected static $defaultName = 'workflow:dump';
-    protected static $defaultDescription = 'Dump a workflow';
+    protected static $defaultDescription = 'Dumps a workflow definition';
 
     /**
      * string is the service id.

@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace Rade\Commands;
 
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -32,10 +33,11 @@ use Symfony\Component\Process\Process;
  *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
+#[AsCommand('serve', 'Runs|Stops a local web server in a background process')]
 final class ServerCommand extends Command
 {
     protected static $defaultName = 'serve';
-    protected static $defaultDescription = 'Display information about the current project';
+    protected static $defaultDescription = 'Runs|Stops a local web server in a background process';
 
     private ?string $documentRoot;
     private string $router, $hostname, $address;
@@ -62,7 +64,6 @@ final class ServerCommand extends Command
                 new InputOption('pidfile', null, InputOption::VALUE_REQUIRED, 'PID file'),
                 new InputOption('stop', 's', InputOption::VALUE_NONE, 'Stops the local web server that was started with the serve command'),
             ])
-            ->setDescription('Starts a local web server in the background')
             ->setHelp(
                 <<<'EOF'
 The <info>%command.name%</info> command runs a local web server: By default, the server

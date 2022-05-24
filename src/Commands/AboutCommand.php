@@ -19,6 +19,7 @@ namespace Rade\Commands;
 
 use Rade\Application;
 use Rade\DI\ContainerInterface;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\TableSeparator;
 use Symfony\Component\Console\Input\InputInterface;
@@ -30,6 +31,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
+#[AsCommand('about', 'Display information about the current project.')]
 final class AboutCommand extends Command
 {
     protected static $defaultName = 'about';
