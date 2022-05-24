@@ -57,6 +57,11 @@ class AnnotationExtension implements AliasedInterface, BootExtensionInterface, C
         $treeBuilder = new TreeBuilder(__CLASS__);
 
         $treeBuilder->getRootNode()
+            ->addDefaultsIfNotSet()
+            ->beforeNormalization()
+                ->ifTrue(fn ($v) => \is_array($v) && \array_is_list($v))
+                ->then(fn ($v) => ['resources' => $v])
+            ->end()
             ->children()
                 ->scalarNode('use_reader')->end()
                 ->booleanNode('merge_readers')->defaultTrue()->end()

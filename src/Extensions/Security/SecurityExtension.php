@@ -58,6 +58,7 @@ use Symfony\Component\Security\Core\Authorization\Voter\RoleHierarchyVoter;
 use Symfony\Component\Security\Core\Authorization\Voter\RoleVoter;
 use Symfony\Component\Security\Core\Role\RoleHierarchy;
 use Symfony\Component\Security\Core\User\ChainUserProvider;
+use Symfony\Component\Security\Core\User\MissingUserProvider;
 use Symfony\Component\Security\Core\Validator\Constraints\UserPasswordValidator;
 
 /**
@@ -322,7 +323,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
             $hasherMap = $hashClasses = [];
 
             foreach ($configs['password_hashers'] as $class => $hasher) {
-                $hasherMap[$hashClasses[] = $class] = $this->createHasher($hasher);
+                $hasherMap[$hashClasses[] = $class] = isset($hasher['id']) ? new Reference($hasher['id']) : $this->createHasher($hasher);
             }
 
             $container->autowire('security.password_hasher_factory', new Definition(PasswordHasherFactory::class, [$hasherMap]));
@@ -338,17 +339,21 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
             $nbUserProviders = 0;
 
             foreach ($configs['providers'] as $nUP => $provider) {
-                $userProviders[$nbUserProviders++] = $this->createUserDaoProvider(\str_replace('-', '_', $nUP), $provider, $container);
+                $nbUserProviders++;
+                $userProviders[] = $this->createUserDaoProvider(\str_replace('-', '_', $nUP), $provider, $container);
             }
 
             if ($nbUserProviders > 1) {
                 $container->autowire('security.user_providers', new Definition(ChainUserProvider::class, [$userProviders]));
 
                 foreach ($userProviders as $userProvider) {
-                    $container->definition($userProvider)->public(false);
+                    $container->definition((string) $userProvider)->public(false);
                 }
             } elseif (1 === $nbUserProviders) {
-                $container->definition($userProviders[0])->autowire();
+                $container->definition((string) $userProviders[0])->autowire();
+            } else {
+                // This may never be reached ...
+                $container->set('security.missing_user_provider', new Definition(MissingUserProvider::class))->autowire();
             }
 
             if ($container->has('console')) {
@@ -451,6 +456,9 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
         ;
 
         $providerNodeBuilder
+            ->beforeNormalization()
+                ->ifString()->then(fn ($v) => ['id' => $v])
+            ->end()
             ->children()
                 ->scalarNode('id')->end()
                 ->arrayNode('chain')
@@ -517,11 +525,6 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
 
     private function createHasher(array $config): array
     {
-        // a custom hasher service
-        if (isset($config['id'])) {
-            return new Reference($config['id']);
-        }
-
         if ($config['migrate_from'] ?? false) {
             return $config;
         }
@@ -614,7 +617,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
     }
 
     // Parses a <provider> tag and returns the id for the related user provider service
-    private function createUserDaoProvider(string $name, array $provider, AbstractContainer $container): string
+    private function createUserDaoProvider(string $name, array $provider, AbstractContainer $container): Reference
     {
         $name = 'security.user.provider.concrete.' . \strtolower($name);
 
@@ -625,7 +628,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
             if (!empty($provider[$key])) {
                 $factory->create($container, $name, $provider[$key]);
 
-                return $name;
+                return new Reference($name);
             }
         }
 
@@ -633,7 +636,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
         if (isset($provider['id'])) {
             $container->alias($name, $provider['id']);
 
-            return $provider['id'];
+            return new Reference($provider['id']);
         }
 
         // Chain provider

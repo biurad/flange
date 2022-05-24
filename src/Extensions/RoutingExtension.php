@@ -125,12 +125,12 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
                     ->arrayPrototype()
                         ->addDefaultsIfNotSet()
                         ->children()
-                            ->scalarNode('name')->defaultValue(null)->end()
-                            ->scalarNode('path')->isRequired()->end()
-                            ->scalarNode('to')->defaultValue(null)->end()
+                            ->scalarNode('bind')->defaultValue(null)->end()
+                            ->scalarNode('path')->defaultValue(null)->end()
+                            ->scalarNode('run')->defaultValue(null)->end()
                             ->scalarNode('namespace')->defaultValue(null)->end()
                             ->booleanNode('debug')->defaultValue(null)->end()
-                            ->arrayNode('methods')
+                            ->arrayNode('method')
                                 ->beforeNormalization()
                                     ->ifString()
                                     ->then(fn (string $v): array => [$v])
@@ -138,14 +138,14 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
                                 ->defaultValue(Route::DEFAULT_METHODS)
                                 ->prototype('scalar')->end()
                             ->end()
-                            ->arrayNode('schemes')
+                            ->arrayNode('scheme')
                                 ->beforeNormalization()
                                     ->ifString()
                                     ->then(fn (string $v): array => [$v])
                                 ->end()
                                 ->prototype('scalar')->defaultValue([])->end()
                             ->end()
-                            ->arrayNode('hosts')
+                            ->arrayNode('domain')
                                 ->beforeNormalization()
                                     ->ifString()
                                     ->then(fn (string $v): array => [$v])
@@ -210,7 +210,7 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
             $container->tag(Listener::class, 'annotation.listener', Listener::class);
             $container->set('router.annotation.collection', new Definition([new Reference('annotation.loader'), 'load'], [Listener::class]))
                 ->public(false)
-                ->tag('router.collection')
+                ->tag('router.collection', false)
             ;
         }
 
@@ -284,20 +284,30 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
             }
 
             if ($container instanceof RouterInterface) {
-                if ('_defaults' === $routeData['name'] ?? null) {
-                    unset($routeData['name']);
-                    $this->defaults = $routeData;
-                    continue;
+                if ('_defaults' !== $routeData['bind'] ?? null) {
+                    if (empty($routeData['path'] ?? null)) {
+                        throw new \InvalidArgumentException('Route path is required.');
+                    }
+                    $route = $container->match($routeData['path'], $routeData['method'], $routeData['run']);
                 }
-
-                $route = $container->match($routeData['path'], $routeData['methods'], $routeData['to']);
+                $notAllowed = ['run', 'debug'];
 
                 foreach ($routeData as $key => $value) {
-                    if (empty($value) || \in_array($key, ['path', 'methods', 'to', 'debug'], true)) {
+                    if (empty($value)) {
                         continue;
                     }
 
-                    \call_user_func_array([$route, 'name' === $key ? 'bind' : $key], [$value]);
+                    if (isset($route)) {
+                        if (\in_array($key, ['path', 'method', ...$notAllowed], true)) {
+                            continue;
+                        }
+                        \call_user_func_array([$route, $key], [$value]);
+                    } else {
+                        if (\in_array($key, ['bind', ...$notAllowed], true)) {
+                            continue;
+                        }
+                        $this->defaults['path' === $key ? 'prefix' : $key] = $value;
+                    }
                 }
             }
         }
