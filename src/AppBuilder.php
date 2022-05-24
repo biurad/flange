@@ -153,51 +153,27 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
      */
     public static function build(callable $application, array $options = []): Application
     {
-        $defFile = 'load_' . ($containerClass = 'App_' . (($debug = $options['debug'] ?? false) ? 'Debug' : '') . 'Container') . '.php';
-        $cacheDir = $options['cacheDir'] ?? \dirname((new \ReflectionClass(\Composer\Autoload\ClassLoader::class))->getFileName(), 2);
-        $cachePath = $cacheDir . '/' . $containerClass . '_' . \PHP_SAPI . \PHP_OS . \PHP_VERSION_ID . '.php';
-
-        // Silence E_WARNING to ignore "include" failures - don't use "@" to prevent silencing fatal errors
-        $errorLevel = \error_reporting(\E_ALL ^ \E_WARNING);
+        $containerClass = 'App_' . (($debug = $options['debug'] ?? false) ? 'Debug' : '') . 'Container';
+        $a = 'load_' . $containerClass . ($hashFile = '_' . \PHP_SAPI . \PHP_OS . '.php');
+        $b = $options['cacheDir'] ?? \dirname((new \ReflectionClass(\Composer\Autoload\ClassLoader::class))->getFileName(), 2);
+        $errorLevel = \error_reporting(\E_ALL ^ \E_WARNING); //ignore "include" failures - don't use "@" to prevent silencing fatal errors
 
         try {
-            if (\is_file($cachePath)) {
-                include $cacheDir . '/' . $defFile;
-                include $cachePath;
-                $container = new $containerClass();
+            if (
+                \is_object($c = include $b . '/' . $a) &&
+                (!$debug || ($cache = new ConfigCache($b . '/' . $containerClass . $hashFile, $debug))->isFresh())
+            ) {
+                \error_reporting($errorLevel);
 
-                if (!$debug || ($cache = new ConfigCache($cachePath, $debug))->isFresh()) {
-                    \error_reporting($errorLevel);
-
-                    return $container;
-                }
-            } else {
-                \is_dir($cacheDir) ?: \mkdir($cacheDir, 0777, true);
+                return $c;
             }
         } catch (\Throwable $e) {
+            $c = null;
         }
+        \error_reporting($errorLevel); // restore error reporting
 
         if ($debug && \interface_exists(\Tracy\IBarPanel::class)) {
             Debug\Tracy\ContainerPanel::$compilationTime = \microtime(true);
-        }
-
-        try {
-            if ($lock = \fopen($cachePath . '.lock', 'w')) {
-                \flock($lock, \LOCK_EX | \LOCK_NB, $wouldBlock);
-
-                if (!\flock($lock, $wouldBlock ? \LOCK_SH : \LOCK_EX)) {
-                    \fclose($lock);
-                    $lock = null;
-                } elseif (isset($container) && \is_file($cachePath)) {
-                    \flock($lock, \LOCK_UN);
-                    \fclose($lock);
-
-                    return new $containerClass();
-                }
-            }
-        } catch (\Throwable $e) {
-        } finally {
-            \error_reporting($errorLevel);
         }
 
         $application($container = new static($debug));
@@ -205,17 +181,20 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
 
         $container->addNodeVisitor(new DI\NodeVisitor\MethodsResolver());
         $container->addNodeVisitor(new DI\NodeVisitor\AutowiringResolver());
-        $container->addNodeVisitor($splitter = new DI\NodeVisitor\DefinitionsSplitter($options['maxDefinitions'] ?? 500, $defFile));
+        $container->addNodeVisitor($splitter = new DI\NodeVisitor\DefinitionsSplitter($options['maxDefinitions'] ?? 500, $a));
 
         if (!isset($cache)) {
-            $cache = new ConfigCache($cachePath, $debug); // ... or create a new cache
+            $cache = new ConfigCache($b . '/' . $containerClass . $hashFile, $debug); // ... or create a new cache
         }
 
-        $cache->write($container->compile($options + \compact('containerClass')), $container->getResources()); // Generate container class
-        require $splitter->buildTraits($cacheDir, $debug, $requiredPaths);
-        require $cachePath;
+        $cache->write($container->compile($options + \compact('containerClass')), $container->getResources());
+        \file_put_contents(
+            $initialize = $splitter->buildTraits($b, $debug, $requiredPaths),
+            \sprintf("require '%s';\n\nreturn new \%s();\n", $cache->getPath(), $containerClass),
+            \FILE_APPEND | \LOCK_EX
+        );
 
-        return new $containerClass();
+        return $c ?: require $initialize;
     }
 
     /**
