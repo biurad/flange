@@ -23,6 +23,7 @@ use Doctrine\Common\Annotations\AnnotationRegistry;
 use Doctrine\Common\Annotations\PsrCachedReader;
 use Rade\DI\AbstractContainer;
 use Rade\DI\Definition;
+use Rade\DI\Definitions\Parameter;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
 use Spiral\Attributes\Composite\MergeReader;
@@ -124,7 +125,7 @@ class AnnotationExtension implements AliasedInterface, BootExtensionInterface, C
                     }
 
                     if ($hasCache) {
-                        $doctrineArgs = [new Statement($doctrineService), new Reference('cache.system'), '%debug%'];
+                        $doctrineArgs = [new Statement($doctrineService), new Reference('cache.system'), new Parameter('debug')];
                         $doctrineService = PsrCachedReader::class;
                     }
 

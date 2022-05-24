@@ -20,6 +20,7 @@ namespace Rade\DI\Extensions;
 use Rade\AppBuilder;
 use Rade\DI\AbstractContainer;
 use Rade\DI\Definition;
+use Rade\DI\Definitions\Parameter;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Loader\{ClosureLoader, DirectoryLoader, GlobFileLoader, PhpFileLoader, YamlFileLoader};
 use Symfony\Component\Config\ConfigCacheFactory;
@@ -113,7 +114,7 @@ class ConfigExtension implements AliasedInterface, ConfigurationInterface, Exten
 
         $container->autowire('config.loader_locator', new Definition(FileLocator::class, [\array_map([$container, 'parameter'], $configs['paths'])]));
         $container->set('config.loader_resolver', new Definition(LoaderResolver::class, [$configLoaders]));
-        $container->autowire('config_cache_factory', new Definition(ConfigCacheFactory::class, ['%debug%']));
+        $container->autowire('config_cache_factory', new Definition(ConfigCacheFactory::class, [new Parameter('debug')]));
 
         if ($configs['auto_configure'] && $container instanceof \Rade\KernelInterface) {
             foreach ($configs['paths'] as $path) {

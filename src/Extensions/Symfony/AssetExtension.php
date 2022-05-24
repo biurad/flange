@@ -19,6 +19,7 @@ namespace Rade\DI\Extensions\Symfony;
 
 use Rade\DI\AbstractContainer;
 use Rade\DI\Definition;
+use Rade\DI\Definitions\Parameter;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Definitions\TaggedLocator;
@@ -171,7 +172,9 @@ class AssetExtension implements AliasedInterface, ConfigurationInterface, Extens
         $container->parameters['asset.request_context.secure'] = $configs['secure_context'] ?? (isset($_SERVER['HTTPS']) ? true : false);
 
         $packagesDef = $container->set('assets.packages', new Definition(Packages::class, [new TaggedLocator('assets.package', 'package')]))->autowire([Packages::class]);
-        $container->autowire('assets.context', new Definition(RequestStackContext::class, [1 => '%asset.request_context.base_path%', 2 => '%asset.request_context.secure%']))->public(false);
+        $container->autowire('assets.context', new Definition(RequestStackContext::class))
+            ->args([1 => new Parameter('asset.request_context.base_path'), 2 => new Parameter('asset.request_context.secure')])
+            ->public(false);
 
         if ($configs['version_strategy']) {
             $defaultVersion = $container->has($configs['version_strategy']) ? new Reference($configs['version_strategy']) : new Statement($configs['version_strategy']);
@@ -192,10 +195,10 @@ class AssetExtension implements AliasedInterface, ConfigurationInterface, Extens
                 $version = $this->createVersion($version, $format, $package['json_manifest_path'], $package['strict_mode']);
             }
 
-            $packages[] = $this->createPackageDefinition('%asset.request_context.base_path%', $package['base_urls'], $version);
+            $packages[] = $this->createPackageDefinition('asset.request_context.base_path', $package['base_urls'], $version);
         }
 
-        $packagesDef->args([$this->createPackageDefinition('%asset.request_context.base_path%', $configs['base_urls'], $defaultVersion), $packages]);
+        $packagesDef->args([$this->createPackageDefinition('asset.request_context.base_path', $configs['base_urls'], $defaultVersion), $packages]);
     }
 
     /**
@@ -207,7 +210,7 @@ class AssetExtension implements AliasedInterface, ConfigurationInterface, Extens
             throw new \LogicException('An asset package cannot have base URLs and base paths.');
         }
 
-        return new Statement($baseUrls ? UrlPackage::class : PathPackage::class, [$baseUrls ?: $basePath, $version]);
+        return new Statement($baseUrls ? UrlPackage::class : PathPackage::class, [$baseUrls ?: new Parameter($basePath, true), $version]);
     }
 
     private function createVersion(?string $version, ?string $format, ?string $jsonManifestPath, bool $strictMode): Statement

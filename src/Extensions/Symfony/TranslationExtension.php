@@ -69,6 +69,7 @@ use Symfony\Component\Translation\Translator;
 use Symfony\Component\Translation\Writer\TranslationWriter;
 use Symfony\Component\Validator\Validation;
 
+use function Rade\DI\Loader\param;
 use function Rade\DI\Loader\service;
 
 /**
@@ -174,8 +175,6 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
             throw new \LogicException('Translation support cannot be enabled as the Translation component is not installed. Try running "composer require symfony/translation".');
         }
 
-        $container->parameters['translator.logging'] = $configs['logging'];
-        $container->parameters['translator.default_path'] = $configs['default_path'];
         $locales = $container->parameters['enabled_locales'] ?? ['en'];
 
         if ($configs['providers']) {
@@ -213,9 +212,9 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
                 ->bind('addDumper', ['ini', new Statement(IniFileDumper::class)])
                 ->bind('addDumper', ['json', new Statement(JsonFileDumper::class)])
                 ->bind('addDumper', ['res', new Statement(IcuResFileDumper::class)]),
-            'translator.default' => $translator = service(Translator::class, ['%default_locale%', 2 => $configs['cache_dir'], 3 => '%debug%'])
+            'translator.default' => $translator = service(Translator::class, [$lParam = param('default_locale'), 2 => $configs['cache_dir'], 3 => param('debug')])
                 ->binds([
-                    'setFallbackLocales' => [$configs['fallbacks'] ?: ['%default_locale%']],
+                    'setFallbackLocales' => [$configs['fallbacks'] ?: [$lParam]],
                     'setConfigCacheFactory' => [new Reference('config_cache_factory')],
                 ]),
             'translation.provider_collection_factory' => service(TranslationProviderCollectionFactory::class, [new TaggedLocator('translation.provider_factory'), \array_unique($locales)])->public(false),
@@ -330,7 +329,7 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
             $providerArgs = [
                 new Reference('http_client'),
                 new Reference('?logger'),
-                '%default_locale%',
+                $lParam,
                 $xliff = new Reference('translation.loader.xliff'),
             ];
 
@@ -353,7 +352,7 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
                     new Reference('translation.provider_collection'),
                     new Reference('translation.writer'),
                     new Reference('translation.reader'),
-                    '%default_locale%',
+                    $lParam,
                     $transPaths,
                     $locales,
                 ])->tag('console.command', ['command' => 'translation:pull']),

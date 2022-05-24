@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace Rade\DI\Extensions\Symfony;
 
 use Rade\DI\AbstractContainer;
+use Rade\DI\Definitions\Parameter;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Definitions\TaggedLocator;
@@ -146,7 +147,7 @@ class SerializerExtension implements AliasedInterface, BootExtensionInterface, C
             'serializer.normalizer.datetime' => service(DateTimeNormalizer::class)->public(false)->tag('serializer.normalizer', ['priority' => -910]),
             'serializer.normalizer.data_uri' => service(DataUriNormalizer::class, [new Reference('?mime_types')])->public(false)->tag('serializer.normalizer', ['priority' => -920]),
             'serializer.normalizer.json_serializable' => service(JsonSerializableNormalizer::class)->public(false)->tag('serializer.normalizer', ['priority' => -900]),
-            'serializer.normalizer.problem' => service(ProblemNormalizer::class, ['%debug%'])->public(false)->tag('serializer.normalizer', ['priority' => -890]),
+            'serializer.normalizer.problem' => service(ProblemNormalizer::class, [new Parameter('debug')])->public(false)->tag('serializer.normalizer', ['priority' => -890]),
             'serializer.denormalizer.unwrapping' => service(UnwrappingDenormalizer::class, [new Reference('?property_accessor')])->public(false)->tag('serializer.normalizer', ['priority' => 1000]),
             'serializer.normalizer.uid' => service(UidNormalizer::class)->public(false)->tag('serializer.normalizer', ['priority' => -890]),
             'serializer.denormalizer.array' => service(ArrayDenormalizer::class)->public(false)->tag('serializer.normalizer', ['priority' => -990]),

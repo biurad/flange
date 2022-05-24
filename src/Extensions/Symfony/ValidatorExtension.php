@@ -20,6 +20,7 @@ namespace Rade\DI\Extensions\Symfony;
 use Rade\DI\AbstractContainer;
 use Rade\DI\ContainerBuilder;
 use Rade\DI\Definition;
+use Rade\DI\Definitions\Parameter;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Definitions\TaggedLocator;
@@ -171,7 +172,7 @@ class ValidatorExtension implements AliasedInterface, BootExtensionInterface, Co
 
         $validatorBuilder = $container->set('validator.builder', new Definition(ValidatorBuilder::class))->autowire([ValidatorBuilder::class])
             ->bind('setConstraintValidatorFactory', [new Reference('validator.validator_factory')])
-            ->bind('setTranslationDomain', ['%validator.translation_domain%']);
+            ->bind('setTranslationDomain', [new Parameter('validator.translation_domain')]);
 
         if ($container->hasExtension(TranslationExtension::class)) {
             $validatorBuilder->bind('setTranslator', [new Reference('translator')]);
