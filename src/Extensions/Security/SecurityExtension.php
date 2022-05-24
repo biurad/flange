@@ -19,6 +19,7 @@ namespace Rade\DI\Extensions\Security;
 
 use Biurad\Security\AccessMap;
 use Biurad\Security\Authenticator;
+use Biurad\Security\Commands\UserStatusCommand;
 use Biurad\Security\Handler\FirewallAccessHandler;
 use Biurad\Security\RateLimiter\DefaultLoginRateLimiter;
 use Biurad\Security\Token\CacheableTokenStorage;
@@ -37,6 +38,7 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 use Symfony\Component\HttpFoundation\RateLimiter\RequestRateLimiterInterface;
 use Symfony\Component\HttpFoundation\RequestMatcher;
+use Symfony\Component\PasswordHasher\Command\UserPasswordHashCommand;
 use Symfony\Component\PasswordHasher\Hasher\NativePasswordHasher;
 use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactory;
 use Symfony\Component\PasswordHasher\Hasher\Pbkdf2PasswordHasher;
@@ -317,14 +319,18 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
         }
 
         if ($configs['password_hashers']) {
-            $hasherMap = [];
+            $hasherMap = $hashClasses = [];
 
             foreach ($configs['password_hashers'] as $class => $hasher) {
-                $hasherMap[$class] = $this->createHasher($hasher);
+                $hasherMap[$hashClasses[] = $class] = $this->createHasher($hasher);
             }
 
             $container->autowire('security.password_hasher_factory', new Definition(PasswordHasherFactory::class, [$hasherMap]));
             $container->autowire('security.user_password_hasher', new Definition(UserPasswordHasher::class, [new Reference('security.password_hasher_factory')]));
+
+            if ($container->has('console')) {
+                $container->set('console.command.user_password_encoder', new Definition(UserPasswordHashCommand::class, [1 => $hashClasses]))->public(false)->tag('console.command', 'security:hash-password');
+            }
         }
 
         if (!empty($configs['providers'])) {
@@ -343,6 +349,10 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
                 }
             } elseif (1 === $nbUserProviders) {
                 $container->definition($userProviders[0])->autowire();
+            }
+
+            if ($container->has('console')) {
+                $container->set('console.command.user_status', new Definition(UserStatusCommand::class))->public(false)->tag('console.command', 'security:user-status');
             }
         }
 
