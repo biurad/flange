@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace Rade\DI\Extensions\Security\Provider;
 
-use Biurad\Security\Handler\CaptchaAuthenticator;
+use Biurad\Security\Authenticator\CaptchaAuthenticator;
 use Rade\DI\AbstractContainer;
 use Rade\DI\Definition;
 use Symfony\Component\Config\Definition\Builder\NodeDefinition;
