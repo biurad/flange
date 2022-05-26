@@ -39,6 +39,7 @@ use Symfony\Component\HttpFoundation\Session\Storage\Handler\SessionHandlerFacto
 use Symfony\Component\HttpFoundation\Session\Storage\MetadataBag;
 use Symfony\Component\HttpFoundation\Session\Storage\NativeSessionStorage;
 use Symfony\Component\Security\Csrf\CsrfTokenManager;
+use Symfony\Component\Security\Csrf\TokenStorage\NativeSessionTokenStorage;
 use Symfony\Component\Security\Csrf\TokenStorage\SessionTokenStorage;
 
 use function Rade\DI\Loader\{reference, service, wrap};
@@ -328,11 +329,10 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
                 throw new \LogicException('CSRF support cannot be enabled as the Security CSRF component is not installed. Try running "composer require symfony/security-csrf".');
             }
 
-            $definitions['http.csrf.token_manager'] = $csrf = service(CsrfTokenManager::class, [2 => reference('?request_stack')])->autowire();
-
-            if ($container->has('http.session')) {
-                $csrf->arg(1, wrap(SessionTokenStorage::class, [reference('request_stack')]));
-            }
+            $definitions += [
+                'http.csrf.token_storage' => ($container->has('http.session') ? service(SessionTokenStorage::class, [reference('request_stack')]) : service(NativeSessionTokenStorage::class))->autowire(),
+                'http.csrf.token_manager' => service(CsrfTokenManager::class, [1 => reference('http.csrf.token_storage'), 2 => reference('?request_stack')])->autowire(),
+            ];
         }
 
         $container->multiple($definitions);
