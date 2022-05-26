@@ -21,6 +21,8 @@ use Biurad\Security\AccessMap;
 use Biurad\Security\Authenticator;
 use Biurad\Security\Commands\UserStatusCommand;
 use Biurad\Security\Handler\FirewallAccessHandler;
+use Biurad\Security\Handler\LogoutHandler;
+use Biurad\Security\RateLimiter\AbstractRequestRateLimiter;
 use Biurad\Security\RateLimiter\DefaultLoginRateLimiter;
 use Biurad\Security\Token\CacheableTokenStorage;
 use Rade\DI\AbstractContainer;
@@ -36,7 +38,6 @@ use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
-use Symfony\Component\HttpFoundation\RateLimiter\RequestRateLimiterInterface;
 use Symfony\Component\HttpFoundation\RequestMatcher;
 use Symfony\Component\PasswordHasher\Command\UserPasswordHashCommand;
 use Symfony\Component\PasswordHasher\Hasher\NativePasswordHasher;
@@ -117,6 +118,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
                 ->booleanNode('hide_user_not_found')->defaultTrue()->end()
                 ->booleanNode('include_authenticators')->defaultTrue()->end()
                 ->booleanNode('erase_credentials')->defaultTrue()->end()
+                ->scalarNode('firewall_name')->defaultValue('main')->end()
                 ->enumNode('token_storage')->values(['session', 'cache', null])->defaultValue('session')->end()
                 ->ScalarNode('token_storage_expiry')->defaultValue('+3 hours')->end()
                 ->scalarNode('user_checker')
@@ -238,11 +240,12 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
                 ->end()
                 ->arrayNode('throttling')
                     ->beforeNormalization()
-                        ->ifTrue(fn ($v) => true === $v)->then(fn () => ['limiter' => null])
-                        ->ifString()->then(fn ($v) => ['limiter' => $v])
+                        ->ifTrue(fn ($v) => true === $v)->then(fn () => ['limiter' => null, 'enabled' => true])
+                        ->ifString()->then(fn ($v) => ['limiter' => $v, 'enabled' => true])
                     ->end()
+                    ->canBeEnabled()
                     ->children()
-                        ->scalarNode('limiter')->info(\sprintf('A service id implementing "%s".', RequestRateLimiterInterface::class))->defaultNull()->end()
+                        ->scalarNode('limiter')->info(\sprintf('A service id implementing "%s".', AbstractRequestRateLimiter::class))->defaultNull()->end()
                         ->integerNode('max_attempts')->defaultValue(5)->end()
                         ->scalarNode('interval')->defaultValue('1 minute')->end()
                         ->scalarNode('lock_factory')->info('The service ID of the lock factory used by the login rate limiter (or null to disable locking)')->defaultNull()->end()
@@ -375,7 +378,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
             $authenticators = $configs['include_authenticators'] ? \array_map(fn (string $factory) => new Reference($factory), $authenticators) : [];
         }
 
-        if (!empty($configs['throttling']) && null === $configs['throttling']['limiter']) {
+        if ($configs['throttling']['enabled'] && null === $configs['throttling']['limiter']) {
             if (!\class_exists(RateLimiterFactory::class)) {
                 throw new \LogicException('Login throttling requires the Rate Limiter component. Try running "composer require symfony/rate-limiter".');
             }
@@ -409,11 +412,14 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
             $authenticators ?? [],
             4 => new Reference('?' . ($configs['throttling']['limiter'] ?? 'security.authenticator_throttling')),
             7 => $configs['hide_user_not_found'],
+            8 => $configs['erase_credentials'],
+            9 => $configs['firewall_name'],
         ]));
         $container->autowire('security.token_storage', isset($tokenType)
             ? new Definition(CacheableTokenStorage::class, [$tokenType, new Statement('Nette\Utils\DateTime::from', [$configs['token_storage_expiry']])])
             : new Definition(TokenStorage::class));
         $container->set('security.access.authenticated_voter', new Definition(AuthenticatedVoter::class, [new Statement(AuthenticationTrustResolver::class)]))->public(false)->tag('security.voter', ['priority' => 250]);
+        $container->set('security.logout_handler', new Definition(LogoutHandler::class, [new Reference('security.token_storage')]))->autowire();
 
         if ($container->hasExtension(Symfony\ValidatorExtension::class)) {
             $container->set('security.validator.user_password', new Definition(UserPasswordValidator::class))->public(false)->tag('validator.constraint_validator', ['alias' => 'security.validator.user_password']);
@@ -502,7 +508,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
                 ->arrayNode('authenticators')
                     ->example([
                         'form_login' => [
-                            'erase_credentials' => true,
+                            'user_parameter' => '_username',
                             'provider' => 'my_memory_provider',
                         ],
                         'my_custom' => [

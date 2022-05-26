@@ -112,7 +112,6 @@ class RememberMeFactory extends AbstractFactory
             $tokenVerifier ?? null,
             new Reference('?security.authenticator.remember_me_signature_hasher'),
             $config['parameter'],
-            $config['user_parameter'],
             \array_intersect_key($config, $this->options),
         ]));
         $container->autowire('security.authenticator.remember_me', new Definition(RememberMeAuthenticator::class, [new Reference('security.authenticator.remember_me_handler'), 2 => $config['allow_multiple_tokens']]));

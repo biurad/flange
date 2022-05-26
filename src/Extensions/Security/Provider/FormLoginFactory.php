@@ -41,7 +41,8 @@ class FormLoginFactory extends AbstractFactory
             ->end()
             ->children()
                 ->scalarNode('provider')->end()
-                ->booleanNode('erase_credentials')->defaultTrue()->end()
+                ->scalarNode('user_parameter')->defaultValue('_identifier')->end()
+                ->scalarNode('password_parameter')->defaultValue('_password')->end()
             ->end()
         ;
     }
@@ -55,7 +56,8 @@ class FormLoginFactory extends AbstractFactory
         $container->autowire($id, new Definition(FormLoginAuthenticator::class, [
             $config['provider'] ?? new Statement(MissingUserProvider::class, ['main']),
             new Reference('security.password_hasher_factory'),
-            5 => $config['erase_credentials'],
+            3 => $config['user_parameter'],
+            4 => $config['password_parameter'],
         ]));
     }
 }
