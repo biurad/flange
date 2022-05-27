@@ -41,6 +41,10 @@ use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mailer\Messenger\MessageHandler;
 use Symfony\Component\Mailer\Transport;
+use Symfony\Component\Mailer\Transport\NativeTransportFactory;
+use Symfony\Component\Mailer\Transport\NullTransportFactory;
+use Symfony\Component\Mailer\Transport\SendmailTransportFactory;
+use Symfony\Component\Mailer\Transport\Smtp\EsmtpTransportFactory;
 use Symfony\Component\Mime\Header\Headers;
 
 use function Rade\DI\Loader\service;
@@ -167,6 +171,10 @@ class MailerExtension implements AliasedInterface, ConfigurationInterface, Exten
             SendinblueTransportFactory::class,
             SesTransportFactory::class,
             OhMySmtpTransportFactory::class,
+            NullTransportFactory::class,
+            NativeTransportFactory::class,
+            SendmailTransportFactory::class,
+            EsmtpTransportFactory::class,
         ];
 
         foreach ($classToServices as $class) {
