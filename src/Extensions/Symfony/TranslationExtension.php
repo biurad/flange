@@ -325,7 +325,9 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
         }
 
         if ($configs['logging']) {
-            $definitions[$translatorId = 'translator.logger'] = service(LoggingTranslator::class, [new Reference($translatorId ?? 'translator.default'), new Reference('logger')])->autowire();
+            $translator->public(false);
+            $definitions['translator.logger'] = service(LoggingTranslator::class, [new Reference($translatorId ?? 'translator.default'), new Reference('logger')])->autowire();
+            $translatorId = 'translator.logger';
         } else {
             $translator->autowire();
         }
