@@ -19,6 +19,7 @@ namespace Rade\Debug\Tracy;
 
 use Biurad\Http\Uri;
 use Flight\Routing\Route;
+use Flight\Routing\RouteMatcher;
 use Flight\Routing\Router;
 use Nette;
 use Symfony\Component\HttpFoundation\Request;
@@ -33,7 +34,7 @@ final class RoutesPanel implements Tracy\IBarPanel
     use Nette\SmartObject;
 
     private int $routeCount = 0;
-    private Router $profiler;
+    private RouteMatcher $profiler;
     private ?Request $request;
 
     /** @var array<int,mixed> */
@@ -44,7 +45,7 @@ final class RoutesPanel implements Tracy\IBarPanel
 
     public function __construct(Router $router, RequestStack $request)
     {
-        $this->profiler = $router;
+        $this->profiler = $router->getMatcher();
         $this->request = $request->getMainRequest();
     }
 
@@ -53,7 +54,7 @@ final class RoutesPanel implements Tracy\IBarPanel
      */
     public function getTab(): string
     {
-        foreach ($this->profiler->getCollection()->getRoutes() as $route) {
+        foreach ($this->profiler->getRoutes() as $route) {
             $this->processData($route);
         }
 
