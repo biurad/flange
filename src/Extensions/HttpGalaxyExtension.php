@@ -37,6 +37,7 @@ use Symfony\Component\HttpFoundation\Session\Storage\Handler\NativeFileSessionHa
 use Symfony\Component\HttpFoundation\Session\Storage\Handler\NullSessionHandler;
 use Symfony\Component\HttpFoundation\Session\Storage\Handler\SessionHandlerFactory;
 use Symfony\Component\HttpFoundation\Session\Storage\MetadataBag;
+use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
 use Symfony\Component\HttpFoundation\Session\Storage\NativeSessionStorage;
 use Symfony\Component\Security\Csrf\CsrfTokenManager;
 use Symfony\Component\Security\Csrf\TokenStorage\NativeSessionTokenStorage;
@@ -304,13 +305,16 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
                 throw new \LogicException('Session support cannot be enabled as the session extension is not installed. See https://php.net/session.installation for instructions.');
             }
 
+            $inConsole = $container instanceof KernelInterface && $container->isRunningInConsole();
+            $metaBag = wrap(MetadataBag::class, [$session['meta_storage_key'], $session['metadata_update_threshold']]);
+            $sessionArgs = \array_diff_key($session, ['storage_id' => null, 'handler_id' => null, 'meta_storage_key' => null, 'metadata_update_threshold' => null]);
             $container->multiple([
-                'session.storage.native' => service(NativeSessionStorage::class, [
-                    $sessionArgs = \array_diff_key($session, ['storage_id' => null, 'handler_id' => null, 'meta_storage_key' => null, 'metadata_update_threshold' => null]),
+                'session.storage.native' => ($inConsole ? service(MockArraySessionStorage::class, [1 => $metaBag]) : service(NativeSessionStorage::class, [
+                    $sessionArgs,
                     reference('session.handler'),
-                    wrap(MetadataBag::class, [$session['meta_storage_key'], $session['metadata_update_threshold']]),
-                ]),
-                'session.handler.native_file' => ($container instanceof KernelInterface && $container->isRunningInConsole() ? service(NullSessionHandler::class) : service(NativeFileSessionHandler::class, [$session['save_path']]))->autowire(),
+                    $metaBag,
+                ]))->autowire(),
+                'session.handler.native_file' => ($inConsole ? service(NullSessionHandler::class) : service(NativeFileSessionHandler::class, [$session['save_path']]))->autowire(),
                 'http.middleware.session' => service(SessionMiddleware::class, [wrap(reference('http.session'), $sessionArgs, true)])->public(false),
                 'http.session' => service(Session::class, [reference($session['storage_id'])])->autowire(),
             ]);
