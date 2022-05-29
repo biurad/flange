@@ -185,7 +185,7 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
         $container->parameters['project.cache_dir'] = $container->parameter($configs['directory']);
         $container->multiple([
             'cache.default_matcher' => service(DefaultMarshaller::class, [1 => '%debug%'])->autowire([MarshallerInterface::class]),
-            'cache.adapter.system' => service(AbstractAdapter::class . '::createSystemCache', [3 => '%project.cache_dir%' . '/pools/system'])->abstract()->public(false)->tag('cache.pool'),
+            'cache.adapter.system' => service(AbstractAdapter::class . '::createSystemCache', ['', 0, \Rade\Application::VERSION, '%project.cache_dir%' . '/pools/system'])->abstract()->public(false)->tag('cache.pool'),
             'cache.adapter.filesystem' => service(FilesystemAdapter::class, [2 => '%project.cache_dir%' . '/pools/app'])->abstract()->public(false)->tag('cache.pool'),
             'cache.adapter.pdo' => service(PdoAdapter::class)->public(false)->abstract()->tag('cache.pool', ['provider' => 'cache.default_pdo_provider']),
             'cache.adapter.array' => service(ArrayAdapter::class)->public(false)->abstract()->tag('cache.pool'),
