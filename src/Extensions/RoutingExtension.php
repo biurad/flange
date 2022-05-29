@@ -274,7 +274,7 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
             }
 
             if (isset($configs['cache'])) {
-                $router->arg(1, \str_starts_with($configs['cache'], 'cache.') ? new Reference($configs['cache']) : $configs['cache']);
+                $router->arg(1, $configs['cache']);
             }
         }
 
@@ -370,7 +370,7 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
                 $router->pipes($key, ...$values);
             }
 
-            $router->getCollection()->prototype($this->defaults);
+            $router->getCollection()->prototype($container->getResolver()->resolveArguments($this->defaults));
         } else {
             $router->bind('pipe', [$defaultMiddlewares]);
             $groupedCollection = 'function (\Flight\Routing\RouteCollection $collection) {';
