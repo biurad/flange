@@ -350,7 +350,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
                 $container->autowire('security.user_providers', new Definition(ChainUserProvider::class, [$userProviders]));
 
                 foreach ($userProviders as $userProvider) {
-                    $container->definition((string) $userProvider)->public(false);
+                    $container->definition((string) $userProvider)->public(true);
                 }
             } elseif (1 === $nbUserProviders) {
                 $container->definition((string) $userProviders[0])->autowire();
