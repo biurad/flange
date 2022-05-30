@@ -85,10 +85,10 @@ class FormExtension implements AliasedInterface, BootExtensionInterface, Configu
 
         $treeBuilder->getRootNode()
             ->info('form configuration')
-            ->addDefaultsIfNotSet()
             ->canBeEnabled()
             ->children()
                 ->arrayNode('csrf_protection')
+                    ->addDefaultsIfNotSet()
                     ->beforeNormalization()
                         ->ifTrue(fn ($v) => \is_bool($v))->then(fn ($v) => ['enabled' => $v])
                         ->ifString()->then(fn ($v) => ['field_name' => $v, 'enabled' => true])
