@@ -178,6 +178,10 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
 
         $locales = $container->parameters['enabled_locales'] ?? ['en'];
 
+        if (\is_string($locales)) {
+            $locales = \explode('|', $locales);
+        }
+
         if ($configs['providers']) {
             foreach ($configs['providers'] as $provider) {
                 if ($provider['locales']) {
