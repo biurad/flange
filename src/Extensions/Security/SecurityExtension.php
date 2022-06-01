@@ -347,20 +347,21 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
             }
 
             if ($nbUserProviders > 1) {
-                $container->autowire('security.user_providers', new Definition(ChainUserProvider::class, [$userProviders]));
+                $container->autowire($providerId = 'security.user_providers', new Definition(ChainUserProvider::class, [$userProviders]));
 
                 foreach ($userProviders as $userProvider) {
                     $container->definition((string) $userProvider)->public(true);
                 }
             } elseif (1 === $nbUserProviders) {
-                $container->definition((string) $userProviders[0])->autowire();
+                $container->definition($providerId = (string) $userProviders[0])->autowire();
             } else {
                 // This may never be reached ...
-                $container->set('security.missing_user_provider', new Definition(MissingUserProvider::class))->autowire();
+                $container->set($providerId = 'security.missing_user_provider', new Definition(MissingUserProvider::class))->autowire();
             }
 
             if ($container->has('console')) {
-                $container->set('console.command.user_status', new Definition(UserStatusCommand::class))->public(false)->tag('console.command', 'security:user-status');
+                $container->set('console.command.user_status', new Definition(UserStatusCommand::class, [new Reference($providerId)]))
+                    ->public(false)->tag('console.command', 'security:user-status');
             }
         }
 
