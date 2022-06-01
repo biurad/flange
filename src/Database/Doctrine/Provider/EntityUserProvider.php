@@ -53,13 +53,13 @@ class EntityUserProvider implements UserProviderInterface, PasswordUpgraderInter
     {
         $repository = $this->getRepository();
 
-        if ($repository instanceof UserLoaderInterface) {
+        if ($repository instanceof UserLoaderInterface || $repository instanceof UserProviderInterface) {
             $user = $repository->loadUserByIdentifier($identifier);
-        } elseif (null === $property = $this->property) {
+        } elseif (null === $this->property) {
             throw new \InvalidArgumentException(\sprintf('You must either make the "%s" entity Doctrine Repository ("%s") implement "Symfony\Bridge\Doctrine\Security\User\UserLoaderInterface" or set the "property" option in the corresponding entity provider configuration.', $this->classOrAlias, \get_debug_type($repository)));
         }
 
-        if (null === $user = ($user ?? $repository->findOneBy([$property => $identifier]))) {
+        if (null === $user = ($user ?? $repository->findOneBy([$this->property => $identifier]))) {
             $e = new UserNotFoundException(\sprintf('User "%s" not found.', $identifier));
             $e->setUserIdentifier($identifier);
 
