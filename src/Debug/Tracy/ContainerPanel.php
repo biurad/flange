@@ -62,7 +62,7 @@ class ContainerPanel implements Tracy\IBarPanel
         $rc = new \ReflectionClass($this->container);
         $types = [];
         $wiring = $this->getContainerProperty('types', $rc);
-        $ids = \array_keys(($methodsMap = $this->getContainerProperty('methodsMap', $rc)) +  $this->container->definitions());
+        $ids = \array_keys(($methodsMap = $this->getContainerProperty('methodsMap', $rc)) +  $this->container->getDefinitions());
 
         foreach ($ids as $id) {
             foreach ($wiring as $type => $names) {
