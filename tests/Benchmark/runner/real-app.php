@@ -27,7 +27,8 @@ $app = \Rade\AppBuilder::build(static function (\Rade\AppBuilder $creator): void
     // Add resource to re-compile if changes are made to this file.
     $creator->addResource(new \Symfony\Component\Config\Resource\FileResource(__FILE__));
 
-    $creator->loadExtensions(require __DIR__ . '/extensions.php', require __DIR__ . '/config.php');
+    $creator->match('/hello*<helloWorldFunc>')->bind('hello');
+    $creator->loadExtensions(require __DIR__ . '/extensions.php');
 }, ['cacheDir' => __DIR__ . '/var/app']);
 
 $app->run();

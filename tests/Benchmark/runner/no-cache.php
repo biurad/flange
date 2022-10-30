@@ -17,6 +17,8 @@ declare(strict_types=1);
 
 require __DIR__ . '/../../../vendor/autoload.php';
 
+\Tracy\Debugger::enable();
+
 function helloWorldFunc(): string
 {
     return 'Hello World';
@@ -24,6 +26,7 @@ function helloWorldFunc(): string
 
 // create a no cache rade application
 $app = new \Rade\Application(null, null, false);
-$app->loadExtensions(require __DIR__ . '/extensions.php', require __DIR__ . '/config.php');
+$app->match('/hello*<helloWorldFunc>')->bind('hello');
+$app->loadExtensions(require __DIR__ . '/extensions.php');
 
 $app->run();

@@ -19,6 +19,6 @@ require __DIR__ . '/../../../vendor/autoload.php';
 
 // create a simple rade application
 $app = new \Rade\Application(null, null, false);
-$app->match('/hello', \Flight\Routing\Route::DEFAULT_METHODS, fn (): string => 'Hello World');
+$app->match('/hello', to: fn (): string => 'Hello World');
 
 $app->run();
