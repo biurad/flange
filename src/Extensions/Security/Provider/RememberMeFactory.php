@@ -19,7 +19,7 @@ namespace Rade\DI\Extensions\Security\Provider;
 
 use Biurad\Security\Authenticator\RememberMeAuthenticator;
 use Biurad\Security\Handler\RememberMeHandler;
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
@@ -90,7 +90,7 @@ class RememberMeFactory extends AbstractFactory
         }
     }
 
-    public function create(AbstractContainer $container, string $id, array $config): void
+    public function create(Container $container, string $id, array $config): void
     {
         if (isset($config['token_provider'])) {
             $tokenVerifier = isset($config['token_verifier']) ? new Reference($config['token_verifier']) : null;

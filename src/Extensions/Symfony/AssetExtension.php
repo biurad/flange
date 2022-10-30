@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace Rade\DI\Extensions\Symfony;
 
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Parameter;
 use Rade\DI\Definitions\Reference;
@@ -157,7 +157,7 @@ class AssetExtension implements AliasedInterface, ConfigurationInterface, Extens
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs): void
+    public function register(Container $container, array $configs = []): void
     {
         if (!$configs['enabled']) {
             return;
@@ -171,7 +171,7 @@ class AssetExtension implements AliasedInterface, ConfigurationInterface, Extens
         $container->parameters['asset.request_context.base_path'] = $configs['base_path'] ?? ($container->parameter('%project_dir%/public'));
         $container->parameters['asset.request_context.secure'] = $configs['secure_context'] ?? (isset($_SERVER['HTTPS']) ? true : false);
 
-        $packagesDef = $container->set('assets.packages', new Definition(Packages::class, [new TaggedLocator('assets.package', 'package')]))->autowire([Packages::class]);
+        $packagesDef = $container->set('assets.packages', new Definition(Packages::class, [new TaggedLocator('assets.package', 'package')]))->typed(Packages::class);
         $container->autowire('assets.context', new Definition(RequestStackContext::class))
             ->args([1 => new Parameter('asset.request_context.base_path'), 2 => new Parameter('asset.request_context.secure')])
             ->public(false);

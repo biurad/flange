@@ -20,7 +20,7 @@ namespace Rade\DI\Extensions\Flysystem;
 use League\Flysystem\Filesystem;
 use League\Flysystem\MountManager;
 use Nette\Utils\Arrays;
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
@@ -107,7 +107,7 @@ class FlysystemExtension implements AliasedInterface, ConfigurationInterface, Ex
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs): void
+    public function register(Container $container, array $configs = []): void
     {
         if (!\class_exists(Filesystem::class)) {
             throw new \LogicException('Flysystem support cannot be enabled as the Flysystem library is not installed. Try running "composer require league/flysystem".');

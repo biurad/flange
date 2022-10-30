@@ -25,7 +25,7 @@ use Biurad\Security\Handler\LogoutHandler;
 use Biurad\Security\RateLimiter\AbstractRequestRateLimiter;
 use Biurad\Security\RateLimiter\DefaultLoginRateLimiter;
 use Biurad\Security\Token\CacheableTokenStorage;
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
@@ -263,7 +263,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs): void
+    public function register(Container $container, array $configs = []): void
     {
         if (!\class_exists(Authenticator::class)) {
             throw new \LogicException('Security support cannot be enabled as the Security library is not installed. Try running "composer require biurad/security".');
@@ -353,10 +353,10 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
                     $container->definition((string) $userProvider)->public(true);
                 }
             } elseif (1 === $nbUserProviders) {
-                $container->definition($providerId = (string) $userProviders[0])->autowire();
+                $container->definition($providerId = (string) $userProviders[0])->typed();
             } else {
                 // This may never be reached ...
-                $container->set($providerId = 'security.missing_user_provider', new Definition(MissingUserProvider::class))->autowire();
+                $container->set($providerId = 'security.missing_user_provider', new Definition(MissingUserProvider::class))->typed();
             }
 
             if ($container->has('console')) {
@@ -420,7 +420,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
             ? new Definition(CacheableTokenStorage::class, [$tokenType, new Statement('Nette\Utils\DateTime::from', [$configs['token_storage_expiry']])])
             : new Definition(TokenStorage::class));
         $container->set('security.access.authenticated_voter', new Definition(AuthenticatedVoter::class, [new Statement(AuthenticationTrustResolver::class)]))->public(false)->tag('security.voter', ['priority' => 250]);
-        $container->set('security.logout_handler', new Definition(LogoutHandler::class, [new Reference('security.token_storage')]))->autowire();
+        $container->set('security.logout_handler', new Definition(LogoutHandler::class, [new Reference('security.token_storage')]))->typed();
 
         if ($container->hasExtension(Symfony\ValidatorExtension::class)) {
             $container->set('security.validator.user_password', new Definition(UserPasswordValidator::class))->public(false)->tag('validator.constraint_validator', ['alias' => 'security.validator.user_password']);
@@ -430,7 +430,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
     /**
      * {@inheritdoc}
      */
-    public function boot(AbstractContainer $container): void
+    public function boot(Container $container): void
     {
         foreach ($this->factoryProviders as $factory) {
             if (!$factory instanceof BootExtensionInterface) {
@@ -624,7 +624,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
     }
 
     // Parses a <provider> tag and returns the id for the related user provider service
-    private function createUserDaoProvider(string $name, array $provider, AbstractContainer $container): Reference
+    private function createUserDaoProvider(string $name, array $provider, Container $container): Reference
     {
         $name = 'security.user.provider.concrete.' . \strtolower($name);
 
@@ -680,7 +680,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
         throw new \InvalidArgumentException(\sprintf('The strategy "%s" is not supported.', $strategy));
     }
 
-    private function createRequestMatcher(AbstractContainer $container, string $path = null, string $host = null, int $port = null, array $methods = [], array $ips = null, array $attributes = []): Statement
+    private function createRequestMatcher(Container $container, string $path = null, string $host = null, int $port = null, array $methods = [], array $ips = null, array $attributes = []): Statement
     {
         if ($methods) {
             $methods = \array_map('strtoupper', $methods);

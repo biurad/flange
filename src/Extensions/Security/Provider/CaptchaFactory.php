@@ -18,7 +18,7 @@ declare(strict_types=1);
 namespace Rade\DI\Extensions\Security\Provider;
 
 use Biurad\Security\Authenticator\CaptchaAuthenticator;
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definition;
 use Symfony\Component\Config\Definition\Builder\NodeDefinition;
 
@@ -42,7 +42,7 @@ class CaptchaFactory extends AbstractFactory
         ;
     }
 
-    public function create(AbstractContainer $container, string $id, array $config): void
+    public function create(Container $container, string $id, array $config): void
     {
         $container->autowire($id, new Definition(CaptchaAuthenticator::class, [$config['recaptcha_secret'], $config['hcaptcha_secret']]));
     }

@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace Rade\DI\Extensions\Symfony;
 
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\ContainerBuilder;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
@@ -166,7 +166,7 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs): void
+    public function register(Container $container, array $configs = []): void
     {
         if (!$configs['enabled']) {
             return;
@@ -203,9 +203,9 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
             'translation.loader.ini' => service(IniFileLoader::class)->public(false)->tag('translation.loader', ['alias' => 'ini']),
             'translation.loader.json' => service(JsonFileLoader::class)->public(false)->tag('translation.loader', ['alias' => 'json']),
             'translation.extractor.php' => service(PhpExtractor::class)->public(false)->tag('translation.extractor', ['alias' => 'php']),
-            'translation.reader' => service(TranslationReader::class)->autowire(),
-            'translation.extractor' => service(ChainExtractor::class)->autowire(),
-            'translation.writer' => service(TranslationWriter::class)->autowire()
+            'translation.reader' => service(TranslationReader::class)->typed(),
+            'translation.extractor' => service(ChainExtractor::class)->typed(),
+            'translation.writer' => service(TranslationWriter::class)->typed()
                 ->bind('addDumper', ['php', new Statement(PhpFileDumper::class)])
                 ->bind('addDumper', ['xlf', new Statement(XliffFileDumper::class)])
                 ->bind('addDumper', ['po', new Statement(PoFileDumper::class)])
@@ -218,12 +218,10 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
                 ->bind('addDumper', ['json', new Statement(JsonFileDumper::class)])
                 ->bind('addDumper', ['res', new Statement(IcuResFileDumper::class)]),
             'translator.default' => $translator = service(Translator::class, [$lParam = param('default_locale'), 2 => $configs['cache_dir'], 3 => param('debug')])
-                ->binds([
-                    'setFallbackLocales' => [$configs['fallbacks'] ?: [$lParam]],
-                    'setConfigCacheFactory' => [new Reference('config_cache_factory')],
-                ]),
+                ->bind('setFallbackLocales', [$configs['fallbacks'] ?: [$lParam]])
+                ->bind('setConfigCacheFactory', [new Reference('config_cache_factory')]),
             'translation.provider_collection_factory' => service(TranslationProviderCollectionFactory::class, [new TaggedLocator('translation.provider_factory'), \array_unique($locales)])->public(false),
-            'translation.provider_collection' => service([new Reference('translation.provider_collection_factory'), 'fromConfig'], [$configs['providers']])->autowire([TranslationProviderCollection::class]),
+            'translation.provider_collection' => service([new Reference('translation.provider_collection_factory'), 'fromConfig'], [$configs['providers']])->typed(TranslationProviderCollection::class),
             'translation.provider_factory.null' => service(NullProviderFactory::class)->public(false)->tag('translation.provider_factory'),
         ];
 
@@ -330,10 +328,10 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
 
         if ($configs['logging']) {
             $translator->public(false);
-            $definitions['translator.logger'] = service(LoggingTranslator::class, [new Reference($translatorId ?? 'translator.default'), new Reference('logger')])->autowire();
+            $definitions['translator.logger'] = service(LoggingTranslator::class, [new Reference($translatorId ?? 'translator.default'), new Reference('logger')])->typed();
             $translatorId = 'translator.logger';
         } else {
-            $translator->autowire();
+            $translator->typed();
         }
 
         if ($container->hasExtension(HttpClientExtension::class)) {
@@ -383,7 +381,7 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
     /**
      * {@inheritdoc}
      */
-    public function boot(AbstractContainer $container): void
+    public function boot(Container $container): void
     {
         if (!$container->has('translator')) {
             return;

@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace Rade\DI\Extensions\Symfony;
 
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definitions\Parameter;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
@@ -130,7 +130,7 @@ class SerializerExtension implements AliasedInterface, BootExtensionInterface, C
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs): void
+    public function register(Container $container, array $configs = []): void
     {
         if (!$configs['enabled']) {
             return;
@@ -138,7 +138,7 @@ class SerializerExtension implements AliasedInterface, BootExtensionInterface, C
 
         $serializerLoaders = [];
         $definitions = [
-            'serializer' => service(Serializer::class, [new TaggedLocator('serializer.normalizer'), new TaggedLocator('serializer.encoder')])->autowire(),
+            'serializer' => service(Serializer::class, [new TaggedLocator('serializer.normalizer'), new TaggedLocator('serializer.encoder')])->typed(),
             ($cM = 'serializer.mapping.class_metadata_factory') => service(ClassMetadataFactory::class, [new Reference('serializer.mapping.chain_loader')])->public(false),
             'serializer.normalizer.constraint_violation_list' => service(ConstraintViolationListNormalizer::class, [1 => new Reference('serializer.name_converter.metadata_aware')])->public(false)->tag('serializer.normalizer', ['priority' => -915]),
             'serializer.normalizer.mime_message' => service(MimeMessageNormalizer::class, [new Reference('serializer.normalizer.property')])->public(false)->tag('serializer.normalizer', ['priority' => -915]),
@@ -172,7 +172,7 @@ class SerializerExtension implements AliasedInterface, BootExtensionInterface, C
         $definitions += [
             'property_info.serializer_extractor' => service(SerializerExtractor::class, [new Reference($cM)])->public(false)->tag('property_info.list_extractor', ['priority' => -999]),
             'serializer.mapping.class_discriminator_resolver' => service(ClassDiscriminatorFromClassMetadata::class, [new Reference($cM)])->public(false),
-            'serializer.name_converter.metadata_aware' => $nameConverter = service(MetadataAwareNameConverter::class, [new Reference($cM), new Statement(CamelCaseToSnakeCaseNameConverter::class)])->autowire()->public(false),
+            'serializer.name_converter.metadata_aware' => $nameConverter = service(MetadataAwareNameConverter::class, [new Reference($cM), new Statement(CamelCaseToSnakeCaseNameConverter::class)])->typed()->public(false),
             'serializer.normalizer.object' => $sno = service(
                 ObjectNormalizer::class,
                 [
@@ -245,7 +245,7 @@ class SerializerExtension implements AliasedInterface, BootExtensionInterface, C
         }
 
         if ($configs['max_depth_handler'] ?? false) {
-            $defaultContext = $sno->getArguments()[6] ?? [];
+            $defaultContext = $sno->getArgument(6) ?? [];
             $defaultContext += ['max_depth_handler' => new Reference($configs['max_depth_handler'])];
             $sno->arg(6, $defaultContext);
         }
@@ -260,7 +260,7 @@ class SerializerExtension implements AliasedInterface, BootExtensionInterface, C
     /**
      * {@inheritdoc}
      */
-    public function boot(AbstractContainer $container): void
+    public function boot(Container $container): void
     {
         if (!$container->has('serializer')) {
             return;
@@ -280,7 +280,7 @@ class SerializerExtension implements AliasedInterface, BootExtensionInterface, C
                 $initialContext = [];
 
                 if ('serializer.normalizer.object' === $service) {
-                    $initialContext = $definition->getArguments()[6] ?? [];
+                    $initialContext = $definition->getArgument(6) ?? [];
                 }
 
                 $definition->arg('defaultContext', $defaultContext + $initialContext);

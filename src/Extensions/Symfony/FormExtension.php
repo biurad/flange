@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace Rade\DI\Extensions\Symfony;
 
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Parameter;
 use Rade\DI\Definitions\Reference;
@@ -120,21 +120,21 @@ class FormExtension implements AliasedInterface, BootExtensionInterface, Configu
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs): void
+    public function register(Container $container, array $configs = []): void
     {
         if (!$configs['enabled']) {
             return;
         }
 
         $definitions = [
-            'form.resolved_type_factory' => service(ResolvedFormTypeFactory::class)->autowire([ResolvedFormTypeFactoryInterface::class]),
-            'form.registry' => service(FormRegistry::class, [new TaggedLocator('form.extension')])->autowire(),
-            'form.factory' => service(FormFactory::class)->autowire(),
-            'form.extension' => service(DependencyInjectionExtension::class)->autowire()->tag('form.extension'),
+            'form.resolved_type_factory' => service(ResolvedFormTypeFactory::class)->typed(ResolvedFormTypeFactoryInterface::class),
+            'form.registry' => service(FormRegistry::class, [new TaggedLocator('form.extension')])->typed(),
+            'form.factory' => service(FormFactory::class)->typed(),
+            'form.extension' => service(DependencyInjectionExtension::class)->typed()->tag('form.extension'),
             'form.choice_list_factory.default' => service(DefaultChoiceListFactory::class)->public(false),
             'form.choice_list_factory.property_access' => service(PropertyAccessDecorator::class, [new Reference('form.choice_list_factory.default')])->public(false),
-            'form.choice_list_factory.cached' => service(CachingFactoryDecorator::class, [new Reference('form.choice_list_factory.property_access')])->autowire(),
-            'form.server_params' => service(ServerParams::class, [new Reference('request_stack')])->autowire(),
+            'form.choice_list_factory.cached' => service(CachingFactoryDecorator::class, [new Reference('form.choice_list_factory.property_access')])->typed(),
+            'form.server_params' => service(ServerParams::class, [new Reference('request_stack')])->typed(),
             'form.type.form' => service(FormType::class)->public(false)->tag('form.type'),
             'form.type.choice' => service(ChoiceType::class)->public(false)->tag('form.type'),
             'form.type.color' => service(ColorType::class)->public(false)->tag('form.type'),
@@ -175,7 +175,7 @@ class FormExtension implements AliasedInterface, BootExtensionInterface, Configu
     /**
      * {@inheritdoc}
      */
-    public function boot(AbstractContainer $container): void
+    public function boot(Container $container): void
     {
         $container->definition('form.extension')->args([
             $this->processFormTypes($container),
@@ -188,7 +188,7 @@ class FormExtension implements AliasedInterface, BootExtensionInterface, Configu
         }
     }
 
-    private function processFormTypes(AbstractContainer $container): Statement
+    private function processFormTypes(Container $container): Statement
     {
         // Get service locator argument
         $servicesMap = [];
@@ -209,7 +209,7 @@ class FormExtension implements AliasedInterface, BootExtensionInterface, Configu
         return new Statement(ServiceLocator::class, $servicesMap);
     }
 
-    private function processFormTypeExtensions(AbstractContainer $container): array
+    private function processFormTypeExtensions(Container $container): array
     {
         $typeExtensions = $typeExtensionsClasses = [];
 
@@ -243,7 +243,7 @@ class FormExtension implements AliasedInterface, BootExtensionInterface, Configu
         return $typeExtensions;
     }
 
-    private function processFormTypeGuessers(AbstractContainer $container): array
+    private function processFormTypeGuessers(Container $container): array
     {
         $guessers = $guessersClasses = [];
 

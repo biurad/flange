@@ -17,9 +17,8 @@ declare(strict_types=1);
 
 namespace Rade\DI\Extensions\Symfony;
 
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definition;
-use Rade\DI\Definitions\DefinitionInterface;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\BootExtensionInterface;
@@ -47,13 +46,13 @@ class EventDispatcherExtension implements AliasedInterface, BootExtensionInterfa
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs): void
+    public function register(Container $container, array $configs = []): void
     {
         $globalDispatcher = $container->definition($id = 'events.dispatcher');
 
         if (
             $globalDispatcher instanceof EventDispatcherInterface ||
-            ($globalDispatcher instanceof DefinitionInterface && \is_subclass_of($globalDispatcher->getEntity(), EventDispatcherInterface::class))
+            ($globalDispatcher instanceof Definition && \is_subclass_of($globalDispatcher->getEntity(), EventDispatcherInterface::class))
         ) {
             return;
         }
@@ -62,13 +61,13 @@ class EventDispatcherExtension implements AliasedInterface, BootExtensionInterfa
         $container->set($inner = $id . '.inner', $globalDispatcher);
         $container->tag($inner, 'container.decorated_services');
         $container->removeType('Psr\EventDispatcher\EventDispatcherInterface');
-        $container->set('events.dispatcher', new Definition(EventDispatcher::class))->autowire();
+        $container->set('events.dispatcher', new Definition(EventDispatcher::class))->typed();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function boot(AbstractContainer $container): void
+    public function boot(Container $container): void
     {
         $globalDispatcherDefinition = $container->definition('events.dispatcher');
         $eventSubscribers = \array_merge($container->tagged('event_subscriber'), $container->findBy(EventSubscriberInterface::class));
@@ -146,7 +145,7 @@ class EventDispatcherExtension implements AliasedInterface, BootExtensionInterfa
         }
     }
 
-    private function getEventFromTypeDeclaration(AbstractContainer $container, string $id, string $method): string
+    private function getEventFromTypeDeclaration(Container $container, string $id, string $method): string
     {
         if (
             null === ($class = $container->definition($id)->getEntity())
@@ -166,11 +165,11 @@ class EventDispatcherExtension implements AliasedInterface, BootExtensionInterfa
     /**
      * @param Definition|EventDispatcherInterface $dispatcherDefinition
      */
-    private function addEventListener(AbstractContainer $container, object $dispatcherDefinition, array $data): void
+    private function addEventListener(Container $container, object $dispatcherDefinition, array $data): void
     {
         [$id, $priority, $event] = $data;
 
-        if ($dispatcherDefinition instanceof DefinitionInterface) {
+        if ($dispatcherDefinition instanceof Definition) {
             $dispatcherDefinition->bind('addListener', [$event['event'], [new Reference($id), $event['method']], $priority]);
         } else {
             $dispatcherDefinition->addListener($event['event'], [$container->get($id), $event['method']], $priority);

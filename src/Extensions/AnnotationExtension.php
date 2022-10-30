@@ -21,14 +21,14 @@ use Biurad\Annotations\AnnotationLoader;
 use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Annotations\AnnotationRegistry;
 use Doctrine\Common\Annotations\PsrCachedReader;
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Parameter;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
 use Spiral\Attributes\Composite\MergeReader;
 use Spiral\Attributes\Composite\SelectiveReader;
-use Spiral\Attributes\Internal\{FallbackAttributeReader, NativeAttributeReader, DoctrineAnnotationReader};
+use Spiral\Attributes\Internal\{NativeAttributeReader, DoctrineAnnotationReader};
 use Spiral\Attributes\Internal\Instantiator\NamedArgumentsInstantiator;
 use Spiral\Attributes\Psr6CachedReader;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
@@ -96,7 +96,7 @@ class AnnotationExtension implements AliasedInterface, BootExtensionInterface, C
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs = []): void
+    public function register(Container $container, array $configs = []): void
     {
         if (!\class_exists(AnnotationLoader::class)) {
             throw new \LogicException('Annotations/Attributes support cannot be enabled as the Annotation component is not installed. Try running "composer require biurad/annotations".');
@@ -113,11 +113,10 @@ class AnnotationExtension implements AliasedInterface, BootExtensionInterface, C
         }
 
         if ($useAttribute = $configs['use_reader'] ?? false) {
-            if (!\class_exists(NativeAttributeReader::class)) {
+            if (!\class_exists($attribute = NativeAttributeReader::class)) {
                 throw new \LogicException('Annotations/Attributes support cannot be enabled as the Spiral Attribute component is not installed. Try running "composer require spiral/attributes".');
             }
 
-            $attribute = 80000 <= \PHP_VERSION_ID ? NativeAttributeReader::class : FallbackAttributeReader::class;
             $attributeArgs = [new Statement($attribute, [new Statement(NamedArgumentsInstantiator::class)])];
             $hasCache = $container->hasExtension(Symfony\CacheExtension::class) || $container->hasExtension(Symfony\FrameworkExtension::class);
 
@@ -161,7 +160,7 @@ class AnnotationExtension implements AliasedInterface, BootExtensionInterface, C
     /**
      * {@inheritdoc}
      */
-    public function boot(AbstractContainer $container): void
+    public function boot(Container $container): void
     {
         if (empty($listeners = $container->tagged('annotation.listener'))) {
             return;

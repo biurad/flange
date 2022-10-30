@@ -20,7 +20,7 @@ namespace Rade\DI\Extensions;
 use Biurad\UI\Storage\ArrayStorage;
 use Biurad\UI\Storage\FilesystemStorage;
 use Biurad\UI\Template;
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
@@ -111,7 +111,7 @@ class TemplateExtension implements AliasedInterface, ConfigurationInterface, Ext
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs): void
+    public function register(Container $container, array $configs = []): void
     {
         if (!$configs['enabled']) {
             return;

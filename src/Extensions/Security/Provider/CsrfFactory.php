@@ -18,7 +18,7 @@ declare(strict_types=1);
 namespace Rade\DI\Extensions\Security\Provider;
 
 use Biurad\Security\Authenticator\CsrfTokenAuthenticator;
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Symfony\Component\Config\Definition\Builder\NodeDefinition;
@@ -49,7 +49,7 @@ class CsrfFactory extends AbstractFactory
         ;
     }
 
-    public function create(AbstractContainer $container, string $id, array $config): void
+    public function create(Container $container, string $id, array $config): void
     {
         if (!$container->has($csrf = 'http.csrf.token_manager')) {
             throw new \RuntimeException('CSRF token manager is not defined.');

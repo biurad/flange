@@ -24,7 +24,7 @@ use Doctrine\DBAL\Types\Type;
 use Doctrine\Persistence\ObjectManager;
 use Rade\Database\Doctrine\Form\DoctrineOrmTypeGuesser;
 use Rade\Database\Doctrine\Form\Type\EntityType;
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
@@ -179,7 +179,7 @@ class DatabaseExtension implements AliasedInterface, ConfigurationInterface, Boo
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs): void
+    public function register(Container $container, array $configs = []): void
     {
         if (!\class_exists('Doctrine\DBAL\DriverManager')) {
             throw new \LogicException('The Doctrine DBAL support cannot be enabled as the Doctrine DBAL is not installed. Try running "composer require doctrine/dbal".');
@@ -193,9 +193,9 @@ class DatabaseExtension implements AliasedInterface, ConfigurationInterface, Boo
             }
 
             if ($name === $configs['default_connection']) {
-                $connection->autowire(['Doctrine\DBAL\Connection']);
-                $container->set('doctrine.dbal_platform', new Definition([$dc = new Reference('doctrine.dbal_connection.' . $name), 'getDatabasePlatform']))->autowire(['Doctrine\DBAL\Platforms\AbstractPlatform']);
-                $container->set('doctrine.dbal_query_builder', new Definition([$dc, 'createQueryBuilder']))->autowire(['Doctrine\DBAL\Query\QueryBuilder']);
+                $connection->typed('Doctrine\DBAL\Connection');
+                $container->set('doctrine.dbal_platform', new Definition([$dc = new Reference('doctrine.dbal_connection.' . $name), 'getDatabasePlatform']))->typed('Doctrine\DBAL\Platforms\AbstractPlatform');
+                $container->set('doctrine.dbal_query_builder', new Definition([$dc, 'createQueryBuilder']))->typed('Doctrine\DBAL\Query\QueryBuilder');
 
                 if ($container instanceof KernelInterface && $container->isRunningInConsole()) {
                     $container->set('doctrine.dbal.single_connection', new Definition(SingleConnectionProvider::class, [$dc, $configs['default_connection']]))->public(false);
@@ -212,7 +212,7 @@ class DatabaseExtension implements AliasedInterface, ConfigurationInterface, Boo
     /**
      * {@inheritdoc}
      */
-    public function boot(AbstractContainer $container): void
+    public function boot(Container $container): void
     {
         if ($container->has('console') && $container->has('doctrine.dbal.single_connection')) {
             $container->definition('console')->call(new Statement(ConsoleRunner::class . '::addCommands', [1 => new Reference('doctrine.dbal.single_connection')]), true);

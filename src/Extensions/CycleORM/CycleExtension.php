@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace Rade\DI\Extensions\CycleORM;
 
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\DependenciesInterface;
 use Rade\DI\Extensions\ExtensionInterface;
@@ -55,7 +55,7 @@ class CycleExtension implements AliasedInterface, DependenciesInterface, Extensi
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs): void
+    public function register(Container $container, array $configs = []): void
     {
     }
 }

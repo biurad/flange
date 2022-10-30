@@ -19,7 +19,7 @@ namespace Rade\DI\Extensions\Symfony;
 
 use Nette\Utils\Arrays;
 use Psr\Log\LoggerInterface;
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
@@ -96,7 +96,7 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
                     ->info('System related cache pools configuration')
                     ->defaultValue('cache.adapter.system')
                 ->end()
-                ->scalarNode('directory')->isRequired()->cannotBeEmpty()->end()
+                ->scalarNode('directory')->defaultValue('%project.var_dir%/cache')->end()
                 ->scalarNode('default_psr6_provider')->end()
                 ->scalarNode('default_redis_provider')->defaultValue('redis://localhost')->end()
                 ->scalarNode('default_memcached_provider')->defaultValue('memcached://localhost')->end()
@@ -172,7 +172,7 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs): void
+    public function register(Container $container, array $configs = []): void
     {
         if (!$configs['enabled']) {
             return;
@@ -184,7 +184,7 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
 
         $container->parameters['project.cache_dir'] = $container->parameter($configs['directory']);
         $container->multiple([
-            'cache.default_matcher' => service(DefaultMarshaller::class, [1 => '%debug%'])->autowire([MarshallerInterface::class]),
+            'cache.default_matcher' => service(DefaultMarshaller::class, [1 => '%debug%'])->typed(MarshallerInterface::class),
             'cache.adapter.system' => service(AbstractAdapter::class . '::createSystemCache', ['', 0, \Rade\Application::VERSION, '%project.cache_dir%' . '/pools/system'])->abstract()->public(false)->tag('cache.pool'),
             'cache.adapter.filesystem' => service(FilesystemAdapter::class, [2 => '%project.cache_dir%' . '/pools/app'])->abstract()->public(false)->tag('cache.pool'),
             'cache.adapter.pdo' => service(PdoAdapter::class)->public(false)->abstract()->tag('cache.pool', ['provider' => 'cache.default_pdo_provider']),
@@ -245,7 +245,7 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
             }
 
             if ($isRedisTagAware && 'cache.app' === $name) {
-                $definition = $container->set($name, $definition)->autowire();
+                $definition = $container->set($name, $definition)->typed();
                 $container->alias('cache.app.taggable', $name);
             } elseif ($isRedisTagAware) {
                 $tagAwareId = $name;
@@ -279,23 +279,23 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
         }
 
         if (!$container->typed(TagAwareAdapter::class)) {
-            $container->set('cache.app.taggable', new Definition(TagAwareAdapter::class, [new Reference('cache.app'), null]))->autowire([
+            $container->set('cache.app.taggable', new Definition(TagAwareAdapter::class, [new Reference('cache.app'), null]))->typed(
                 TagAwareAdapter::class,
                 TagAwareAdapterInterface::class,
                 TagAwareCacheInterface::class,
                 PruneableInterface::class,
-            ]);
+            );
         }
 
         if (!$container->typed(AdapterInterface::class)) {
-            $container->definition('cache.app')->autowire();
+            $container->definition('cache.app')->typed();
         }
     }
 
     /**
      * {@inheritdoc}
      */
-    public function boot(AbstractContainer $container): void
+    public function boot(Container $container): void
     {
         $seed = $container->parameters['cache.prefix.seed'] ?? ('_' . $container->parameters['project_dir'] . 'rade');
         $attributes = [
@@ -338,7 +338,7 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
             }
 
             if (ChainAdapter::class === $class) {
-                foreach ($adapter->getArguments()[0] as $provider => $adapter) {
+                foreach ($adapter->getArgument(0) ?? [] as $provider => $adapter) {
                     $chainedTags = \is_int($provider) ? [] : ['provider' => $provider];
                     $chainedClass = '';
                     $i = 0;
@@ -417,7 +417,7 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
     /**
      * @internal
      */
-    public static function getServiceProvider(AbstractContainer $container, string $name, string $value = null)
+    public static function getServiceProvider(Container $container, string $name, string $value = null)
     {
         if (\preg_match('#^[a-z]++:#', $dsn = $value ?? $name)) {
             if (null === $value) {

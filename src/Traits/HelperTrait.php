@@ -22,7 +22,6 @@ use Laminas\Escaper\Escaper;
 use Nette\Utils\FileSystem;
 use Rade\DI\Exceptions\ContainerResolutionException;
 use Rade\DI\Exceptions\ServiceCreationException;
-use Rade\DI\Extensions\ConfigExtension;
 use Rade\DI\Extensions\ExtensionBuilder;
 use Symfony\Component\Config\Exception\LoaderLoadException;
 use Symfony\Component\Config\Loader\LoaderResolverInterface;
@@ -57,24 +56,7 @@ trait HelperTrait
      */
     public function getConfigLoader(): LoaderResolverInterface
     {
-        $configLoader = $this->services['config.loader_resolver'] ?? $this->privates['config.builder.loader_resolver'] ?? null;
-
-        if (null === $configLoader) {
-            if (isset($this->definitions['config.builder.loader_resolver'])) {
-                $configLoader = $this->definitions['config.builder.loader_resolver'];
-                unset($this->definitions['config.builder.loader_resolver']);
-
-                return $this->privates['config.builder.loader_resolver'] = $configLoader;
-            }
-
-            if ($this->has('config.loader_resolver')) {
-                return $this->get('config.loader_resolver');
-            }
-
-            throw new ContainerResolutionException(\sprintf('Did you forgot to register the "%s" class?', ConfigExtension::class));
-        }
-
-        return $configLoader;
+        return $this->parameters['config.builder.loader_resolver'] ?? $this->get('config.loader_resolver');
     }
 
     /**
@@ -88,7 +70,7 @@ trait HelperTrait
     /**
      * Mounts a service provider like controller taking in a parameter of application.
      *
-     * @param callable(\Rade\DI\AbstractContainer) $controllers
+     * @param callable(\Rade\DI\Container) $controllers
      */
     public function mount(callable $controllers): void
     {

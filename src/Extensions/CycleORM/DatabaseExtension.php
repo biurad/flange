@@ -27,7 +27,7 @@ use Rade\Commands\CycleORM\DatabaseListCommand;
 use Rade\Commands\CycleORM\DatabaseMigrateCommand;
 use Rade\Commands\CycleORM\DatabaseTableCommand;
 use Rade\Database\Cycle\Config;
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
@@ -123,7 +123,7 @@ class DatabaseExtension implements AliasedInterface, ConfigurationInterface, Ext
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs): void
+    public function register(Container $container, array $configs = []): void
     {
         if (!\interface_exists(DatabaseProviderInterface::class)) {
             throw new \LogicException('Cycle Database support cannot be enabled as the Database component is not installed. Try running "composer require cycle/database".');

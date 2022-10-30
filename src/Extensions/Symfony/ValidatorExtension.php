@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace Rade\DI\Extensions\Symfony;
 
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\ContainerBuilder;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Parameter;
@@ -160,7 +160,7 @@ class ValidatorExtension implements AliasedInterface, BootExtensionInterface, Co
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs): void
+    public function register(Container $container, array $configs = []): void
     {
         if (!$configs['enabled']) {
             return;
@@ -170,7 +170,7 @@ class ValidatorExtension implements AliasedInterface, BootExtensionInterface, Co
             throw new \LogicException('Validation support cannot be enabled as the Validator component is not installed. Try running "composer require symfony/validator".');
         }
 
-        $validatorBuilder = $container->set('validator.builder', new Definition(ValidatorBuilder::class))->autowire([ValidatorBuilder::class])
+        $validatorBuilder = $container->set('validator.builder', new Definition(ValidatorBuilder::class))->typed(ValidatorBuilder::class)
             ->bind('setConstraintValidatorFactory', [new Reference('validator.validator_factory')])
             ->bind('setTranslationDomain', [new Parameter('validator.translation_domain')]);
 
@@ -186,7 +186,7 @@ class ValidatorExtension implements AliasedInterface, BootExtensionInterface, Co
             }
         }
 
-        $container->set('validator', new Definition([new Reference('validator.builder'), 'getValidator']))->autowire([ValidatorInterface::class, MetadataFactoryInterface::class]);
+        $container->set('validator', new Definition([new Reference('validator.builder'), 'getValidator']))->typed(ValidatorInterface::class, MetadataFactoryInterface::class);
         $container->set('validator.validator_factory', new Definition(ContainerConstraintValidatorFactory::class));
         $container->set('validator.email', new Definition(EmailValidator::class, [$configs['email_validation_mode']]))->public(false)->tag('validator.constraint_validator', ['alias' => EmailValidator::class]);
 
@@ -229,7 +229,7 @@ class ValidatorExtension implements AliasedInterface, BootExtensionInterface, Co
     /**
      * {@inheritdoc}
      */
-    public function boot(AbstractContainer $container): void
+    public function boot(Container $container): void
     {
         if (!$container->has('validator')) {
             return;
@@ -283,7 +283,7 @@ class ValidatorExtension implements AliasedInterface, BootExtensionInterface, Co
         unset($container->parameters['validator.auto_mapping']);
     }
 
-    private function registerValidatorMapping(AbstractContainer $container, array &$files): void
+    private function registerValidatorMapping(Container $container, array &$files): void
     {
         $fileRecorder = function ($extension, $path) use (&$files): void {
             $files['yaml' === $extension ? 'yml' : $extension][] = $path;

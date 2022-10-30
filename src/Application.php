@@ -20,18 +20,17 @@ namespace Rade;
 use Biurad\Http\{Request, Response, Response\HtmlResponse};
 use Biurad\Http\Factory\Psr17Factory;
 use Biurad\Http\Interfaces\Psr17Interface;
-use Flight\Routing\{Exceptions\RouteNotFoundException, Route, RouteCollection, Router};
+use Flight\Routing\{Exceptions\RouteNotFoundException, RouteCollection, Router, RouteUri};
 use Fig\Http\Message\RequestMethodInterface;
-use Flight\Routing\Generator\GeneratedUri;
 use Flight\Routing\Interfaces\{RouteMatcherInterface, UrlGeneratorInterface};
 use Psr\Http\Message\{ResponseInterface, ServerRequestInterface};
 use Psr\Http\Server\{MiddlewareInterface, RequestHandlerInterface};
-use Laminas\Stratigility\Middleware\{CallableMiddlewareDecorator, RequestHandlerMiddleware};
 use Laminas\{HttpHandlerRunner\Emitter\SapiStreamEmitter, Stratigility\Utils};
 use Psr\EventDispatcher\EventDispatcherInterface;
-use Rade\DI\Definitions\{Reference, Statement};
 use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\HttpFoundation\RequestStack;
+
+use function Rade\DI\Loader\service;
 
 /**
  * The Rade framework core class.
@@ -52,21 +51,17 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
         parent::__construct();
         $this->parameters['debug'] ??= $debug;
 
-        if (!isset($this->parameters['project.compiled_container_class'])) {
+        if (!isset($this->types[Router::class])) {
             $this->definitions = [
-                'http.router' => $this->services['http.router'] = new Router(),
-                'request_stack' => $this->services['request_stack'] = new RequestStack(),
-                'psr17.factory' => $this->services['psr17.factory'] = $psr17Factory = $psr17Factory ?? new Psr17Factory(),
-                'events.dispatcher' => $this->services['events.dispatcher'] = $dispatcher = $dispatcher ?? new Handler\EventHandler(),
-                RequestHandlerInterface::class => $this->services[RequestHandlerInterface::class] = new Handler\RouteHandler($this),
+                'request_stack' => service($this->services['request_stack'] = new RequestStack())->typed(RequestStack::class)->setContainer($this, 'request_stack'),
+                'http.router' => service($this->services['http.router'] = new Router())->typed(Router::class, RouteMatcherInterface::class, UrlGeneratorInterface::class)->setContainer($this, 'http.router'),
+                'psr17.factory' => service($this->services['psr17.factory'] = $psr17Factory ?? new Psr17Factory())->typed()->setContainer($this, 'psr17.factory'),
+                RequestHandlerInterface::class => service($this->services[RequestHandlerInterface::class] = new Handler\RouteHandler($this))->setContainer($this, RequestHandlerInterface::class),
             ];
-            $this->types += [
-                RequestStack::class => ['request_stack'],
-                Router::class => ['http.router'],
-                RouteMatcherInterface::class => ['http.router'],
-                UrlGeneratorInterface::class => ['http.router'],
-            ];
-            $this->types(['psr17.factory' => DI\Resolver::autowireService($psr17Factory), 'events.dispatcher' => DI\Resolver::autowireService($dispatcher)]);
+
+            if (null !== $dispatcher) {
+                $this->autowire('events.dispatcher', $this->services['events.dispatcher'] = $dispatcher);
+            }
         }
     }
 
@@ -75,43 +70,43 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
      */
     public function strictAutowiring(bool $boolean = true): void
     {
-        $this->resolver->setStrictAutowiring($boolean);
+        $this->getResolver()->setStrictAutowiring($boolean);
     }
 
-    public function getDispatcher(): EventDispatcherInterface
+    public function getDispatcher(): ?EventDispatcherInterface
     {
-        return $this->services['events.dispatcher'] ?? $this->get('events.dispatcher');
+        return $this->get('events.dispatcher', DI\Container::NULL_ON_INVALID_SERVICE);
     }
 
     public function getRouter(): Router
     {
-        return $this->services['http.router'] ?? $this->get('http.router');
+        return $this->get('http.router');
     }
 
     /**
      * {@inheritdoc}
      *
-     * @param MiddlewareInterface|RequestHandlerInterface|Reference|Statement|callable ...$middlewares
+     * @param MiddlewareInterface ...$middlewares
      */
     public function pipe(object ...$middlewares): void
     {
-        $this->getRouter()->pipe(...$this->resolveMiddlewares($middlewares));
+        $this->getRouter()->pipe(...$middlewares);
     }
 
     /**
      * {@inheritdoc}
      *
-     * @param MiddlewareInterface|RequestHandlerInterface|Reference|Statement|callable ...$middlewares
+     * @param MiddlewareInterface ...$middlewares
      */
     public function pipes(string $named, object ...$middlewares): void
     {
-        $this->getRouter()->pipes($named, ...$this->resolveMiddlewares($middlewares));
+        $this->getRouter()->pipes($named, ...$middlewares);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function generateUri(string $routeName, array $parameters = []): GeneratedUri
+    public function generateUri(string $routeName, array $parameters = []): RouteUri
     {
         return $this->getRouter()->generateUri($routeName, $parameters);
     }
@@ -119,15 +114,19 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
     /**
      * {@inheritdoc}
      */
-    public function match(string $pattern, array $methods = Route::DEFAULT_METHODS, $to = null): Route
+    public function match(string $pattern, array $methods = ['GET'], mixed $to = null)
     {
-        return $this->getRouter()->getCollection()->add(new Route($pattern, $methods, $to), false)->getRoute();
+        if (!\class_exists($r = 'Flight\Routing\Route')) {
+            return $this->getRouter()->getCollection()->add($pattern, $methods, $to);
+        }
+
+        return $this->getRouter()->getCollection()->add(new $r($pattern, $methods, $to), false)->getRoute();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function post(string $pattern, $to = null): Route
+    public function post(string $pattern, mixed $to = null)
     {
         return $this->match($pattern, [RequestMethodInterface::METHOD_POST], $to);
     }
@@ -135,7 +134,7 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
     /**
      * {@inheritdoc}
      */
-    public function put(string $pattern, $to = null): Route
+    public function put(string $pattern, mixed $to = null)
     {
         return $this->match($pattern, [RequestMethodInterface::METHOD_PUT], $to);
     }
@@ -143,7 +142,7 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
     /**
      * {@inheritdoc}
      */
-    public function delete(string $pattern, $to = null): Route
+    public function delete(string $pattern, mixed $to = null)
     {
         return $this->match($pattern, [RequestMethodInterface::METHOD_DELETE], $to);
     }
@@ -151,7 +150,7 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
     /**
      * {@inheritdoc}
      */
-    public function options(string $pattern, $to = null): Route
+    public function options(string $pattern, mixed $to = null)
     {
         return $this->match($pattern, [RequestMethodInterface::METHOD_OPTIONS], $to);
     }
@@ -159,7 +158,7 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
     /**
      * {@inheritdoc}
      */
-    public function patch(string $pattern, $to = null): Route
+    public function patch(string $pattern, mixed $to = null)
     {
         return $this->match($pattern, [RequestMethodInterface::METHOD_PATCH], $to);
     }
@@ -175,35 +174,29 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
     /**
      * Handles the request and delivers the response.
      *
-     * @param ServerRequestInterface|null $request Request to process
-     *
      * @throws \Throwable
      *
-     * @return int|bool
+     * @return int Exit status 0 on success, any other number on failure (e.g. 1)
      */
-    public function run(ServerRequestInterface $request = null, bool $catch = true)
+    public function run(ServerRequestInterface $request = null, bool $catch = true): int
     {
-        if ($this->isRunningInConsole()) {
-            $this->get(ConsoleApplication::class)->run();
+        if (!$this->isRunningInConsole()) {
+            $response = $this->handle($request ?? $this->get('psr17.factory')->fromGlobalRequest(), $catch);
+
+            if ($response instanceof Response) {
+                $code = $response->getResponse()->send()->getStatusCode();
+
+                return $code >= 200 && $code < 400 ? 0 : 1;
+            }
+
+            if (!\class_exists(SapiStreamEmitter::class)) {
+                throw new \RuntimeException('You must install the laminas/laminas-httphandlerrunner package to emit a response.');
+            }
+
+            return (new SapiStreamEmitter())->emit($response) ? 0 : 1;
         }
 
-        if (null === $request) {
-            $request = $this->get('psr17.factory')->fromGlobalRequest();
-        }
-
-        $response = $this->handle($request, $catch);
-
-        if ($response instanceof Response) {
-            $response->getResponse()->send();
-
-            return true;
-        }
-
-        if (!\class_exists(SapiStreamEmitter::class)) {
-            throw new \RuntimeException(\sprintf('Unable to emit response onto the browser. Try running "composer require laminas/laminas-httphandlerrunner".'));
-        }
-
-        return (new SapiStreamEmitter())->emit($response);
+        return $this->get(ConsoleApplication::class)->run();
     }
 
     /**
@@ -216,20 +209,23 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
     public function handle(ServerRequestInterface $request, bool $catch = true): ResponseInterface
     {
         try {
-            $this->getDispatcher()->dispatch($event = new Event\RequestEvent($this, $request));
-            $request = $event->getRequest();
+            $event = $this->getDispatcher()?->dispatch(new Event\RequestEvent($this, $request));
 
-            if ($supportStack = $request instanceof Request) {
+            if (null !== $event) {
+                $request = $event->getRequest();
+            }
+
+            if ($request instanceof Request) {
                 $this->get('request_stack')->push($request->getRequest());
             }
 
-            $response = !$event->hasResponse() ? $this->getRouter()->process($request, $this->get(RequestHandlerInterface::class)) : $event->getResponse();
+            $response = $event?->getResponse() ?? $this->getRouter()->process($request, $this->get(RequestHandlerInterface::class));
 
-            if ($supportStack) {
+            if ($request instanceof Request) {
                 $request = $request->withRequest($this->get('request_stack')->getCurrentRequest());
             }
 
-            $this->getDispatcher()->dispatch($event = new Event\ResponseEvent($this, $request, $response));
+            $event = $this->getDispatcher()?->dispatch(new Event\ResponseEvent($this, $request, $response));
         } catch (\Throwable $e) {
             if (!$catch || $this->isRunningInConsole()) {
                 throw $e;
@@ -237,10 +233,10 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
 
             return $this->handleThrowable($e, $request);
         } finally {
-            $this->getDispatcher()->dispatch(new Event\TerminateEvent($this, $request));
+            $this->getDispatcher()?->dispatch(new Event\TerminateEvent($this, $request));
         }
 
-        return $event->getResponse();
+        return $event?->getResponse() ?? $response;
     }
 
     /**
@@ -278,12 +274,14 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
             $this->get('request_stack')->push($request->getRequest());
         }
 
-        $this->getDispatcher()->dispatch($event = new Event\ExceptionEvent($this, $request, $e));
+        $event = $this->getDispatcher()?->dispatch(new Event\ExceptionEvent($this, $request, $e));
 
         // a listener might have replaced the exception
-        $e = $event->getThrowable();
+        if (null !== $event) {
+            $e = $event->getThrowable();
+        }
 
-        if (null === $response = $event->getResponse()) {
+        if (null === $response = $event?->getResponse()) {
             if ($e instanceof RouteNotFoundException) {
                 $e = $this->handleRouterException($e, $request);
 
@@ -317,29 +315,5 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
         include __DIR__ . '/Resources/welcome.phtml';
 
         return new HtmlResponse((string) \ob_get_clean(), 404);
-    }
-
-    /**
-     * Resolve Middlewares.
-     *
-     * @param array<int,MiddlewareInterface|RequestHandlerInterface|Reference|Statement|callable> $middlewares
-     *
-     * @return array<int,MiddlewareInterface>
-     */
-    protected function resolveMiddlewares(array $middlewares): array
-    {
-        foreach ($middlewares as $offset => $middleware) {
-            if ($middleware instanceof RequestHandlerInterface) {
-                $middlewares[$offset] = new RequestHandlerMiddleware($middleware);
-            } elseif ($middleware instanceof Statement) {
-                $middlewares[$offset] = $this->resolver->resolve($middleware->getValue(), $middleware->getArguments());
-            } elseif ($middleware instanceof Reference) {
-                $middlewares[$offset] = $this->get((string) $middleware);
-            } elseif (\is_callable($middleware)) {
-                $middlewares[$offset] = new CallableMiddlewareDecorator($middleware);
-            }
-        }
-
-        return $middlewares;
     }
 }

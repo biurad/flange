@@ -26,7 +26,7 @@ use Biurad\Http\Middlewares\HttpCorsMiddleware;
 use Biurad\Http\Middlewares\HttpHeadersMiddleware;
 use Biurad\Http\Middlewares\HttpPolicyMiddleware;
 use Biurad\Http\Middlewares\SessionMiddleware;
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\KernelInterface;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
@@ -256,20 +256,20 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs = []): void
+    public function register(Container $container, array $configs = []): void
     {
         $definitions = [
             'http.middleware.headers' => service(HttpHeadersMiddleware::class, [\array_diff_key($configs['headers'], ['cors' => []])])->public(false),
         ];
 
         if (!$container->has('psr17.factory')) {
-            $definitions['psr17.factory'] = service($configs['psr17_factory'] ?? Psr17Factory::class)->autowire();
+            $definitions['psr17.factory'] = service($configs['psr17_factory'] ?? Psr17Factory::class)->typed();
         }
 
         if ($configs['cookie']['enabled']) {
             unset($configs['cookie']['enabled']);
             $definitions += [
-                'http.cookie' => $cookie = service(CookieFactory::class)->autowire([CookieFactory::class, CookieFactoryInterface::class]),
+                'http.cookie' => $cookie = service(CookieFactory::class)->typed(CookieFactory::class, CookieFactoryInterface::class),
                 'http.middleware.cookie' => $cookieMiddleware = service(CookiesMiddleware::class)->public(false),
             ];
             $cookies = [];
@@ -317,16 +317,16 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
                     $sessionArgs,
                     reference('session.handler'),
                     $metaBag,
-                ]))->autowire(),
-                'session.handler.native_file' => ($inConsole ? service(NullSessionHandler::class) : service(NativeFileSessionHandler::class, [$session['save_path']]))->autowire(),
+                ]))->typed(),
+                'session.handler.native_file' => ($inConsole ? service(NullSessionHandler::class) : service(NativeFileSessionHandler::class, [$session['save_path']]))->typed(),
                 'http.middleware.session' => service(SessionMiddleware::class, [wrap(reference('http.session'), $sessionArgs, true)])->public(false),
-                'http.session' => service(Session::class, [reference($session['storage_id'])])->autowire(),
+                'http.session' => service(Session::class, [reference($session['storage_id'])])->typed(),
             ]);
 
             if ($container->has($session['handler_id'])) {
                 $container->alias('session.handler', $session['handler_id']);
             } else {
-                $definitions['session.handler'] = service([wrap(SessionHandlerFactory::class), 'createHandler'], [$session['handler_id']])->autowire([AbstractSessionHandler::class]);
+                $definitions['session.handler'] = service([wrap(SessionHandlerFactory::class), 'createHandler'], [$session['handler_id']])->typed(AbstractSessionHandler::class);
             }
         }
 
@@ -338,8 +338,8 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
             }
 
             $definitions += [
-                'http.csrf.token_storage' => ($container->has('http.session') ? service(SessionTokenStorage::class, [reference('request_stack')]) : service(NativeSessionTokenStorage::class))->autowire(),
-                'http.csrf.token_manager' => service(CsrfTokenManager::class, [1 => reference('http.csrf.token_storage'), 2 => reference('?request_stack')])->autowire(),
+                'http.csrf.token_storage' => ($container->has('http.session') ? service(SessionTokenStorage::class, [reference('request_stack')]) : service(NativeSessionTokenStorage::class))->typed(),
+                'http.csrf.token_manager' => service(CsrfTokenManager::class, [1 => reference('http.csrf.token_storage'), 2 => reference('?request_stack')])->typed(),
             ];
         }
 

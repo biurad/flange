@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace Rade\DI\Extensions\Security\Provider;
 
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Symfony\Component\Config\Definition\Builder\NodeDefinition;
 
 /**
@@ -27,7 +27,7 @@ use Symfony\Component\Config\Definition\Builder\NodeDefinition;
  */
 interface ProviderFactoryInterface
 {
-    public function create(AbstractContainer $container, string $id, array $config): void;
+    public function create(Container $container, string $id, array $config): void;
 
     public function getKey(): string;
 

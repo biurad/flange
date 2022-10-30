@@ -20,11 +20,11 @@ namespace Rade;
 use Fig\Http\Message\RequestMethodInterface;
 use Flight\Routing\Interfaces\RouteMatcherInterface;
 use Flight\Routing\Interfaces\UrlGeneratorInterface;
-use Flight\Routing\Route;
 use Flight\Routing\RouteCollection;
 use Flight\Routing\Router;
 use Rade\DI\Exceptions\ServiceCreationException;
 use Symfony\Component\Config\ConfigCache;
+use Symfony\Component\Config\Resource\SelfCheckingResourceInterface;
 
 /**
  * Create a cacheable application.
@@ -40,7 +40,7 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
         parent::__construct(Application::class);
 
         $this->parameters['debug'] = $debug;
-        $this->set('http.router', new DI\Definition(Router::class))->autowire([Router::class, RouteMatcherInterface::class, UrlGeneratorInterface::class]);
+        $this->set('http.router', new DI\Definition(Router::class))->typed(Router::class, RouteMatcherInterface::class, UrlGeneratorInterface::class);
     }
 
     /**
@@ -80,17 +80,21 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
     /**
      * {@inheritdoc}
      */
-    public function match(string $pattern, array $methods = Route::DEFAULT_METHODS, $to = null)
+    public function match(string $pattern, array $methods = ['GET'], mixed $to = null)
     {
         $routes = $this->parameters['routes'] ??= new RouteCollection();
 
-        return $routes->add(new Route($pattern, $methods, $to), false)->getRoute();
+        if (!\class_exists($r = 'Flight\Routing\Route')) {
+            return $routes->add($pattern, $methods, $to);
+        }
+
+        return $routes->add(new $r($pattern, $methods, $to), false)->getRoute();
     }
 
     /**
      * {@inheritdoc}
      */
-    public function post(string $pattern, $to = null)
+    public function post(string $pattern, mixed $to = null)
     {
         return $this->match($pattern, [RequestMethodInterface::METHOD_POST], $to);
     }
@@ -98,7 +102,7 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
     /**
      * {@inheritdoc}
      */
-    public function put(string $pattern, $to = null)
+    public function put(string $pattern, mixed $to = null)
     {
         return $this->match($pattern, [RequestMethodInterface::METHOD_PUT], $to);
     }
@@ -106,7 +110,7 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
     /**
      * {@inheritdoc}
      */
-    public function delete(string $pattern, $to = null)
+    public function delete(string $pattern, mixed $to = null)
     {
         return $this->match($pattern, [RequestMethodInterface::METHOD_DELETE], $to);
     }
@@ -114,7 +118,7 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
     /**
      * {@inheritdoc}
      */
-    public function options(string $pattern, $to = null)
+    public function options(string $pattern, mixed $to = null)
     {
         return $this->match($pattern, [RequestMethodInterface::METHOD_OPTIONS], $to);
     }
@@ -122,7 +126,7 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
     /**
      * {@inheritdoc}
      */
-    public function patch(string $pattern, $to = null)
+    public function patch(string $pattern, mixed $to = null)
     {
         return $this->match($pattern, [RequestMethodInterface::METHOD_PATCH], $to);
     }
@@ -130,7 +134,7 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
     /**
      * {@inheritdoc}
      */
-    public function group(string $prefix)
+    public function group(string $prefix): RouteCollection
     {
         $routes = $this->parameters['routes'] ??= new RouteCollection();
 
@@ -153,48 +157,44 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
      */
     public static function build(callable $application, array $options = []): Application
     {
-        $containerClass = 'App_' . (($debug = $options['debug'] ?? false) ? 'Debug' : '') . 'Container';
-        $a = 'load_' . $containerClass . ($hashFile = '_' . \PHP_SAPI . \PHP_OS . '.php');
-        $b = $options['cacheDir'] ?? \dirname((new \ReflectionClass(\Composer\Autoload\ClassLoader::class))->getFileName(), 2);
-        $errorLevel = \error_reporting(\E_ALL ^ \E_WARNING); //ignore "include" failures - don't use "@" to prevent silencing fatal errors
+        $a = $options['cacheDir'] ?? \dirname((new \ReflectionClass(\Composer\Autoload\ClassLoader::class))->getFileName(), 2);
+        $b = 'App_' . \substr(\md5($a), 0, 10) . '.php';
+
+        if (!($cache = new ConfigCache($a . '/' . $b, $debug = $options['debug'] ?? false))->isFresh()) {
+            re_cache:
+            if ($debug && \interface_exists(\Tracy\IBarPanel::class)) {
+                Debug\Tracy\ContainerPanel::$compilationTime = \microtime(true);
+            }
+
+            $application($container = new static($debug));
+            $requiredPaths = $container->parameters['project.require_paths'] ?? []; // Autoload require hot paths ...
+            $containerClass = 'App_' . ($debug ? 'Debug' : '') . 'Container';
+
+            $container->addResource(new Debug\AppResource());
+            $container->addNodeVisitor(new DI\NodeVisitor\MethodsResolver());
+            $container->addNodeVisitor(new DI\NodeVisitor\AutowiringResolver());
+            $container->addNodeVisitor($splitter = new DI\NodeVisitor\DefinitionsSplitter($options['maxDefinitions'] ?? 500, $b));
+
+            $cache->write('', $container->getResources());
+            \file_put_contents($a . '/' . $containerClass .'_' . \PHP_SAPI . \PHP_OS . '.php', $container->compile($options + compact('containerClass')));
+            \file_put_contents(
+                $splitter->buildTraits($a, $requiredPaths),
+                \sprintf("\nrequire '%s/%s_'.\PHP_SAPI.\PHP_OS.'.php';\n\nreturn new \%2\$s();\n", $a, $containerClass),
+                \FILE_APPEND | \LOCK_EX
+            );
+        }
 
         try {
-            if (
-                \is_object($c = include $b . '/' . $a) &&
-                (!$debug || ($cache = new ConfigCache($b . '/' . $containerClass . $hashFile, $debug))->isFresh())
-            ) {
-                \error_reporting($errorLevel);
+            $container = include $cache->getPath();
 
-                return $c;
+            if (!$container instanceof Application) {
+                goto re_cache;
             }
-        } catch (\Throwable $e) {
-            $c = null;
+
+            return $container;
+        } catch (\Error) {
+            goto re_cache;
         }
-        \error_reporting($errorLevel); // restore error reporting
-
-        if ($debug && \interface_exists(\Tracy\IBarPanel::class)) {
-            Debug\Tracy\ContainerPanel::$compilationTime = \microtime(true);
-        }
-
-        $application($container = new static($debug));
-        $requiredPaths = $container->parameters['project.require_paths'] ?? []; // Autoload require hot paths ...
-
-        $container->addNodeVisitor(new DI\NodeVisitor\MethodsResolver());
-        $container->addNodeVisitor(new DI\NodeVisitor\AutowiringResolver());
-        $container->addNodeVisitor($splitter = new DI\NodeVisitor\DefinitionsSplitter($options['maxDefinitions'] ?? 500, $a));
-
-        if (!isset($cache)) {
-            $cache = new ConfigCache($b . '/' . $containerClass . $hashFile, $debug); // ... or create a new cache
-        }
-
-        $cache->write($container->compile($options + \compact('containerClass')), $container->getResources());
-        \file_put_contents(
-            $initialize = $splitter->buildTraits($b, $debug, $requiredPaths),
-            \sprintf("require '%s';\n\nreturn new \%s();\n", $cache->getPath(), $containerClass),
-            \FILE_APPEND | \LOCK_EX
-        );
-
-        return $c ?: require $initialize;
     }
 
     /**
@@ -202,8 +202,7 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
      */
     public function compile(array $options = [])
     {
-        $this->parameters['project.compiled_container_class'] = $options['containerClass'];
-        unset($this->definitions['config.builder.loader_resolver'], $this->parameters['project.require_paths']);
+        unset($this->parameters['config.builder.loader_resolver'], $this->parameters['project.require_paths']);
 
         if (isset($this->parameters['routes'])) {
             throw new ServiceCreationException(\sprintf('The %s extension needs to be registered before adding routes.', DI\Extensions\RoutingExtension::class));

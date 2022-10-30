@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace Rade\DI\Extensions;
 
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Statement;
 use Rade\GraphQL\Schema;
@@ -72,7 +72,7 @@ class GraphQLExtension implements AliasedInterface, ConfigurationInterface, Exte
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs): void
+    public function register(Container $container, array $configs = []): void
     {
         if (!\class_exists(\GraphQL\GraphQL::class)) {
             throw new \LogicException('GraphQL support cannot be enabled as the GraphQL library is not installed. Try running "composer require webonyx/graphql-php".');

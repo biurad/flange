@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace Rade\DI\Extensions\Symfony\Traits;
 
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\ContainerBuilder;
 use Symfony\Component\Config\Resource\DirectoryResource;
 use Symfony\Component\Finder\Finder;
@@ -31,7 +31,7 @@ trait FilesMappingTrait
         }
     }
 
-    private function registerMappingFilesFromConfig(AbstractContainer $container, array $mappedPaths, callable $fileRecorder): void
+    private function registerMappingFilesFromConfig(Container $container, array $mappedPaths, callable $fileRecorder): void
     {
         foreach ($mappedPaths as $path) {
             if (\is_dir($path = $container->parameter($path))) {

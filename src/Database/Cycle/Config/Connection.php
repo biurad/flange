@@ -26,14 +26,11 @@ use Cycle\Database\Config\PDOConnectionConfig;
  */
 class Connection extends PDOConnectionConfig
 {
-    private string $dsn;
-
     /**
      * @param array<string,mixed> $options
      */
-    public function __construct(string $dsn, ?string $username, ?string $password, array $options)
+    public function __construct(private string $dsn, ?string $username, ?string $password, array $options)
     {
-        $this->dsn = $dsn;
         parent::__construct($username, $password, $options);
     }
 

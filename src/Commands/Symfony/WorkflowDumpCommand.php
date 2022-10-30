@@ -44,22 +44,14 @@ class WorkflowDumpCommand extends Command
     protected static $defaultName = 'workflow:dump';
     protected static $defaultDescription = 'Dumps a workflow definition';
 
-    /**
-     * string is the service id.
-     *
-     * @var array<string,Definition>
-     */
-    private array $workflows = [];
-
     private const DUMP_FORMAT_OPTIONS = ['puml', 'mermaid', 'dot'];
 
     /**
      * @param array<string,Definition> $workflows
      */
-    public function __construct(array $workflows)
+    public function __construct(private array $workflows = [])
     {
         parent::__construct();
-        $this->workflows = $workflows;
     }
 
     /**

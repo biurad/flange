@@ -18,7 +18,7 @@ declare(strict_types=1);
 namespace Rade\DI\Extensions;
 
 use Rade\AppBuilder;
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Parameter;
 use Rade\DI\Definitions\Statement;
@@ -80,7 +80,7 @@ class ConfigExtension implements AliasedInterface, ConfigurationInterface, Exten
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs = []): void
+    public function register(Container $container, array $configs = []): void
     {
         // The default configs ...
         $container->parameters['default_locale'] = $configs['locale'] ?? 'en';
@@ -105,7 +105,7 @@ class ConfigExtension implements AliasedInterface, ConfigurationInterface, Exten
                 $builderResolver->addLoader(new $builderLoader($container, $fileLocator));
             }
 
-            $container->set('config.builder.loader_resolver', $builderResolver);
+            $container->parameters['config.builder.loader_resolver'] = $builderResolver;
         }
 
         foreach ($configLoaders as &$configLoader) {

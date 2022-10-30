@@ -19,7 +19,6 @@ namespace Rade\Handler;
 
 use Biurad\Http\Request;
 use Flight\Routing\Handlers\RouteHandler as BaseRouteHandler;
-use Flight\Routing\Route;
 use Psr\Http\Message\ServerRequestInterface;
 use Rade\Event\ControllerEvent;
 
@@ -32,27 +31,31 @@ class RouteHandler extends BaseRouteHandler
 {
     public function __construct(\Rade\Application $container)
     {
-        $handlerResolver = static function ($handler, array $parameters) use ($container) {
-            $event = new ControllerEvent($container, $parameters[ServerRequestInterface::class], $handler, $parameters);
-            $container->getDispatcher()->dispatch($event);
-            $request = $event->getRequest();
+        if ($container->has('events.dispatcher')) {
+            $resolver = static function (mixed $handler, array $parameters) use ($container) {
+                $event = new ControllerEvent($container, $parameters[ServerRequestInterface::class], $handler, $parameters);
+                $container->getDispatcher()->dispatch($event);
+                $request = $event->getRequest();
 
-            if ($request instanceof Request) {
-                $container->get('request_stack')->push($request->getRequest());
-            }
+                if ($request instanceof Request) {
+                    $container->get('request_stack')->push($request->getRequest());
+                }
 
-            return $container->getResolver()->resolve($event->getController(), $event->getArguments());
-        };
+                return $container->call($event->getController(), $event->getArguments());
+            };
+        }
 
-        parent::__construct($container->get('psr17.factory'), $handlerResolver);
+        parent::__construct($container->get('psr17.factory'), $resolver ?? [$container->getResolver(), 'resolve']);
     }
 
     /**
      * {@inheritdoc}
      */
-    protected function resolveArguments(ServerRequestInterface $request, Route $route): array
+    protected function resolveArguments(ServerRequestInterface $request, $parameters): array
     {
-        $parameters = $route->getArguments();
+        if (!\is_array($parameters)) {
+            $parameters = $parameters->getArguments();
+        }
         $requests = \array_merge([\get_class($request)], \class_implements($request) ?: [], (\class_parents($request) ?: []));
 
         foreach ($requests as $psr7Interface) {

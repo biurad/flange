@@ -20,7 +20,7 @@ namespace Rade\DI\Extensions\Symfony;
 use Rade\Application as RadeApplication;
 use Rade\Commands\AboutCommand;
 use Rade\Commands\ServerCommand;
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
@@ -52,7 +52,7 @@ class ConsoleExtension implements AliasedInterface, BootExtensionInterface, Exte
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs): void
+    public function register(Container $container, array $configs = []): void
     {
         if ($container instanceof KernelInterface && !$container->isRunningInConsole()) {
             return;
@@ -65,13 +65,13 @@ class ConsoleExtension implements AliasedInterface, BootExtensionInterface, Exte
                 $container->parameters['console.name'] ?? 'PHP Rade Framework',
                 $container->parameters['console.version'] ?? RadeApplication::VERSION,
             ])
-            ->autowire([Application::class]);
+            ->typed(Application::class);
     }
 
     /**
      * {@inheritdoc}
      */
-    public function boot(AbstractContainer $container): void
+    public function boot(Container $container): void
     {
         if (!$container->typed(Application::class)) {
             return;

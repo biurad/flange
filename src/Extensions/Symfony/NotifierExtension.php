@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace Rade\DI\Extensions\Symfony;
 
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Definitions\TaggedLocator;
@@ -162,7 +162,7 @@ class NotifierExtension implements AliasedInterface, ConfigurationInterface, Ext
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs): void
+    public function register(Container $container, array $configs = []): void
     {
         if (!$configs['enabled']) {
             return;
@@ -184,7 +184,7 @@ class NotifierExtension implements AliasedInterface, ConfigurationInterface, Ext
             'notifier.channel.chat' => $cc = service(ChatChannel::class, [$ct, $ms = new Reference('?messenger.default_bus')])->public(false)->tag('notifier.channel', ['channel' => 'chat']),
             'notifier.channel.sms' => $sc = service(SmsChannel::class, [$tt, $ms])->public(false)->tag('notifier.channel', ['channel' => 'sms']),
             'notifier.channel.push' => $pc = service(PushChannel::class, [$tt, $ms])->public(false)->tag('notifier.channel', ['channel' => 'push']),
-            'notifier' => $notifier = service(Notifier::class, [new TaggedLocator('notifier.channel', 'channel'), new Statement(ChannelPolicy::class, [$configs['channel_policy']])])->autowire(),
+            'notifier' => $notifier = service(Notifier::class, [new TaggedLocator('notifier.channel', 'channel'), new Statement(ChannelPolicy::class, [$configs['channel_policy']])])->typed(),
         ];
 
         if (isset($configs['admin_recipients'])) {
@@ -194,16 +194,16 @@ class NotifierExtension implements AliasedInterface, ConfigurationInterface, Ext
         }
 
         if ($configs['texter_transports']) {
-            $definitions['notifier.texter'] = service(Texter::class, [$tt, $ms])->autowire();
+            $definitions['notifier.texter'] = service(Texter::class, [$tt, $ms])->typed();
         }
 
         if ($configs['chatter_transports']) {
-            $definitions['notifier.chatter'] = service(Chatter::class, [$ct, $ms])->autowire();
+            $definitions['notifier.chatter'] = service(Chatter::class, [$ct, $ms])->typed();
         }
 
         if ($container->hasExtension(EventDispatcherExtension::class)) {
             if ($container->hasExtension(MailerExtension::class)) {
-                $sender = $container->definition('mailer.envelope_listener')->getArguments()[0] ?? null;
+                $sender = $container->definition('mailer.envelope_listener')->getArgument(0);
                 $definitions['notifier.channel.email'] = $ec = service(EmailChannel::class, [new Reference('mailer.transports'), $ms, $sender])->public(false)->tag('notifier.channel', ['channel' => 'email']);
             }
 

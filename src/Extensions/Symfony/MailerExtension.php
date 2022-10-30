@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace Rade\DI\Extensions\Symfony;
 
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\TaggedLocator;
@@ -132,7 +132,7 @@ class MailerExtension implements AliasedInterface, ConfigurationInterface, Exten
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs): void
+    public function register(Container $container, array $configs = []): void
     {
         if (!$configs['enabled']) {
             return;
@@ -148,7 +148,7 @@ class MailerExtension implements AliasedInterface, ConfigurationInterface, Exten
 
         $transports = $configs['dsn'] ? ['main' => $configs['dsn']] : $configs['transports'];
         $definitions = [
-            'mailer' => $mailer = service(Mailer::class, [new Reference('mailer.transports')])->autowire([Mailer::class, MailerInterface::class]),
+            'mailer' => $mailer = service(Mailer::class, [new Reference('mailer.transports')])->typed(Mailer::class, MailerInterface::class),
             'mailer.transports' => service([new Reference('mailer.transport_factory'), 'fromStrings'], [$transports]),
             'mailer.transport_factory' => service(Transport::class, [new TaggedLocator('mailer.transport_factory')])->public(false),
             'mailer.default_transport' => service([new Reference('mailer.transport_factory'), 'fromString'], [\current($transports)]),

@@ -18,8 +18,6 @@ declare(strict_types=1);
 namespace Rade\Debug\Tracy;
 
 use Biurad\Http\Uri;
-use Flight\Routing\Route;
-use Flight\Routing\RouteMatcher;
 use Flight\Routing\Router;
 use Nette;
 use Symfony\Component\HttpFoundation\Request;
@@ -34,7 +32,7 @@ final class RoutesPanel implements Tracy\IBarPanel
     use Nette\SmartObject;
 
     private int $routeCount = 0;
-    private RouteMatcher $profiler;
+    private Router $profiler;
     private ?Request $request;
 
     /** @var array<int,mixed> */
@@ -45,7 +43,7 @@ final class RoutesPanel implements Tracy\IBarPanel
 
     public function __construct(Router $router, RequestStack $request)
     {
-        $this->profiler = $router->getMatcher();
+        $this->profiler = $router;
         $this->request = $request->getMainRequest();
     }
 
@@ -54,7 +52,7 @@ final class RoutesPanel implements Tracy\IBarPanel
      */
     public function getTab(): string
     {
-        foreach ($this->profiler->getRoutes() as $route) {
+        foreach ($this->profiler->getCollection()->getRoutes() as $route) {
             $this->processData($route);
         }
 
@@ -73,10 +71,10 @@ final class RoutesPanel implements Tracy\IBarPanel
         });
     }
 
-    private function processData(Route $profile): void
+    private function processData($profile): void
     {
         ++$this->routeCount;
-        $data = ['matched' => false, 'route' => $profile, 'name' => $profile->getName()];
+        $data = ['matched' => false, 'route' => $profile, 'name' => \is_array($profile) ? $profile['name'] ?? 'unnamed' : $profile->getName() ?? 'unnamed'];
 
         if (null !== ($r = $this->request) && $profile === $this->profiler->match($r->getMethod(), new Uri($r->getUri()))) {
             $data['matched'] = true;

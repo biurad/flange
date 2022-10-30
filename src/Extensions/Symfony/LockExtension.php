@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace Rade\DI\Extensions\Symfony;
 
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Extensions\AliasedInterface;
@@ -125,7 +125,7 @@ class LockExtension implements AliasedInterface, ConfigurationInterface, Extensi
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs): void
+    public function register(Container $container, array $configs = []): void
     {
         if (!$configs['enabled']) {
             return;
@@ -159,7 +159,7 @@ class LockExtension implements AliasedInterface, ConfigurationInterface, Extensi
             // provide alias for default resource
             if ('default' === $resourceName) {
                 $container->alias('lock.factory', 'lock.' . $resourceName . '.factory');
-                $lock->autowire([LockFactory::class]);
+                $lock->typed(LockFactory::class);
             }
         }
     }

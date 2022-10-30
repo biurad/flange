@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace Rade\DI\Extensions\Symfony;
 
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
@@ -120,7 +120,7 @@ class RateLimiterExtension implements AliasedInterface, ConfigurationInterface, 
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs): void
+    public function register(Container $container, array $configs = []): void
     {
         if (!$configs['enabled']) {
             return;
@@ -152,7 +152,7 @@ class RateLimiterExtension implements AliasedInterface, ConfigurationInterface, 
             $limiter->arg(0, $limiterConfig);
 
             if (1 === $nLimiters) {
-                $limiter->autowire([RateLimiterFactory::class]);
+                $limiter->typed(RateLimiterFactory::class);
             }
         }
     }

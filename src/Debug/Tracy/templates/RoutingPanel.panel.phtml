@@ -79,9 +79,9 @@ use Tracy\Helpers;
                 <tr
                     class="<?php echo $router['matched'] ? 'yes' : 'no'; ?>">
                     <td><code
-                            title="<?php echo Helpers::escapeHtml(\get_class($router['route'])); ?>"> <?php echo Helpers::escapeHtml($router['name']); ?></code>
+                            title="<?php echo Helpers::escapeHtml($router['name']) ?>"> <?php echo Helpers::escapeHtml($router['name']); ?></code>
                     </td>
-                    <td><?php echo $router['route']->getPath(); ?>
+                    <td><?php echo \is_array($router['route']) ? $router['route']['path'] : $router['route']->getPath(); ?>
                     </td>
                     <td><?php echo $router['matched'] ? '✓ Yes' : '≈ No'; ?>
                     </td>

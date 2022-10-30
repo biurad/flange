@@ -20,7 +20,7 @@ namespace Rade\DI\Extensions\Symfony;
 use phpDocumentor\Reflection\DocBlockFactoryInterface;
 use phpDocumentor\Reflection\Types\ContextFactory;
 use PHPStan\PhpDocParser\Parser\PhpDocParser;
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\TaggedLocator;
@@ -71,7 +71,7 @@ class PropertyInfoExtension implements AliasedInterface, BootExtensionInterface,
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs): void
+    public function register(Container $container, array $configs = []): void
     {
         if (!$configs['enabled']) {
             return;
@@ -93,13 +93,13 @@ class PropertyInfoExtension implements AliasedInterface, BootExtensionInterface,
             ->tag('property_info.type_extractor')
             ->tag('property_info.access_extractor')
             ->tag('property_info.initializable_extractor')
-            ->autowire([ReflectionExtractor::class, PropertyReadInfoExtractorInterface::class, PropertyWriteInfoExtractorInterface::class]);
+            ->typed(ReflectionExtractor::class, PropertyReadInfoExtractorInterface::class, PropertyWriteInfoExtractorInterface::class);
 
         if ($container->hasExtension(CacheExtension::class)) {
             $definition->public(false);
             $container->autowire('property_info.cache', new Definition(PropertyInfoCacheExtractor::class, [new Reference('property_info'), new Reference('cache.system')]));
         } else {
-            $definition->autowire();
+            $definition->typed();
         }
 
         if (\class_exists(PhpDocParser::class) && \class_exists(ContextFactory::class)) {
@@ -116,7 +116,7 @@ class PropertyInfoExtension implements AliasedInterface, BootExtensionInterface,
     /**
      * {@inheritdoc}
      */
-    public function boot(AbstractContainer $container): void
+    public function boot(Container $container): void
     {
         if (!$container->has('property_info.constructor_extractor')) {
             return;

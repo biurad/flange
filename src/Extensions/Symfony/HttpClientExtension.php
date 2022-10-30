@@ -18,7 +18,7 @@ declare(strict_types=1);
 namespace Rade\DI\Extensions\Symfony;
 
 use Psr\Http\Client\ClientInterface;
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
@@ -331,7 +331,7 @@ class HttpClientExtension implements AliasedInterface, ConfigurationInterface, E
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs): void
+    public function register(Container $container, array $configs = []): void
     {
         if (!$configs['enabled']) {
             return;
@@ -355,7 +355,7 @@ class HttpClientExtension implements AliasedInterface, ConfigurationInterface, E
             $client->public(false);
             $container->autowire('psr18.http_client', new Definition(Psr18Client::class, [new Reference('http_client')]));
         } else {
-            $client->autowire();
+            $client->typed();
         }
 
         if (\array_key_exists('enabled', $retryOptions)) {
@@ -390,7 +390,7 @@ class HttpClientExtension implements AliasedInterface, ConfigurationInterface, E
             $container->type($name, HttpClientInterface::class);
 
             if ($hasPsr18) {
-                $container->set('psr18.' . $name, new Reference('psr18.http_client'))->arg(0, new Reference($name))->autowire([ClientInterface::class]);
+                $container->set('psr18.' . $name, new Reference('psr18.http_client'))->arg(0, new Reference($name))->typed(ClientInterface::class);
             }
         }
 
@@ -399,7 +399,7 @@ class HttpClientExtension implements AliasedInterface, ConfigurationInterface, E
         }
     }
 
-    private function registerRetryableHttpClient(array $options, string $name, AbstractContainer $container): void
+    private function registerRetryableHttpClient(array $options, string $name, Container $container): void
     {
         if (!\class_exists(RetryableHttpClient::class)) {
             throw new \LogicException('Support for retrying failed requests requires symfony/http-client 5.2 or higher, try upgrading.');

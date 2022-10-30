@@ -17,8 +17,8 @@ declare(strict_types=1);
 
 namespace Rade\Commands;
 
+use Psr\Container\ContainerInterface;
 use Rade\Application;
-use Rade\DI\ContainerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\TableSeparator;
@@ -37,11 +37,8 @@ final class AboutCommand extends Command
     protected static $defaultName = 'about';
     protected static $defaultDescription = 'Display information about the current project';
 
-    private ContainerInterface $container;
-
-    public function __construct(ContainerInterface $container)
+    public function __construct(private ContainerInterface $container)
     {
-        $this->container = $container;
         parent::__construct(self::$defaultName);
     }
 

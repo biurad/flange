@@ -51,10 +51,8 @@ class EventHandler implements EventDispatcherInterface, ListenerProviderInterfac
      */
     public function getListenersForEvent(object $event): iterable
     {
-        $eventName = \get_class($event);
-
-        if (null === $calledListeners = &$this->calledEvents[$eventName] ?? null) {
-            if (empty($listeners = $this->listeners[$eventName] ?? [])) {
+        if (null === $calledListeners = &$this->calledEvents[$event::class] ?? null) {
+            if (empty($listeners = $this->listeners[$event::class] ?? [])) {
                 return [];
             }
 
@@ -71,7 +69,7 @@ class EventHandler implements EventDispatcherInterface, ListenerProviderInterfac
      * @param callable $listener Any callable could be used be it a closure or invokable object
      * @param int $priority The higher this value, the earlier an event listener will be triggered in the chain (defaults to 0)
      */
-    public function addListener(string $eventClass, $listener, int $priority = 0): void
+    public function addListener(string $eventClass, callable $listener, int $priority = 0): void
     {
         $this->listeners[$eventClass][$priority][] = $listener;
         unset($this->calledEvents[$eventClass]);

@@ -18,7 +18,7 @@ declare(strict_types=1);
 namespace Rade\DI\Extensions\Security\Provider;
 
 use Biurad\Security\Authenticator\RemoteUserAuthenticator;
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
@@ -47,7 +47,7 @@ class RemoteUserFactory extends AbstractFactory
         ;
     }
 
-    public function create(AbstractContainer $container, string $id, array $config): void
+    public function create(Container $container, string $id, array $config): void
     {
         if (isset($config['provider'])) {
             $config['provider'] = new Reference('security.user.provider.concrete.' . \strtolower($config['provider']));

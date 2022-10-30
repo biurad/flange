@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace Rade\DI\Extensions\Security\Provider;
 
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definition;
 use Symfony\Component\Config\Definition\Builder\NodeDefinition;
 use Symfony\Component\Security\Core\User\InMemoryUserProvider;
@@ -29,7 +29,7 @@ use Symfony\Component\Security\Core\User\InMemoryUserProvider;
  */
 class InMemoryFactory implements ProviderFactoryInterface
 {
-    public function create(AbstractContainer $container, string $id, array $config): void
+    public function create(Container $container, string $id, array $config): void
     {
         $definition = $container->set($id, new Definition(InMemoryUserProvider::class));
         $users = [];

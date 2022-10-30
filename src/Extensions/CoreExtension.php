@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace Rade\DI\Extensions;
 
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\Handler\EventHandler;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
@@ -81,9 +81,9 @@ class CoreExtension implements AliasedInterface, ConfigurationInterface, Depende
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs = []): void
+    public function register(Container $container, array $configs = []): void
     {
-        $container->parameters['project.var_dir'] = $configs['var_path'] ?? ($this->rootDir . '/var');
+        $container->parameters['project.var_dir'] = $container->parameter($configs['var_path'] ?? $this->rootDir . '/var');
 
         if (!$container->has('events.dispatcher')) {
             $eventsDispatcher = $configs['events_dispatcher'] ?? EventHandler::class;

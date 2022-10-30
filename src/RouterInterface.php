@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace Rade;
 
-use Flight\Routing\{Route, RouteCollection};
+use Flight\Routing\{RouteCollection, RouteUri};
 
 /**
  * Flight Routing support methods proxied into application class.
@@ -39,7 +39,7 @@ interface RouterInterface
     /**
      * Generate a URI from the named route.
      *
-     * @return GeneratedUri
+     * @return \Flight\Routing\Generator\GeneratedUri|RouteUri
      */
     public function generateUri(string $routeName, array $parameters = []);
 
@@ -50,61 +50,59 @@ interface RouterInterface
      *
      * @param mixed $to Callback that returns the response when matched
      *
-     * @return Route
+     * @return \Flight\Routing\Route|RouteCollection
      */
-    public function match(string $pattern, array $methods = Route::DEFAULT_METHODS, $to = null);
+    public function match(string $pattern, array $methods = ['GET'], mixed $to = null);
 
     /**
      * Maps a POST request to a callable.
      *
      * @param mixed $to Callback that returns the response when matched
      *
-     * @return Route
+     * @return \Flight\Routing\Route|RouteCollection
      */
-    public function post(string $pattern, $to = null);
+    public function post(string $pattern, mixed $to = null);
 
     /**
      * Maps a PUT request to a callable.
      *
      * @param mixed $to Callback that returns the response when matched
      *
-     * @return Route
+     * @return \Flight\Routing\Route|RouteCollection
      */
-    public function put(string $pattern, $to = null);
+    public function put(string $pattern, mixed $to = null);
 
     /**
      * Maps a DELETE request to a callable.
      *
      * @param mixed $to Callback that returns the response when matched
      *
-     * @return Route
+     * @return \Flight\Routing\Route|RouteCollection
      */
-    public function delete(string $pattern, $to = null);
+    public function delete(string $pattern, mixed $to = null);
 
     /**
      * Maps an OPTIONS request to a callable.
      *
      * @param mixed $to Callback that returns the response when matched
      *
-     * @return Route
+     * @return \Flight\Routing\Route|RouteCollection
      */
-    public function options(string $pattern, $to = null);
+    public function options(string $pattern, mixed $to = null);
 
     /**
      * Maps a PATCH request to a callable.
      *
      * @param mixed $to Callback that returns the response when matched
      *
-     * @return Route
+     * @return \Flight\Routing\Route|RouteCollection
      */
-    public function patch(string $pattern, $to = null);
+    public function patch(string $pattern, mixed $to = null);
 
     /**
      * Mount route collection into router.
      *
-     * @param string $prefix The route named prefix
-     *
-     * @return RouteCollection
+     * @param string $prefix The route named prefixCollection
      */
-    public function group(string $prefix);
+    public function group(string $prefix): RouteCollection;
 }

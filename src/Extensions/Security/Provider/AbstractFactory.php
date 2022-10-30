@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace Rade\DI\Extensions\Security\Provider;
 
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Symfony\Component\Config\Definition\Builder\NodeDefinition;
 
 /**
@@ -51,5 +51,5 @@ abstract class AbstractFactory implements ProviderFactoryInterface
 
     abstract public function getKey(): string;
 
-    abstract public function create(AbstractContainer $container, string $id, array $config): void;
+    abstract public function create(Container $container, string $id, array $config): void;
 }

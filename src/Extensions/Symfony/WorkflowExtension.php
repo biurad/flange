@@ -18,7 +18,7 @@ declare(strict_types=1);
 namespace Rade\DI\Extensions\Symfony;
 
 use Rade\Commands\Symfony\WorkflowDumpCommand;
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Extensions\AliasedInterface;
@@ -325,7 +325,7 @@ class WorkflowExtension implements AliasedInterface, ConfigurationInterface, Ext
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs): void
+    public function register(Container $container, array $configs = []): void
     {
         if (!$configs['enabled']) {
             return;

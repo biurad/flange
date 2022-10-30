@@ -39,15 +39,11 @@ final class ServerCommand extends Command
     protected static $defaultName = 'serve';
     protected static $defaultDescription = 'Runs|Stops a local web server in a background process';
 
-    private ?string $documentRoot;
     private string $router, $hostname, $address;
     private int $port;
-    private bool $debug;
 
-    public function __construct(string $documentRoot, bool $debug)
+    public function __construct(private ?string $documentRoot, private bool $debug)
     {
-        $this->documentRoot = $documentRoot;
-        $this->debug = $debug;
         parent::__construct();
     }
 

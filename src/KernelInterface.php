@@ -67,7 +67,7 @@ interface KernelInterface
     /**
      * Mounts a service provider like controller taking in a parameter of application.
      *
-     * @param callable(\Rade\DI\AbstractContainer) $controllers
+     * @param callable(\Rade\DI\Container) $controllers
      */
     public function mount(callable $controllers): void;
 }

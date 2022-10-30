@@ -29,7 +29,7 @@ use Cycle\Schema\Generator;
 use Cycle\Schema\GeneratorInterface;
 use Cycle\Schema\Registry;
 use Rade\Commands\CycleORM\DatabaseOrmCommand;
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Builder\PhpLiteral;
 use Rade\DI\ContainerBuilder;
 use Rade\DI\Definition;
@@ -73,7 +73,7 @@ class ORMExtension implements AliasedInterface, ConfigurationInterface, Extensio
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs): void
+    public function register(Container $container, array $configs = []): void
     {
         if (!\interface_exists(ORMInterface::class)) {
             throw new \LogicException('Cycle ORM support cannot be enabled as the ORM component is not installed. Try running "composer require cycle/orm".');
@@ -99,7 +99,7 @@ class ORMExtension implements AliasedInterface, ConfigurationInterface, Extensio
     /**
      * @return GeneratorInterface[]
      */
-    private function getGenerators(AbstractContainer $container, string $entityPath): array
+    private function getGenerators(Container $container, string $entityPath): array
     {
         $generators = [new Statement(Generator\ResetTables::class)]; // re-declared table schemas (remove columns)
 

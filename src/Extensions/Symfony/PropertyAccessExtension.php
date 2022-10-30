@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace Rade\DI\Extensions\Symfony;
 
-use Rade\DI\AbstractContainer;
+use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Extensions\AliasedInterface;
@@ -71,7 +71,7 @@ class PropertyAccessExtension implements AliasedInterface, ConfigurationInterfac
     /**
      * {@inheritdoc}
      */
-    public function register(AbstractContainer $container, array $configs): void
+    public function register(Container $container, array $configs = []): void
     {
         if (!$configs['enabled']) {
             return;
@@ -101,6 +101,6 @@ class PropertyAccessExtension implements AliasedInterface, ConfigurationInterfac
             new Reference($cacheId ?? '?cache.system'),
             new Reference('?' . PropertyReadInfoExtractorInterface::class),
             new Reference('?' . PropertyWriteInfoExtractorInterface::class),
-        ]))->autowire();
+        ]))->typed();
     }
 }
