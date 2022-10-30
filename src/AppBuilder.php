@@ -170,7 +170,6 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
             $requiredPaths = $container->parameters['project.require_paths'] ?? []; // Autoload require hot paths ...
             $containerClass = 'App_' . ($debug ? 'Debug' : '') . 'Container';
 
-            $container->addResource(new Debug\AppResource());
             $container->addNodeVisitor(new DI\NodeVisitor\MethodsResolver());
             $container->addNodeVisitor(new DI\NodeVisitor\AutowiringResolver());
             $container->addNodeVisitor($splitter = new DI\NodeVisitor\DefinitionsSplitter($options['maxDefinitions'] ?? 500, $b));
