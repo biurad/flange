@@ -17,7 +17,6 @@ declare(strict_types=1);
 
 namespace Rade\Tests;
 
-use Flight\Routing\Route;
 use Flight\Routing\RouteCollection;
 use Psr\Http\Message\ServerRequestInterface;
 use Rade\DI\Extensions\ConfigExtension;
@@ -34,19 +33,20 @@ class ApplicationTest extends BaseTestCase
         $app = self::getApplication();
 
         $returnValue = $app->match('/foo');
-        $this->assertInstanceOf(Route::class, $returnValue);
+        $this->assertInstanceOf(RouteCollection::class, $returnValue);
+        $this->assertTrue(\in_array($returnValue::class, [RouteCollection::class, 'Flight\Routing\Route'], true));
 
         $returnValue = $app->post('/foo');
-        $this->assertInstanceOf(Route::class, $returnValue);
+        $this->assertTrue(\in_array($returnValue::class, [RouteCollection::class, 'Flight\Routing\Route'], true));
 
         $returnValue = $app->put('/foo');
-        $this->assertInstanceOf(Route::class, $returnValue);
+        $this->assertTrue(\in_array($returnValue::class, [RouteCollection::class, 'Flight\Routing\Route'], true));
 
         $returnValue = $app->patch('/foo');
-        $this->assertInstanceOf(Route::class, $returnValue);
+        $this->assertTrue(\in_array($returnValue::class, [RouteCollection::class, 'Flight\Routing\Route'], true));
 
         $returnValue = $app->delete('/foo');
-        $this->assertInstanceOf(Route::class, $returnValue);
+        $this->assertTrue(\in_array($returnValue::class, [RouteCollection::class, 'Flight\Routing\Route'], true));
     }
 
     public function testConstructorInjection(): void
@@ -153,7 +153,6 @@ class ApplicationTest extends BaseTestCase
         $app->match('/c')->bind('third');
 
         $routes = $routes = $app['http.router']->getCollection()->getRoutes();
-
-        $this->assertEquals(['first', 'third', 'second'], \array_map(fn ($route) => $route->getName(), $routes));
+        $this->assertEquals(['first', 'third', 'second'], \array_map(fn ($route) => $route['name'], $routes));
     }
 }
