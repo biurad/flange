@@ -96,7 +96,6 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
                     ->info('System related cache pools configuration')
                     ->defaultValue('cache.adapter.system')
                 ->end()
-                ->scalarNode('directory')->defaultValue('%project.var_dir%/cache')->end()
                 ->scalarNode('default_psr6_provider')->end()
                 ->scalarNode('default_redis_provider')->defaultValue('redis://localhost')->end()
                 ->scalarNode('default_memcached_provider')->defaultValue('memcached://localhost')->end()
@@ -182,7 +181,6 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
             throw new \LogicException('Cache support cannot be enabled as the Cache component is not installed. Try running "composer require symfony/cache".');
         }
 
-        $container->parameters['project.cache_dir'] = $container->parameter($configs['directory']);
         $container->multiple([
             'cache.default_matcher' => service(DefaultMarshaller::class, [1 => '%debug%'])->typed(MarshallerInterface::class),
             'cache.adapter.system' => service(AbstractAdapter::class . '::createSystemCache', ['', 0, \Rade\Application::VERSION, '%project.cache_dir%' . '/pools/system'])->abstract()->public(false)->tag('cache.pool'),

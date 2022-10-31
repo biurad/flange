@@ -52,15 +52,24 @@ class ApplicationTest extends BaseTestCase
     public function testConstructorInjection(): void
     {
         $app = self::getApplication();
+        ConfigExtension::setPath($app, __DIR__);
         $this->assertArrayNotHasKey('default_locale', $app->parameters);
         $this->assertTrue($app->parameters['debug']);
+        $this->assertEquals(__DIR__, $app->parameters['project_dir']);
+        $this->assertEquals(__DIR__.'/var', $app->parameters['project.var_dir']);
+        $this->assertEquals(__DIR__.'/var/cache', $app->parameters['project.cache_dir']);
 
-        $app = self::getApplication();
-        $app->loadExtensions([[ConfigExtension::class, [__DIR__]]], ['config' => ['locale' => 'fr', 'debug' => false]]);
+        $app = self::getApplication(false);
+        $app->loadExtensions([[ConfigExtension::class, [__DIR__]]], ['config' => [
+            'locale' => 'fr',
+            'cache_path' => '%project_dir%/cache-000',
+        ]]);
 
         $this->assertEquals('fr', $app->parameters['default_locale']);
         $this->assertFalse($app->parameters['debug']);
         $this->assertEquals(__DIR__, $app->parameters['project_dir']);
+        $this->assertEquals(__DIR__.'/var', $app->parameters['project.var_dir']);
+        $this->assertEquals(__DIR__.'/cache-000', $app->parameters['project.cache_dir']);
     }
 
     public function testGetRequest(): void

@@ -30,7 +30,7 @@ use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Config\Loader\LoaderResolver;
 
 /**
- * Symfony's Config component extension.
+ * Required Config component extension.
  *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
@@ -60,14 +60,16 @@ class ConfigExtension implements AliasedInterface, ConfigurationInterface, Exten
 
         $treeBuilder->getRootNode()
             ->addDefaultsIfNotSet()
+            ->canBeEnabled()
             ->beforeNormalization()->ifString()->then(fn ($v) =>  ['paths' => [$v]])->end()
             ->children()
                 ->scalarNode('locale')->defaultValue('en')->end()
-                ->booleanNode('debug')->defaultNull()->end()
                 ->booleanNode('auto_configure')->defaultFalse()->end()
                 ->arrayNode('paths')
                     ->prototype('scalar')->isRequired()->cannotBeEmpty()->end()
                 ->end()
+                ->scalarNode('var_path')->defaultValue('%project_dir%/var')->end()
+                ->scalarNode('cache_path')->defaultValue('%project.var_dir%/cache')->end()
                 ->arrayNode('loaders')
                     ->prototype('scalar')->defaultValue([])->end()
                 ->end()
@@ -84,11 +86,7 @@ class ConfigExtension implements AliasedInterface, ConfigurationInterface, Exten
     {
         // The default configs ...
         $container->parameters['default_locale'] = $configs['locale'] ?? 'en';
-        $container->parameters['project_dir'] = $this->rootDir;
-
-        if (isset($configs['debug'])) {
-            $container->parameters['debug'] = $configs['debug'];
-        }
+        self::setPath($container, $this->rootDir, $configs['var_path'] ?? null, $configs['cache_path'] ?? null);
 
         // Configurations ...
         $configLoaders = [...$configs['loaders'], PhpFileLoader::class, ClosureLoader::class, DirectoryLoader::class, GlobFileLoader::class];
@@ -121,5 +119,12 @@ class ConfigExtension implements AliasedInterface, ConfigurationInterface, Exten
                 $container->load($path, 'directory');
             }
         }
+    }
+
+    public static function setPath(Container $container, string $rootDir, string $varDir = null, string $cacheDir = null): void
+    {
+        $container->parameters['project_dir'] = $rootDir;
+        $container->parameters['project.var_dir'] = $container->parameter($varDir ?? $rootDir . '/var');
+        $container->parameters['project.cache_dir'] = $container->parameter($cacheDir ?? '%project.var_dir%/cache');
     }
 }
