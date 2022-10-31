@@ -83,7 +83,7 @@ class ORMExtension implements AliasedInterface, ConfigurationInterface, Extensio
             throw new \LogicException(\sprintf('Cycle ORM requires the %s to be registered first.', DatabaseExtension::class));
         }
 
-        $container->set('cycle.orm.factory', new Definition(Factory::class))->autowire([FactoryInterface::class]);
+        $container->set('cycle.orm.factory', new Definition(Factory::class))->typed(FactoryInterface::class);
         $container->autowire('cycle.orm', new Definition(ORM::class, [new Reference('cycle.orm.factory'), new Reference('cycle.orm.schema')]));
         $container->autowire('cycle.orm.entity_manager', new Definition(EntityManager::class, [new Reference('cycle.orm')]));
         $container->autowire('cycle.orm.schema', new Definition(Schema::class, [new Statement(
