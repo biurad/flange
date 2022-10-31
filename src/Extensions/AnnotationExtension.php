@@ -62,8 +62,15 @@ class AnnotationExtension implements AliasedInterface, BootExtensionInterface, C
                 ->ifTrue(fn ($v) => \is_array($v) && \array_is_list($v))
                 ->then(fn ($v) => ['resources' => $v])
             ->end()
+            ->fixXmlConfig('use_reader')
             ->children()
-                ->scalarNode('use_reader')->end()
+                ->arrayNode('use_readers')
+                    ->beforeNormalization()
+                        ->ifString()->then(fn ($v) => [$v])
+                        ->ifTrue(fn ($v) => true === $v)->then(fn ($v) => [])
+                    ->end()
+                    ->prototype('scalar')->end()
+                ->end()
                 ->booleanNode('merge_readers')->defaultTrue()->end()
                 ->variableNode('class_loader')
                     ->beforeNormalization()
@@ -86,7 +93,7 @@ class AnnotationExtension implements AliasedInterface, BootExtensionInterface, C
                     ->prototype('scalar')->end()
                     ->defaultValue(['persistent', 'serializationVersion', 'inject'])
                 ->end()
-                ->scalarNode('cache')->end()
+                ->scalarNode('cache')->defaultNull()->end()
             ->end()
         ;
 
@@ -112,47 +119,53 @@ class AnnotationExtension implements AliasedInterface, BootExtensionInterface, C
             $loader->bind('resource', [$resources]);
         }
 
-        if ($useAttribute = $configs['use_reader'] ?? false) {
+        foreach ($configs['listeners'] ?? [] as $listener) {
+            $loader->bind('listener', $container->has($listener) ? new Reference($listener) : [new Statement($listener), $listener]);
+        }
+
+        if ($useAttributes = $configs['use_readers'] ?? []) {
             if (!\class_exists($attribute = NativeAttributeReader::class)) {
                 throw new \LogicException('Annotations/Attributes support cannot be enabled as the Spiral Attribute component is not installed. Try running "composer require spiral/attributes".');
             }
 
             $attributeArgs = [new Statement($attribute, [new Statement(NamedArgumentsInstantiator::class)])];
-            $hasCache = $container->hasExtension(Symfony\CacheExtension::class) || $container->hasExtension(Symfony\FrameworkExtension::class);
+            $attribute = $configs['merge_readers'] ? MergeReader::class : SelectiveReader::class;
+            $hasCache = $configs['cache'] ??
+                !empty($container->getExtensionConfig(Symfony\CacheExtension::class, $container->hasExtension(Symfony\FrameworkExtension::class) ? 'symfony' : null)) ? 'cache.system' : null;
 
-            if (\is_string($useAttribute)) {
-                $attribute = $configs['merge_readers'] ? MergeReader::class : SelectiveReader::class;
-
-                if (\in_array($useAttribute, [$doctrineService = AnnotationReader::class, 'doctrine'], true)) {
-                    if (!\class_exists($doctrineService)) {
-                        throw new \LogicException('Annotations support cannot be enabled as the Doctrine component is not installed. Try running "composer require doctrine/annotations".');
-                    }
-
-                    if ($hasCache) {
-                        $doctrineArgs = [new Statement($doctrineService), new Reference('cache.system'), new Parameter('debug')];
-                        $doctrineService = PsrCachedReader::class;
-                    }
-
-                    $doctrineService = $container->autowire('annotation.doctrine', new Definition($doctrineService, $doctrineArgs ?? []));
-                    $attributeArgs[] = new Statement(DoctrineAnnotationReader::class, [new Reference('annotation.doctrine')]);
-
-                    foreach ($configs['doctrine_ignores'] as $doctrineExclude) {
-                        $doctrineService->call(new Statement(AnnotationReader::class . '::addGlobalIgnoredName', [$doctrineExclude]));
-                    }
-
-                    // doctrine/annotations ^1.0 compatibility.
-                    if (\method_exists(AnnotationRegistry::class, 'registerLoader')) {
-                        $doctrineService->call(new Statement(AnnotationRegistry::class . '::registerUniqueLoader', ['class_exists']));
-                    }
-                } else {
+            foreach ($useAttributes as $useAttribute) {
+                if (!\in_array($useAttribute, [$doctrineService = AnnotationReader::class, 'doctrine'], true)) {
                     $attributeArgs[] = $container->has($useAttribute) ? new Reference($useAttribute) : new Statement($useAttribute);
+                    continue;
+                }
+
+                if (!\class_exists($doctrineService)) {
+                    throw new \LogicException('Annotations support cannot be enabled as the Doctrine component is not installed. Try running "composer require doctrine/annotations".');
                 }
 
                 if ($hasCache) {
-                    $attributeArgs = [new Statement($attribute, [$attributeArgs]), new Reference('cache.system')];
-                    $attribute = Psr6CachedReader::class;
+                    $doctrineArgs = [new Statement($doctrineService), new Reference($hasCache), new Parameter('debug')];
+                    $doctrineService = PsrCachedReader::class;
+                }
+
+                $doctrineService = $container->autowire('annotation.doctrine', new Definition($doctrineService, $doctrineArgs ?? []));
+                $attributeArgs[] = new Statement(DoctrineAnnotationReader::class, [new Reference('annotation.doctrine')]);
+
+                foreach ($configs['doctrine_ignores'] as $doctrineExclude) {
+                    $doctrineService->call(new Statement(AnnotationReader::class . '::addGlobalIgnoredName', [$doctrineExclude]));
+                }
+
+                // doctrine/annotations ^1.0 compatibility.
+                if (\method_exists(AnnotationRegistry::class, 'registerLoader')) {
+                    $doctrineService->call(new Statement(AnnotationRegistry::class . '::registerUniqueLoader', ['class_exists']));
                 }
             }
+
+            if ($hasCache) {
+                $attributeArgs = [new Statement($attribute, [$attributeArgs]), new Reference($hasCache)];
+                $attribute = Psr6CachedReader::class;
+            }
+
             $container->autowire('annotation.reader', new Definition($attribute, $attributeArgs));
         }
     }
@@ -169,12 +182,7 @@ class AnnotationExtension implements AliasedInterface, BootExtensionInterface, C
 
         foreach ($listeners as $listener => $value) {
             $value = \is_string($value) ? $value : null;
-
-            if ($loader instanceof AnnotationLoader) {
-                $loader->listener($container->get($listener), $value);
-            } else {
-                $loader->bind('listener', [$container->has($listener) ? new Reference($listener) : new Statement($listener), $value]);
-            }
+            $loader->bind('listener', [$container->has($listener) ? new Reference($listener) : new Statement($listener), $value]);
         }
     }
 }
