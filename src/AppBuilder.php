@@ -134,11 +134,14 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
     /**
      * {@inheritdoc}
      */
-    public function group(string $prefix): RouteCollection
+    public function group(string $prefix, callable|RouteCollection|null $collection = null): RouteCollection
     {
+        if (\is_callable($collection)) {
+            throw new ServiceCreationException('Route grouping using callable is supported since application is compilable.');
+        }
         $routes = $this->parameters['routes'] ??= new RouteCollection();
 
-        return $routes->group($prefix);
+        return $routes->group($prefix, $collection);
     }
 
     /**

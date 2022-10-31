@@ -166,7 +166,7 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
     /**
      * {@inheritdoc}
      */
-    public function group(string $prefix, $collection = null): RouteCollection
+    public function group(string $prefix, callable|RouteCollection|null $collection = null): RouteCollection
     {
         return $this->getRouter()->getCollection()->group($prefix, $collection);
     }

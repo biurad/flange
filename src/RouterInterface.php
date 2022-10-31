@@ -104,5 +104,5 @@ interface RouterInterface
      *
      * @param string $prefix The route named prefixCollection
      */
-    public function group(string $prefix): RouteCollection;
+    public function group(string $prefix, callable|RouteCollection|null $collection = null): RouteCollection;
 }
