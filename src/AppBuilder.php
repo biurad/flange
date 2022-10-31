@@ -24,7 +24,6 @@ use Flight\Routing\RouteCollection;
 use Flight\Routing\Router;
 use Rade\DI\Exceptions\ServiceCreationException;
 use Symfony\Component\Config\ConfigCache;
-use Symfony\Component\Config\Resource\SelfCheckingResourceInterface;
 
 /**
  * Create a cacheable application.
