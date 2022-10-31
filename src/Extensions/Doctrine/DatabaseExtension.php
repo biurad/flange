@@ -26,6 +26,7 @@ use Rade\Database\Doctrine\Form\DoctrineOrmTypeGuesser;
 use Rade\Database\Doctrine\Form\Type\EntityType;
 use Rade\DI\Container;
 use Rade\DI\Definition;
+use Rade\DI\Definitions\Parameter;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Extensions\AliasedInterface;
@@ -45,15 +46,6 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
  */
 class DatabaseExtension implements AliasedInterface, ConfigurationInterface, BootExtensionInterface, ExtensionInterface
 {
-    /** @var bool */
-    private $debug;
-
-    /** @param bool $debug Whether to use the debug mode */
-    public function __construct(bool $debug = false)
-    {
-        $this->debug = $debug;
-    }
-
     public static function createConnectionTypes(Connection $connection, array $types): void
     {
         $platform = $connection->getDatabasePlatform();
@@ -115,14 +107,14 @@ class DatabaseExtension implements AliasedInterface, ConfigurationInterface, Boo
                 ->scalarNode('platform_service')->end()
                 ->booleanNode('auto_commit')->end()
                 ->scalarNode('schema_filter')->end()
-                ->booleanNode('logging')->defaultValue($this->debug)->end()
-                ->booleanNode('profiling')->defaultValue($this->debug)->end()
+                ->booleanNode('logging')->defaultValue(new Parameter('debug'))->end()
+                ->booleanNode('profiling')->defaultValue(new Parameter('debug'))->end()
                 ->booleanNode('profiling_collect_backtrace')
-                    ->defaultValue(false)
+                    ->defaultValue(new Parameter('debug'))
                     ->info('Enables collecting backtraces when profiling is enabled')
                 ->end()
                 ->booleanNode('profiling_collect_schema_errors')
-                    ->defaultValue(true)
+                    ->defaultValue(new Parameter('debug'))
                     ->info('Enables collecting schema errors when profiling is enabled')
                 ->end()
                 ->scalarNode('server_version')->end()
