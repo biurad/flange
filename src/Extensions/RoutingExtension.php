@@ -24,6 +24,7 @@ use Flight\Routing\Interfaces\RouteMatcherInterface;
 use Flight\Routing\Interfaces\UrlGeneratorInterface;
 use Flight\Routing\Middlewares\PathMiddleware;
 use Flight\Routing\Route;
+use Flight\Routing\RouteCollection;
 use Flight\Routing\Router;
 use Laminas\Stratigility\Middleware\OriginalMessages;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -38,6 +39,9 @@ use Rade\DI\Exceptions\ServiceCreationException;
 use Rade\Handler\RouteHandler;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
+use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
+use Symfony\Component\Config\Definition\Processor;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Flight Routing Extension. (Recommend being used with AppBuilder).
@@ -79,6 +83,7 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
             ->addDefaultsIfNotSet()
             ->fixXmlConfig('pipe')
             ->fixXmlConfig('route')
+            ->fixXmlConfig('method')
             ->children()
                 ->booleanNode('redirect_permanent')->defaultFalse()->end()
                 ->booleanNode('keep_request_method')->defaultFalse()->end()
@@ -121,74 +126,8 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
                     ->end()
                     ->prototype('variable')->end()
                 ->end()
-                ->arrayNode('routes')
-                    ->arrayPrototype()
-                        ->addDefaultsIfNotSet()
-                        ->children()
-                            ->scalarNode('bind')->defaultValue(null)->end()
-                            ->scalarNode('path')->defaultValue(null)->end()
-                            ->scalarNode('run')->defaultValue(null)->end()
-                            ->scalarNode('namespace')->defaultValue(null)->end()
-                            ->booleanNode('debug')->defaultValue(null)->end()
-                            ->arrayNode('methods')
-                                ->beforeNormalization()
-                                    ->ifString()
-                                    ->then(fn (string $v): array => [$v])
-                                ->end()
-                                ->defaultValue(['GET'])
-                                ->prototype('scalar')->end()
-                            ->end()
-                            ->arrayNode('scheme')
-                                ->beforeNormalization()
-                                    ->ifString()
-                                    ->then(fn (string $v): array => [$v])
-                                ->end()
-                                ->prototype('scalar')->defaultValue([])->end()
-                            ->end()
-                            ->arrayNode('domain')
-                                ->beforeNormalization()
-                                    ->ifString()
-                                    ->then(fn (string $v): array => [$v])
-                                ->end()
-                                ->prototype('scalar')->defaultValue([])->end()
-                            ->end()
-                            ->arrayNode('piped')
-                                ->beforeNormalization()
-                                    ->ifString()
-                                    ->then(fn (string $v): array => [$v])
-                                ->end()
-                                ->prototype('scalar')->defaultValue([])->end()
-                            ->end()
-                            ->arrayNode('placeholders')
-                                ->normalizeKeys(false)
-                                ->defaultValue([])
-                                ->beforeNormalization()
-                                    ->ifTrue(fn ($v) => !\is_array($v) || \array_is_list($v))
-                                    ->thenInvalid('Expected patterns values to be an associate array of string keys mapping to mixed values.')
-                                ->end()
-                                ->prototype('variable')->end()
-                            ->end()
-                            ->arrayNode('defaults')
-                                ->normalizeKeys(false)
-                                ->defaultValue([])
-                                ->beforeNormalization()
-                                    ->ifTrue(fn ($v) => !\is_array($v) || \array_is_list($v))
-                                    ->thenInvalid('Expected defaults values to be an associate array of string keys mapping to mixed values.')
-                                ->end()
-                                ->prototype('variable')->end()
-                            ->end()
-                            ->arrayNode('arguments')
-                                ->normalizeKeys(false)
-                                ->defaultValue([])
-                                ->beforeNormalization()
-                                    ->ifTrue(fn ($v) => !\is_array($v) || \array_is_list($v))
-                                    ->thenInvalid('Expected arguments values to be an associate array of string keys mapping to mixed values.')
-                                ->end()
-                                ->prototype('variable')->end()
-                            ->end()
-                        ->end()
-                    ->end()
-                ->end()
+                ->append(Config\RouteSection::getConfigNode('import', true)->end())
+                ->append(Config\RouteSection::getConfigNode('routes')->end())
             ->end()
         ;
 
@@ -277,37 +216,73 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
                 continue;
             }
 
-            if ('_defaults' !== $routeData['bind'] ?? null) {
-                if (empty($routeData['path'] ?? null)) {
-                    throw new \InvalidArgumentException('Route path is required.');
-                }
-                $routeData['add'] = [$routeData['path'], $routeData['methods'], $routeData['run']];
-                unset($routeData['path'], $routeData['methods'], $routeData['run'], $routeData['debug']);
+            if (empty($routeData['path'] ?? null)) {
+                throw new \InvalidArgumentException('Route path is required.');
+            }
+            $routeData['add'] = [$routeData['path'], $routeData['methods'], $routeData['run']];
+            unset($routeData['path'], $routeData['methods'], $routeData['run'], $routeData['debug']);
 
-                if (!$container instanceof AppBuilder) {
-                    \ksort($routeData);
-                    $router->bind('getCollection|prototype', [$routeData]);
-                } else {
-                    $route = $container->match(...$routeData['add']);
-                    unset($routeData['add']);
+            if (!$container instanceof AppBuilder) {
+                \ksort($routeData);
+                $router->bind('getCollection|prototype', [$routeData]);
+            } else {
+                $route = $container->match(...$routeData['add']);
+                unset($routeData['add']);
 
-                    foreach ($routeData as $key => $value) {
-                        if (empty($value)) {
-                            continue;
-                        }
-
-                        \call_user_func_array([$route, $key], \is_array($value) ? $value : [$value]);
+                foreach ($routeData as $key => $value) {
+                    if (empty($value)) {
+                        continue;
                     }
+                    \call_user_func_array([$route, $key], \is_array($value) ? $value : [$value]);
                 }
+            }
+        }
+
+        foreach ($configs['import'] ?? [] as $routeFile => $collection) {
+            if (isset($collection['debug']) && $container->parameters['debug'] !== $collection['debug']) {
+                continue;
+            }
+            unset($collection['debug']);
+
+            if ('@' === $routeFile) {
+                $this->defaults = $collection;
                 continue;
             }
 
-            if (isset($routeData['path'])) {
-                $routeData['prefix'] = $routeData['path'];
+            if (\str_ends_with($routeFile = $container->parameter($routeFile), '.yaml')) {
+                $routes = \function_exists('yaml_parse_file') ? \yaml_parse_file($routeFile) : Yaml::parseFile($routeFile);
+            } elseif (!\str_ends_with($routeFile, '.php')) {
+                throw new InvalidConfigurationException(\sprintf('Route file "%s" loading support only yaml or php.'));
+            } else {
+                $routes = require $routeFile;
             }
 
-            unset($routeData['path'], $routeData['run'], $routeData['debug']);
-            $this->defaults = $routeData;
+            $routes = (new Processor())->process(Config\RouteSection::getConfigNode('routes')->end()->getNode(true), ['routes' => $routes['routes'] ?? $routes]);
+            $collectionDef = new RouteCollection();
+
+            if ($collection = \array_filter($collection)) {
+                $collection['method'] = $collection['methods'] ?? [];
+                $groupName = $collection['bind'] ?? null;
+                unset($collection['methods'], $collection['bind']);
+                $collectionDef->prototype($collection);
+            }
+
+            foreach ($routes as $routeData) {
+                if (empty($routeData['path'] ?? null)) {
+                    throw new \InvalidArgumentException('Route path is required.');
+                }
+
+                $routeData['add'] = [$routeData['path'], $routeData['methods'], $routeData['run']];
+                unset($routeData['path'], $routeData['methods'], $routeData['run']);
+                \ksort($routeData);
+                $collectionDef->prototype($routeData);
+            }
+
+            if (!$container instanceof AppBuilder) {
+                $router->bind('getCollection|group', [$groupName ?? null, $collectionDef]);
+            } else {
+                $container->group($groupName ?? '', $collectionDef);
+            }
         }
     }
 
