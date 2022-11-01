@@ -23,11 +23,8 @@ use Symfony\Component\Form\FormTypeGuesserInterface;
 
 class DoctrineOrmExtension extends AbstractExtension
 {
-    protected ObjectManager $registry;
-
-    public function __construct(ObjectManager $registry)
+    public function __construct(protected ObjectManager $registry)
     {
-        $this->registry = $registry;
     }
 
     protected function loadTypes(): array

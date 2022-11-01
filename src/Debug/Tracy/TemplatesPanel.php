@@ -23,17 +23,14 @@ use Biurad\UI\Template;
 
 final class TemplatesPanel implements IbarPanel
 {
-    private Template $render;
-
     /** @var array<int,string> */
     private array $templates = [];
 
     /**
      * Initialize the panel.
      */
-    public function __construct(Template $template)
+    public function __construct(private Template $render)
     {
-        $this->render = $template;
     }
 
     /**

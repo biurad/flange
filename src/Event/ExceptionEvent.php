@@ -41,7 +41,6 @@ final class ExceptionEvent extends RequestEvent
     public function __construct(Application $kernel, Request $request, \Throwable $e)
     {
         parent::__construct($kernel, $request);
-
         $this->setThrowable($e);
     }
 

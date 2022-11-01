@@ -32,7 +32,6 @@ final class RoutesPanel implements Tracy\IBarPanel
     use Nette\SmartObject;
 
     private int $routeCount = 0;
-    private Router $profiler;
     private ?Request $request;
 
     /** @var array<int,mixed> */
@@ -41,9 +40,8 @@ final class RoutesPanel implements Tracy\IBarPanel
     /** @var \ReflectionClass|\ReflectionFunction|\ReflectionMethod|string */
     private ?\Reflector $source = null;
 
-    public function __construct(Router $router, RequestStack $request)
+    public function __construct(private Router $profiler, RequestStack $request)
     {
-        $this->profiler = $router;
         $this->request = $request->getMainRequest();
     }
 
