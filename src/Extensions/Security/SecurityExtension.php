@@ -401,7 +401,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
         }
 
         if ('cache' === $configs['token_storage']) {
-            if (!($container->hasExtension(Symfony\CacheExtension::class) || $container->hasExtension(Symfony\FrameworkExtension::class))) {
+            if (empty($container->getExtensionConfig(Symfony\CacheExtension::class, $container->hasExtension(Symfony\FrameworkExtension::class) ? 'symfony' : null))) {
                 throw new \LogicException(\sprintf('You cannot use the "cache" token storage without the "%s" extension.', Symfony\CacheExtension::class));
             }
             $tokenType = new Reference('cache.app');

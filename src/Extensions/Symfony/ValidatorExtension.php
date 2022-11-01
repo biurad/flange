@@ -178,7 +178,7 @@ class ValidatorExtension implements AliasedInterface, BootExtensionInterface, Co
             $validatorBuilder->bind('setTranslator', [new Reference('translator')]);
         }
 
-        if ($container->hasExtension(CacheExtension::class)) {
+        if (!empty($container->getExtensionConfig(CacheExtension::class, $container->hasExtension(FrameworkExtension::class) ? 'symfony' : null))) {
             $container->set('validator.mapping.cache.adapter', new Definition(PhpArrayAdapter::class . '::create', ['%project.cache_dir%/validation.php', new Reference('cache.system')]))->public(false);
 
             if (!$container->parameters['debug']) {

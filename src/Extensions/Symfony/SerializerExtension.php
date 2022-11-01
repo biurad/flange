@@ -157,7 +157,7 @@ class SerializerExtension implements AliasedInterface, BootExtensionInterface, C
             'serializer.encoder.csv' => service(CsvEncoder::class)->public(false)->tag('serializer.encoder'),
         ];
 
-        if ($container->hasExtension(CacheExtension::class)) {
+        if (!empty($container->getExtensionConfig(CacheExtension::class, $container->hasExtension(FrameworkExtension::class) ? 'symfony' : null))) {
             $definitions[$cM = 'serializer.mapping.cache_class_metadata_factory'] = service(CacheClassMetadataFactory::class, [new Reference('serializer.mapping.class_metadata_factory'), new Reference('cache.system')])->public(false);
         }
 

@@ -95,7 +95,7 @@ class PropertyInfoExtension implements AliasedInterface, BootExtensionInterface,
             ->tag('property_info.initializable_extractor')
             ->typed(ReflectionExtractor::class, PropertyReadInfoExtractorInterface::class, PropertyWriteInfoExtractorInterface::class);
 
-        if ($container->hasExtension(CacheExtension::class)) {
+        if (!empty($container->getExtensionConfig(CacheExtension::class, $container->hasExtension(FrameworkExtension::class) ? 'symfony' : null))) {
             $definition->public(false);
             $container->autowire('property_info.cache', new Definition(PropertyInfoCacheExtractor::class, [new Reference('property_info'), new Reference('cache.system')]));
         } else {

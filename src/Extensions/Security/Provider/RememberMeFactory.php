@@ -24,6 +24,7 @@ use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Extensions\Symfony\CacheExtension;
+use Rade\DI\Extensions\Symfony\FrameworkExtension;
 use Rade\DI\Extensions\Symfony\PropertyAccessExtension;
 use Symfony\Component\Config\Definition\Builder\NodeDefinition;
 use Symfony\Component\HttpFoundation\Cookie;
@@ -92,15 +93,17 @@ class RememberMeFactory extends AbstractFactory
 
     public function create(Container $container, string $id, array $config): void
     {
+        $hasCache = !empty($container->getExtensionConfig(CacheExtension::class, $container->hasExtension(FrameworkExtension::class) ? 'symfony' : null));
+
         if (isset($config['token_provider'])) {
             $tokenVerifier = isset($config['token_verifier']) ? new Reference($config['token_verifier']) : null;
             $tokenStorage = $container->has($config['token_provider']) ? new Reference($config['token_provider']) : new Statement($config['token_provider']);
 
-            if (null === $tokenVerifier && $container->hasExtension(CacheExtension::class)) {
+            if (null === $tokenVerifier && $hasCache) {
                 $tokenVerifier = new Statement(CacheTokenVerifier::class, [new Reference('cache.app')]);
             }
         } elseif ($container->hasExtension(PropertyAccessExtension::class)) {
-            if ($container->hasExtension(CacheExtension::class)) {
+            if ($hasCache) {
                 $expireStorage = new Statement(ExpiredSignatureStorage::class, [new Reference('cache.app'), $config['signature_lifetime']]);
             }
             $container->set('security.authenticator.remember_me_signature_hasher', new Definition(SignatureHasher::class, [new Reference('property_accessor'), $config['signature_properties'], $config['secret'], $expireStorage ?? null, $config['max_uses'] ?? null]));

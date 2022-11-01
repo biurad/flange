@@ -88,6 +88,7 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
                     ->defaultValue('_%project_dir%.rade')
                     ->example('my-application-name/rade')
                 ->end()
+                ->booleanNode('taggable_cache')->defaultFalse()->end()
                 ->scalarNode('app')
                     ->info('App related cache pools configuration')
                     ->defaultValue('cache.adapter.filesystem')
@@ -222,7 +223,7 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
             foreach ($pool['adapters'] as $provider => $adapter) {
                 if (($configs['pools'][$adapter]['adapters'] ?? null) === ['cache.adapter.redis_tag_aware']) {
                     $isRedisTagAware = true;
-                } elseif ($configs['pools'][$adapter]['tags'] ?? false) {
+                } elseif ($configs['taggable_cache'] && $configs['pools'][$adapter]['tags'] ?? false) {
                     $pool['adapters'][$provider] = $adapter = '.' . $adapter . '.inner';
                 }
             }
@@ -244,11 +245,13 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
 
             if ($isRedisTagAware && 'cache.app' === $name) {
                 $definition = $container->set($name, $definition)->typed();
-                $container->alias('cache.app.taggable', $name);
+
+                if ($configs['taggable_cache']) {
+                    $container->alias('cache.app.taggable', $name);
+                }
             } elseif ($isRedisTagAware) {
-                $tagAwareId = $name;
-                $container->alias('.' . $name . '.inner', $name);
-            } elseif ($pool['tags']) {
+                $container->set($name, $definition)->public($pool['public']);
+            } elseif ($configs['taggable_cache'] && $pool['tags']) {
                 if (true !== $pool['tags'] && ($configs['pools'][$pool['tags']]['tags'] ?? false)) {
                     $pool['tags'] = '.' . $pool['tags'] . '.inner';
                 }
@@ -257,12 +260,11 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
                 if ($container->typed(LoggerInterface::class)) {
                     $container->definition($name)->bind('setLogger', [new Reference('?logger')]);
                 }
-                $pool['name'] = $tagAwareId = $name;
+                $pool['name'] = $name;
                 $pool['public'] = false;
                 $name = '.' . $name . '.inner';
-            } elseif (!\in_array($name, ['cache.app', 'cache.system'], true)) {
-                $tagAwareId = '.' . $name . '.taggable';
-                $container->set($tagAwareId, new Definition(TagAwareAdapter::class, [new Reference($name), null]))->public(false);
+            } elseif ($configs['taggable_cache'] && !\in_array($name, ['cache.app', 'cache.system'], true)) {
+                $container->set('.' . $name . '.taggable', new Definition(TagAwareAdapter::class, [new Reference($name), null]))->public($pool['public']);
             }
 
             $public = $pool['public'];
@@ -276,7 +278,7 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
             $container->set($name, $definition)->public($public);
         }
 
-        if (!$container->typed(TagAwareAdapter::class)) {
+        if ($configs['taggable_cache'] && !$container->typed(TagAwareAdapter::class)) {
             $container->set('cache.app.taggable', new Definition(TagAwareAdapter::class, [new Reference('cache.app'), null]))->typed(
                 TagAwareAdapter::class,
                 TagAwareAdapterInterface::class,
@@ -389,6 +391,9 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
                     }
                     $attr = 'defaultLifetime';
                     $argument = $argument ?? 0;
+                } elseif ('provider' === $attr && isset($tags[$attr])) {
+                    unset($tags[$attr]);
+                    $attr = 0;
                 }
                 unset($tags[$attr], $tags['default_lifetime']);
 

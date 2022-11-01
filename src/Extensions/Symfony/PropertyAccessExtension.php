@@ -91,7 +91,7 @@ class PropertyAccessExtension implements AliasedInterface, ConfigurationInterfac
         $throw |= $configs['throw_exception_on_invalid_property_path'] ? PropertyAccessor::THROW_ON_INVALID_PROPERTY_PATH : 0;
 
 
-        if ($container->hasExtension(CacheExtension::class)) {
+        if (!empty($container->getExtensionConfig(CacheExtension::class, $container->hasExtension(FrameworkExtension::class) ? 'symfony' : null))) {
             $container->set($cacheId = 'cache.property_access', new Definition(PropertyAccessor::class . '::createCache'))->tag('cache.pool')->public(false);
         }
 
