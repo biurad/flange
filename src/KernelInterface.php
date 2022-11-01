@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -37,9 +34,9 @@ interface KernelInterface
      *
      * @param mixed $resource the resource can be anything supported by a config loader
      *
-     * @throws \Exception If something went wrong
-     *
      * @return mixed
+     *
+     * @throws \Exception If something went wrong
      */
     public function load($resource, string $type = null);
 
@@ -56,11 +53,11 @@ interface KernelInterface
      *
      * @param string $name
      *
+     * @return string The absolute path of the resource
+     *
      * @throws \InvalidArgumentException    if the file cannot be found or the name is not valid
      * @throws \RuntimeException            if the name contains invalid/unsafe characters
      * @throws ContainerResolutionException if the service provider is not included in path
-     *
-     * @return string The absolute path of the resource
      */
     public function getLocation(string $path, string $baseDir = 'src');
 

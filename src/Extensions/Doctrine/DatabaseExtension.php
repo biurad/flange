@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -178,15 +175,15 @@ class DatabaseExtension implements AliasedInterface, ConfigurationInterface, Boo
         }
 
         foreach ($configs['connections'] as $name => $connectionConfig) {
-            $connection = $container->set('doctrine.dbal_connection.' . $name, new Definition('Doctrine\DBAL\DriverManager::getConnection', [$connectionConfig]));
+            $connection = $container->set('doctrine.dbal_connection.'.$name, new Definition('Doctrine\DBAL\DriverManager::getConnection', [$connectionConfig]));
 
             if (!empty($configs['types'])) {
-                $connection->call(new Statement(__CLASS__ . '::createConnectionTypes', [1 => $configs['types']]), true);
+                $connection->call(new Statement(__CLASS__.'::createConnectionTypes', [1 => $configs['types']]), true);
             }
 
             if ($name === $configs['default_connection']) {
                 $connection->typed('Doctrine\DBAL\Connection');
-                $container->set('doctrine.dbal_platform', new Definition([$dc = new Reference('doctrine.dbal_connection.' . $name), 'getDatabasePlatform']))->typed('Doctrine\DBAL\Platforms\AbstractPlatform');
+                $container->set('doctrine.dbal_platform', new Definition([$dc = new Reference('doctrine.dbal_connection.'.$name), 'getDatabasePlatform']))->typed('Doctrine\DBAL\Platforms\AbstractPlatform');
                 $container->set('doctrine.dbal_query_builder', new Definition([$dc, 'createQueryBuilder']))->typed('Doctrine\DBAL\Query\QueryBuilder');
 
                 if ($container instanceof KernelInterface && $container->isRunningInConsole()) {
@@ -207,7 +204,7 @@ class DatabaseExtension implements AliasedInterface, ConfigurationInterface, Boo
     public function boot(Container $container): void
     {
         if ($container->has('console') && $container->has('doctrine.dbal.single_connection')) {
-            $container->definition('console')->call(new Statement(ConsoleRunner::class . '::addCommands', [1 => new Reference('doctrine.dbal.single_connection')]), true);
+            $container->definition('console')->call(new Statement(ConsoleRunner::class.'::addCommands', [1 => new Reference('doctrine.dbal.single_connection')]), true);
         }
     }
 
@@ -262,7 +259,7 @@ class DatabaseExtension implements AliasedInterface, ConfigurationInterface, Boo
                 ->end()
                 ->scalarNode('servicename')
                     ->info(
-                        'Overrules dbname parameter if given and used as SERVICE_NAME or SID connection parameter ' .
+                        'Overrules dbname parameter if given and used as SERVICE_NAME or SID connection parameter '.
                         'for Oracle depending on the service parameter.'
                     )
                 ->end()
@@ -279,13 +276,13 @@ class DatabaseExtension implements AliasedInterface, ConfigurationInterface, Boo
                 ->end()
                 ->scalarNode('sslmode')
                     ->info(
-                        'Determines whether or with what priority a SSL TCP/IP connection will be negotiated with ' .
+                        'Determines whether or with what priority a SSL TCP/IP connection will be negotiated with '.
                         'the server for PostgreSQL.'
                     )
                 ->end()
                 ->scalarNode('sslrootcert')
                     ->info(
-                        'The name of a file containing SSL certificate authority (CA) certificate(s). ' .
+                        'The name of a file containing SSL certificate authority (CA) certificate(s). '.
                         'If the file exists, the server\'s certificate will be verified to be signed by one of these authorities.'
                     )
                 ->end()
@@ -309,24 +306,22 @@ class DatabaseExtension implements AliasedInterface, ConfigurationInterface, Boo
                 ->booleanNode('use_savepoints')->info('Use savepoints for nested transactions')->end()
                 ->scalarNode('instancename')
                 ->info(
-                    'Optional parameter, complete whether to add the INSTANCE_NAME parameter in the connection.' .
-                    ' It is generally used to connect to an Oracle RAC server to select the name' .
+                    'Optional parameter, complete whether to add the INSTANCE_NAME parameter in the connection.'.
+                    ' It is generally used to connect to an Oracle RAC server to select the name'.
                     ' of a particular instance.'
                 )
                 ->end()
                 ->scalarNode('connectstring')
                 ->info(
-                    'Complete Easy Connect connection descriptor, see https://docs.oracle.com/database/121/NETAG/naming.htm.' .
-                    'When using this option, you will still need to provide the user and password parameters, but the other ' .
-                    'parameters will no longer be used. Note that when using this parameter, the getHost and getPort methods' .
+                    'Complete Easy Connect connection descriptor, see https://docs.oracle.com/database/121/NETAG/naming.htm.'.
+                    'When using this option, you will still need to provide the user and password parameters, but the other '.
+                    'parameters will no longer be used. Note that when using this parameter, the getHost and getPort methods'.
                     ' from Doctrine\DBAL\Connection will no longer function as expected.'
                 )
                 ->end()
             ->end()
             ->beforeNormalization()
-                ->ifTrue(static function ($v) {
-                    return !isset($v['sessionMode']) && isset($v['session_mode']);
-                })
+                ->ifTrue(static fn ($v) => !isset($v['sessionMode']) && isset($v['session_mode']))
                 ->then(static function ($v) {
                     $v['sessionMode'] = $v['session_mode'];
                     unset($v['session_mode']);
@@ -335,9 +330,7 @@ class DatabaseExtension implements AliasedInterface, ConfigurationInterface, Boo
                 })
             ->end()
             ->beforeNormalization()
-                ->ifTrue(static function ($v) {
-                    return !isset($v['MultipleActiveResultSets']) && isset($v['multiple_active_result_sets']);
-                })
+                ->ifTrue(static fn ($v) => !isset($v['MultipleActiveResultSets']) && isset($v['multiple_active_result_sets']))
                 ->then(static function ($v) {
                     $v['MultipleActiveResultSets'] = $v['multiple_active_result_sets'];
                     unset($v['multiple_active_result_sets']);

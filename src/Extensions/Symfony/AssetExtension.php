@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -79,21 +76,15 @@ class AssetExtension implements AliasedInterface, ConfigurationInterface, Extens
                 ->end()
             ->end()
             ->validate()
-                ->ifTrue(function ($v) {
-                    return isset($v['version_strategy']) && isset($v['version']);
-                })
+                ->ifTrue(fn ($v) => isset($v['version_strategy']) && isset($v['version']))
                 ->thenInvalid('You cannot use both "version_strategy" and "version" at the same time under "assets".')
             ->end()
             ->validate()
-                ->ifTrue(function ($v) {
-                    return isset($v['version_strategy']) && isset($v['json_manifest_path']);
-                })
+                ->ifTrue(fn ($v) => isset($v['version_strategy']) && isset($v['json_manifest_path']))
                 ->thenInvalid('You cannot use both "version_strategy" and "json_manifest_path" at the same time under "assets".')
             ->end()
             ->validate()
-                ->ifTrue(function ($v) {
-                    return isset($v['version']) && isset($v['json_manifest_path']);
-                })
+                ->ifTrue(fn ($v) => isset($v['version']) && isset($v['json_manifest_path']))
                 ->thenInvalid('You cannot use both "version" and "json_manifest_path" at the same time under "assets".')
             ->end()
             ->fixXmlConfig('package')
@@ -111,12 +102,8 @@ class AssetExtension implements AliasedInterface, ConfigurationInterface, Extens
                             ->scalarNode('version_strategy')->defaultNull()->end()
                             ->scalarNode('version')
                                 ->beforeNormalization()
-                                ->ifTrue(function ($v) {
-                                    return '' === $v;
-                                })
-                                ->then(function ($v): void {
-                                    return;
-                                })
+                                ->ifTrue(fn ($v) => '' === $v)
+                                ->then(fn ($v): void => null)
                                 ->end()
                             ->end()
                             ->scalarNode('version_format')->defaultNull()->end()
@@ -129,21 +116,15 @@ class AssetExtension implements AliasedInterface, ConfigurationInterface, Extens
                             ->end()
                         ->end()
                         ->validate()
-                            ->ifTrue(function ($v) {
-                                return isset($v['version_strategy']) && isset($v['version']);
-                            })
+                            ->ifTrue(fn ($v) => isset($v['version_strategy']) && isset($v['version']))
                             ->thenInvalid('You cannot use both "version_strategy" and "version" at the same time under "assets" packages.')
                         ->end()
                         ->validate()
-                            ->ifTrue(function ($v) {
-                                return isset($v['version_strategy']) && isset($v['json_manifest_path']);
-                            })
+                            ->ifTrue(fn ($v) => isset($v['version_strategy']) && isset($v['json_manifest_path']))
                             ->thenInvalid('You cannot use both "version_strategy" and "json_manifest_path" at the same time under "assets" packages.')
                         ->end()
                         ->validate()
-                            ->ifTrue(function ($v) {
-                                return isset($v['version']) && isset($v['json_manifest_path']);
-                            })
+                            ->ifTrue(fn ($v) => isset($v['version']) && isset($v['json_manifest_path']))
                             ->thenInvalid('You cannot use both "version" and "json_manifest_path" at the same time under "assets" packages.')
                         ->end()
                     ->end()
@@ -168,7 +149,7 @@ class AssetExtension implements AliasedInterface, ConfigurationInterface, Extens
         }
 
         $packages = [];
-        $container->parameters['asset.request_context.base_path'] = $configs['base_path'] ?? ($container->parameter('%project_dir%/public'));
+        $container->parameters['asset.request_context.base_path'] = $configs['base_path'] ?? $container->parameter('%project_dir%/public');
         $container->parameters['asset.request_context.secure'] = $configs['secure_context'] ?? (isset($_SERVER['HTTPS']) ? true : false);
 
         $packagesDef = $container->set('assets.packages', new Definition(Packages::class, [new TaggedLocator('assets.package', 'package')]))->typed(Packages::class);

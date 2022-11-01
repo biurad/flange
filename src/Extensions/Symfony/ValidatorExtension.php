@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -179,7 +176,7 @@ class ValidatorExtension implements AliasedInterface, BootExtensionInterface, Co
         }
 
         if (!empty($container->getExtensionConfig(CacheExtension::class, $container->hasExtension(FrameworkExtension::class) ? 'symfony' : null))) {
-            $container->set('validator.mapping.cache.adapter', new Definition(PhpArrayAdapter::class . '::create', ['%project.cache_dir%/validation.php', new Reference('cache.system')]))->public(false);
+            $container->set('validator.mapping.cache.adapter', new Definition(PhpArrayAdapter::class.'::create', ['%project.cache_dir%/validation.php', new Reference('cache.system')]))->public(false);
 
             if (!$container->parameters['debug']) {
                 $validatorBuilder->bind('setMappingCache', [new Reference('validator.mapping.cache.adapter')]);
@@ -291,7 +288,7 @@ class ValidatorExtension implements AliasedInterface, BootExtensionInterface, Co
 
         if ($container->hasExtension(FormExtension::class) || \class_exists(Form::class)) {
             $reflClass = new \ReflectionClass(Form::class);
-            $fileRecorder('xml', \dirname($reflClass->getFileName()) . '/Resources/config/validation.xml');
+            $fileRecorder('xml', \dirname($reflClass->getFileName()).'/Resources/config/validation.xml');
         }
 
         if (isset($configs['config_dir'])) {
@@ -304,24 +301,24 @@ class ValidatorExtension implements AliasedInterface, BootExtensionInterface, Co
         if ($container instanceof KernelInterface) {
             foreach ($container->getExtensions() as $extension) {
                 try {
-                    $configDir = $container->getLocation('@' . \get_class($extension) . '/');
-                    $configDir = \is_dir($configDir . 'Resources/config') ? $configDir . 'Resources/config' : $configDir . 'config';
+                    $configDir = $container->getLocation('@'.$extension::class.'/');
+                    $configDir = \is_dir($configDir.'Resources/config') ? $configDir.'Resources/config' : $configDir.'config';
                 } catch (\InvalidArgumentException $e) {
                     continue;
                 }
 
                 if (
-                    \file_exists($file = $configDir . '/validation.yaml') ||
-                    \file_exists($file = $configDir . '/validation.yml')
+                    \file_exists($file = $configDir.'/validation.yaml') ||
+                    \file_exists($file = $configDir.'/validation.yml')
                 ) {
                     $fileRecorder('yml', $file);
                 }
 
-                if (\file_exists($file = $configDir . '/validation.xml')) {
+                if (\file_exists($file = $configDir.'/validation.xml')) {
                     $fileRecorder('xml', $file);
                 }
 
-                if (\file_exists($dir = $configDir . '/validation')) {
+                if (\file_exists($dir = $configDir.'/validation')) {
                     $this->registerMappingFilesFromDir($dir, $fileRecorder);
                 }
             }
@@ -354,7 +351,7 @@ class ValidatorExtension implements AliasedInterface, BootExtensionInterface, Co
                 $regex .= '$';
             }
 
-            $regexps[] = '^' . $regex;
+            $regexps[] = '^'.$regex;
         }
 
         return \sprintf('{%s}', \implode('|', $regexps));

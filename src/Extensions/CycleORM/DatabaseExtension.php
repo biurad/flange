@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -134,14 +131,14 @@ class DatabaseExtension implements AliasedInterface, ConfigurationInterface, Ext
 
             foreach ($configs['connections'] as $name => $con) {
                 if (!\str_starts_with($con['dsn'], $name)) {
-                    $con['dsn'] = $name . ':' . $con['dsn'];
+                    $con['dsn'] = $name.':'.$con['dsn'];
                 }
 
                 $connections[$name] = new Statement(
                     Config\DriverConfig::class,
                     [
                         new Statement(Config\Connection::class, [$con['dsn'], $con['username'], $con['password'], $con['options'] ?? []]),
-                        \class_exists($con['driver']) ? $con['driver'] : 'Cycle\\Database\\Driver\\' . $con['driver'] . '\\' . $con['driver'] . 'Driver',
+                        \class_exists($con['driver']) ? $con['driver'] : 'Cycle\\Database\\Driver\\'.$con['driver'].'\\'.$con['driver'].'Driver',
                         $con['reconnect'],
                         $con['timezone'],
                         $con['queryCache'],

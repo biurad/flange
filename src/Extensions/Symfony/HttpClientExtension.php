@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -29,12 +26,12 @@ use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\HttpClient\HttplugClient;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Psr18Client;
-use Symfony\Component\HttpClient\RetryableHttpClient;
 use Symfony\Component\HttpClient\Retry\GenericRetryStrategy;
+use Symfony\Component\HttpClient\RetryableHttpClient;
 use Symfony\Component\HttpClient\ScopingHttpClient;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
  * Symfony component http client extension.
@@ -191,15 +188,11 @@ class HttpClientExtension implements AliasedInterface, ConfigurationInterface, E
                             })
                         ->end()
                         ->validate()
-                            ->ifTrue(function ($v) {
-                                return !isset($v['scope']) && !isset($v['base_uri']);
-                            })
+                            ->ifTrue(fn ($v) => !isset($v['scope']) && !isset($v['base_uri']))
                             ->thenInvalid('Either "scope" or "base_uri" should be defined.')
                         ->end()
                         ->validate()
-                            ->ifTrue(function ($v) {
-                                return !empty($v['query']) && !isset($v['base_uri']);
-                            })
+                            ->ifTrue(fn ($v) => !empty($v['query']) && !isset($v['base_uri']))
                             ->thenInvalid('"query" applies to "base_uri" but no base URI is defined.')
                         ->end()
                         ->children()
@@ -345,7 +338,7 @@ class HttpClientExtension implements AliasedInterface, ConfigurationInterface, E
         $retryOptions = $options['retry_failed'] ?? ['enabled' => false];
         unset($options['retry_failed']);
 
-        $client = $container->set('http_client', new Definition(HttpClient::class . '::create', [$options, $configs['max_host_connections'] ?? 6]));
+        $client = $container->set('http_client', new Definition(HttpClient::class.'::create', [$options, $configs['max_host_connections'] ?? 6]));
 
         if (\class_exists(\Http\Client\HttpClient::class)) {
             $container->set(\Http\Client\HttpClient::class, new Definition(HttplugClient::class, [new Reference('http_client')]));
@@ -378,7 +371,7 @@ class HttpClientExtension implements AliasedInterface, ConfigurationInterface, E
                 $baseUri = $scopeConfig['base_uri'];
                 unset($scopeConfig['base_uri']);
 
-                $container->set($name, new Definition(ScopingHttpClient::class . '::forBaseUri', [new Reference($httpClientId), $baseUri, $scopeConfig]));
+                $container->set($name, new Definition(ScopingHttpClient::class.'::forBaseUri', [new Reference($httpClientId), $baseUri, $scopeConfig]));
             } else {
                 $container->set($name, new Definition(ScopingHttpClient::class, [new Reference($httpClientId), [$scope => $scopeConfig], $scope]));
             }
@@ -390,12 +383,12 @@ class HttpClientExtension implements AliasedInterface, ConfigurationInterface, E
             $container->type($name, HttpClientInterface::class);
 
             if ($hasPsr18) {
-                $container->set('psr18.' . $name, new Reference('psr18.http_client'))->arg(0, new Reference($name))->typed(ClientInterface::class);
+                $container->set('psr18.'.$name, new Reference('psr18.http_client'))->arg(0, new Reference($name))->typed(ClientInterface::class);
             }
         }
 
         if ($responseFactoryId = $config['mock_response_factory'] ?? null) {
-            $container->set($httpClientId . '.mock_client', new Definition(MockHttpClient::class, [new Reference($responseFactoryId)]));
+            $container->set($httpClientId.'.mock_client', new Definition(MockHttpClient::class, [new Reference($responseFactoryId)]));
         }
     }
 
@@ -422,6 +415,6 @@ class HttpClientExtension implements AliasedInterface, ConfigurationInterface, E
             $retryStrategy = new Statement(GenericRetryStrategy::class, (!empty($codes) ? [0 => $codes] : []) + $retryArgs);
         }
 
-        $container->set($name . '.retryable', new Definition(RetryableHttpClient::class, [new Reference($name), $retryStrategy, $options['max_retries'] ?? 3]));
+        $container->set($name.'.retryable', new Definition(RetryableHttpClient::class, [new Reference($name), $retryStrategy, $options['max_retries'] ?? 3]));
     }
 }

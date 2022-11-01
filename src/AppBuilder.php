@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -55,7 +52,7 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
                 continue;
             }
 
-            $this->set('http.middleware.' . \spl_object_id($middleware), $middleware)->public(false)->tag('router.middleware');
+            $this->set('http.middleware.'.\spl_object_id($middleware), $middleware)->public(false)->tag('router.middleware');
         }
     }
 
@@ -161,9 +158,9 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
     public static function build(callable $application, array $options = []): Application
     {
         $a = $options['cacheDir'] ?? \dirname((new \ReflectionClass(\Composer\Autoload\ClassLoader::class))->getFileName(), 2);
-        $b = 'App_' . \substr(\md5($a), 0, 10) . '.php';
+        $b = 'App_'.\substr(\md5($a), 0, 10).'.php';
 
-        if (!($cache = new ConfigCache($a . '/' . $b, $debug = $options['debug'] ?? false))->isFresh()) {
+        if (!($cache = new ConfigCache($a.'/'.$b, $debug = $options['debug'] ?? false))->isFresh()) {
             re_cache:
             if ($debug && \interface_exists(\Tracy\IBarPanel::class)) {
                 Debug\Tracy\ContainerPanel::$compilationTime = \microtime(true);
@@ -171,14 +168,14 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
 
             $application($container = new static($debug));
             $requiredPaths = $container->parameters['project.require_paths'] ?? []; // Autoload require hot paths ...
-            $containerClass = 'App_' . ($debug ? 'Debug' : '') . 'Container';
+            $containerClass = 'App_'.($debug ? 'Debug' : '').'Container';
 
             $container->addNodeVisitor(new DI\NodeVisitor\MethodsResolver());
             $container->addNodeVisitor(new DI\NodeVisitor\AutowiringResolver());
             $container->addNodeVisitor($splitter = new DI\NodeVisitor\DefinitionsSplitter($options['maxDefinitions'] ?? 500, $b));
 
             $cache->write('', $container->getResources());
-            \file_put_contents($a . '/' . $containerClass .'_' . \PHP_SAPI . \PHP_OS . '.php', $container->compile($options + compact('containerClass')));
+            \file_put_contents($a.'/'.$containerClass.'_'.\PHP_SAPI.\PHP_OS.'.php', $container->compile($options + \compact('containerClass')));
             \file_put_contents(
                 $splitter->buildTraits($a, $requiredPaths),
                 \sprintf("\nrequire '%s/%s_'.\PHP_SAPI.\PHP_OS.'.php';\n\nreturn new \%2\$s();\n", $a, $containerClass),

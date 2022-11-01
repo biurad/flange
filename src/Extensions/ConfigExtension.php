@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -63,7 +60,7 @@ class ConfigExtension implements AliasedInterface, ConfigurationInterface, Exten
         $treeBuilder->getRootNode()
             ->addDefaultsIfNotSet()
             ->canBeEnabled()
-            ->beforeNormalization()->ifString()->then(fn ($v) =>  ['paths' => [$v]])->end()
+            ->beforeNormalization()->ifString()->then(fn ($v) => ['paths' => [$v]])->end()
             ->children()
                 ->scalarNode('locale')->defaultValue('en')->end()
                 ->booleanNode('auto_configure')->defaultFalse()->end()
@@ -126,7 +123,7 @@ class ConfigExtension implements AliasedInterface, ConfigurationInterface, Exten
     public static function setPath(Container $container, string $rootDir, string $varDir = null, string $cacheDir = null): void
     {
         $container->parameters['project_dir'] = $rootDir;
-        $container->parameters['project.var_dir'] = $container->parameter($varDir ?? $rootDir . '/var');
+        $container->parameters['project.var_dir'] = $container->parameter($varDir ?? $rootDir.'/var');
         $container->parameters['project.cache_dir'] = $container->parameter($cacheDir ?? '%project.var_dir%/cache');
     }
 }

@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -342,7 +339,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
             $nbUserProviders = 0;
 
             foreach ($configs['providers'] as $nUP => $provider) {
-                $nbUserProviders++;
+                ++$nbUserProviders;
                 $userProviders[] = $this->createUserDaoProvider(\str_replace('-', '_', $nUP), $provider, $container);
             }
 
@@ -371,7 +368,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
             foreach ($configs['authenticators'] as $nAP => $provider) {
                 foreach ($this->factoryProviders as $factory) {
                     if ($nAP === $key = \str_replace('-', '_', $factory->getKey())) {
-                        $factory->create($container, $authenticators[] = 'security.authenticator.' . $key, $provider);
+                        $factory->create($container, $authenticators[] = 'security.authenticator.'.$key, $provider);
                     }
                 }
             }
@@ -397,7 +394,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
                     $globalId = 'login_global' => ['limit' => 5 * $configs['throttling']['max_attempts']] + $limiterOptions,
                 ],
             ]);
-            $container->autowire('security.authenticator_throttling', new Definition(DefaultLoginRateLimiter::class, [new Reference('limiter.' . $globalId), new Reference('limiter.' . $localId)]));
+            $container->autowire('security.authenticator_throttling', new Definition(DefaultLoginRateLimiter::class, [new Reference('limiter.'.$globalId), new Reference('limiter.'.$localId)]));
         }
 
         if ('cache' === $configs['token_storage']) {
@@ -411,7 +408,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
 
         $container->autowire('security.authenticator', new Definition(Authenticator::class, [
             $authenticators ?? [],
-            4 => new Reference('?' . ($configs['throttling']['limiter'] ?? 'security.authenticator_throttling')),
+            4 => new Reference('?'.($configs['throttling']['limiter'] ?? 'security.authenticator_throttling')),
             7 => $configs['hide_user_not_found'],
             8 => $configs['erase_credentials'],
             9 => $configs['firewall_name'],
@@ -626,7 +623,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
     // Parses a <provider> tag and returns the id for the related user provider service
     private function createUserDaoProvider(string $name, array $provider, Container $container): Reference
     {
-        $name = 'security.user.provider.concrete.' . \strtolower($name);
+        $name = 'security.user.provider.concrete.'.\strtolower($name);
 
         // Doctrine Entity and In-memory DAO provider are managed by factories
         foreach ($this->userProviders as $factory) {
@@ -651,7 +648,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
             $providers = [];
 
             foreach ($provider['chain']['providers'] as $providerName) {
-                $providers[] = new Reference('security.user.provider.concrete.' . \strtolower($providerName));
+                $providers[] = new Reference('security.user.provider.concrete.'.\strtolower($providerName));
             }
             $container->set($name, new Definition(ChainUserProvider::class, [$providers]))->public(false);
 
@@ -711,9 +708,7 @@ class SecurityExtension implements AliasedInterface, BootExtensionInterface, Con
      */
     private function isValidIps($ips): bool
     {
-        $ipsList = \array_reduce((array) $ips, static function (array $ips, string $ip) {
-            return \array_merge($ips, \preg_split('/\s*,\s*/', $ip));
-        }, []);
+        $ipsList = \array_reduce((array) $ips, static fn (array $ips, string $ip) => \array_merge($ips, \preg_split('/\s*,\s*/', $ip)), []);
 
         if (!$ipsList) {
             return false;

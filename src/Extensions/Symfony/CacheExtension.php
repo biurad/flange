@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -26,6 +23,9 @@ use Rade\DI\Definitions\Statement;
 use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Extensions\ExtensionInterface;
+
+use function Rade\DI\Loader\service;
+
 use Symfony\Component\Cache\Adapter\AbstractAdapter;
 use Symfony\Component\Cache\Adapter\AdapterInterface;
 use Symfony\Component\Cache\Adapter\ApcuAdapter;
@@ -51,8 +51,6 @@ use Symfony\Component\Cache\PruneableInterface;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
-
-use function Rade\DI\Loader\service;
 
 /**
  * Symfony component cache extension.
@@ -108,9 +106,7 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
                     ->arrayPrototype()
                         ->fixXmlConfig('adapter')
                         ->beforeNormalization()
-                            ->ifTrue(function ($v) {
-                                return isset($v['provider']) && \is_array($v['adapters'] ?? $v['adapter'] ?? null) && 1 < \count($v['adapters'] ?? $v['adapter']);
-                            })
+                            ->ifTrue(fn ($v) => isset($v['provider']) && \is_array($v['adapters'] ?? $v['adapter'] ?? null) && 1 < \count($v['adapters'] ?? $v['adapter']))
                             ->thenInvalid('Pool cannot have a "provider" while more than one adapter is defined')
                         ->end()
                         ->children()
@@ -157,9 +153,7 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
                         ->end()
                     ->end()
                     ->validate()
-                        ->ifTrue(function ($v) {
-                            return isset($v['cache.app']) || isset($v['cache.system']);
-                        })
+                        ->ifTrue(fn ($v) => isset($v['cache.app']) || isset($v['cache.system']))
                         ->thenInvalid('"cache.app" and "cache.system" are reserved names')
                     ->end()
                 ->end()
@@ -184,8 +178,8 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
 
         $container->multiple([
             'cache.default_matcher' => service(DefaultMarshaller::class, [1 => '%debug%'])->typed(MarshallerInterface::class),
-            'cache.adapter.system' => service(AbstractAdapter::class . '::createSystemCache', ['', 0, \Flange\Application::VERSION, '%project.cache_dir%' . '/pools/system'])->abstract()->public(false)->tag('cache.pool'),
-            'cache.adapter.filesystem' => service(FilesystemAdapter::class, [2 => '%project.cache_dir%' . '/pools/app'])->abstract()->public(false)->tag('cache.pool'),
+            'cache.adapter.system' => service(AbstractAdapter::class.'::createSystemCache', ['', 0, \Flange\Application::VERSION, '%project.cache_dir%/pools/system'])->abstract()->public(false)->tag('cache.pool'),
+            'cache.adapter.filesystem' => service(FilesystemAdapter::class, [2 => '%project.cache_dir%/pools/app'])->abstract()->public(false)->tag('cache.pool'),
             'cache.adapter.pdo' => service(PdoAdapter::class)->public(false)->abstract()->tag('cache.pool', ['provider' => 'cache.default_pdo_provider']),
             'cache.adapter.array' => service(ArrayAdapter::class)->public(false)->abstract()->tag('cache.pool'),
             'cache.adapter.psr6' => service(ProxyAdapter::class)->public(false)->abstract()->tag('cache.pool', ['provider' => 'cache.default_psr6_provider']),
@@ -203,13 +197,13 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
         }
 
         foreach (['psr6', 'redis', 'memcached', 'doctrine_dbal', 'pdo', 'couchbase'] as $name) {
-            if (isset($configs[$name = 'default_' . $name . '_provider'])) {
-                $container->definition(static::getServiceProvider($container, 'cache.' . $name, $configs[$name]))->abstract();
+            if (isset($configs[$name = 'default_'.$name.'_provider'])) {
+                $container->definition(static::getServiceProvider($container, 'cache.'.$name, $configs[$name]))->abstract();
             }
         }
 
         foreach (['app', 'system'] as $name) {
-            $configs['pools']['cache.' . $name] = [
+            $configs['pools']['cache.'.$name] = [
                 'adapters' => [$configs[$name]],
                 'public' => true,
                 'tags' => false,
@@ -224,7 +218,7 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
                 if (($configs['pools'][$adapter]['adapters'] ?? null) === ['cache.adapter.redis_tag_aware']) {
                     $isRedisTagAware = true;
                 } elseif ($configs['taggable_cache'] && $configs['pools'][$adapter]['tags'] ?? false) {
-                    $pool['adapters'][$provider] = $adapter = '.' . $adapter . '.inner';
+                    $pool['adapters'][$provider] = $adapter = '.'.$adapter.'.inner';
                 }
             }
 
@@ -253,18 +247,18 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
                 $container->set($name, $definition)->public($pool['public']);
             } elseif ($configs['taggable_cache'] && $pool['tags']) {
                 if (true !== $pool['tags'] && ($configs['pools'][$pool['tags']]['tags'] ?? false)) {
-                    $pool['tags'] = '.' . $pool['tags'] . '.inner';
+                    $pool['tags'] = '.'.$pool['tags'].'.inner';
                 }
-                $container->set($name, new Definition(TagAwareAdapter::class), [new Reference('.' . $name . '.inner'), true !== $pool['tags'] ? new Reference($pool['tags']) : null])->public($pool['public']);
+                $container->set($name, new Definition(TagAwareAdapter::class), [new Reference('.'.$name.'.inner'), true !== $pool['tags'] ? new Reference($pool['tags']) : null])->public($pool['public']);
 
                 if ($container->typed(LoggerInterface::class)) {
                     $container->definition($name)->bind('setLogger', [new Reference('?logger')]);
                 }
                 $pool['name'] = $name;
                 $pool['public'] = false;
-                $name = '.' . $name . '.inner';
+                $name = '.'.$name.'.inner';
             } elseif ($configs['taggable_cache'] && !\in_array($name, ['cache.app', 'cache.system'], true)) {
-                $container->set('.' . $name . '.taggable', new Definition(TagAwareAdapter::class, [new Reference($name), null]))->public($pool['public']);
+                $container->set('.'.$name.'.taggable', new Definition(TagAwareAdapter::class, [new Reference($name), null]))->public($pool['public']);
             }
 
             $public = $pool['public'];
@@ -297,7 +291,7 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
      */
     public function boot(Container $container): void
     {
-        $seed = $container->parameters['cache.prefix.seed'] ?? ('_' . $container->parameters['project_dir'] . 'rade');
+        $seed = $container->parameters['cache.prefix.seed'] ?? ('_'.$container->parameters['project_dir'].'rade');
         $attributes = [
             'provider',
             'name',
@@ -321,7 +315,7 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
                 $namespaceSeed = $seed;
 
                 if (null !== $class) {
-                    $namespaceSeed .= '.' . $class;
+                    $namespaceSeed .= '.'.$class;
                 }
 
                 $tags['namespace'] = $this->getNamespace($namespaceSeed, $name);
@@ -387,7 +381,7 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
 
                 if ('default_lifetime' === $attr) {
                     if (\is_string($argument)) {
-                        $argument = new Statement(ParameterNormalizer::class . '::normalizeDuration', [$argument]);
+                        $argument = new Statement(ParameterNormalizer::class.'::normalizeDuration', [$argument]);
                     }
                     $attr = 'defaultLifetime';
                     $argument = $argument ?? 0;
@@ -414,7 +408,7 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
 
     private function getNamespace(string $seed, string $id)
     {
-        return \substr(\str_replace('/', '-', \base64_encode(\hash('sha256', $id . $seed, true))), 0, 10);
+        return \substr(\str_replace('/', '-', \base64_encode(\hash('sha256', $id.$seed, true))), 0, 10);
     }
 
     /**
@@ -424,11 +418,11 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
     {
         if (\preg_match('#^[a-z]++:#', $dsn = $value ?? $name)) {
             if (null === $value) {
-                $name = '.cache_connection.' . \md5($dsn);
+                $name = '.cache_connection.'.\md5($dsn);
             }
 
             if (!$container->has($name)) {
-                $container->set($name, new Definition(AbstractAdapter::class . '::createConnection', [$dsn, ['lazy' => true]]))->public(false);
+                $container->set($name, new Definition(AbstractAdapter::class.'::createConnection', [$dsn, ['lazy' => true]]))->public(false);
             }
         }
 

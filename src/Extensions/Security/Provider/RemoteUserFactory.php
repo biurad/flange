@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -50,7 +47,7 @@ class RemoteUserFactory extends AbstractFactory
     public function create(Container $container, string $id, array $config): void
     {
         if (isset($config['provider'])) {
-            $config['provider'] = new Reference('security.user.provider.concrete.' . \strtolower($config['provider']));
+            $config['provider'] = new Reference('security.user.provider.concrete.'.\strtolower($config['provider']));
         }
 
         $container->set($id, new Definition(RemoteUserAuthenticator::class, [

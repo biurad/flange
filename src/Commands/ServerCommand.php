@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -136,7 +133,7 @@ EOF
         }
 
         $this->findFrontController($this->documentRoot = $documentRoot);
-        $this->router = $router ?? __DIR__ . '/../Resources/dev-router.php';
+        $this->router = $router ?? __DIR__.'/../Resources/dev-router.php';
         $this->address = $this->findServerAddress($input->getArgument('addressport'));
 
         if (!\extension_loaded('pcntl')) {
@@ -181,7 +178,7 @@ EOF
 
     private static function getDefaultPidFile(): string
     {
-        return \getcwd() . '/.web-server-pid';
+        return \getcwd().'/.web-server-pid';
     }
 
     private function runBlockingServer(SymfonyStyle $io, InputInterface $input, OutputInterface $output): int
@@ -318,7 +315,7 @@ EOF
             return '';
         }
 
-        return \gethostbyname($localHostname) . ':' . $this->port;
+        return \gethostbyname($localHostname).':'.$this->port;
     }
 
     private function findServerAddress(?string $address): string
@@ -341,7 +338,7 @@ EOF
             $this->port = $this->findBestPort();
         }
 
-        return $this->hostname . ':' . $this->port;
+        return $this->hostname.':'.$this->port;
     }
 
     private function findBestPort(): int
@@ -361,14 +358,14 @@ EOF
 
     private function findFrontController(string $documentRoot): void
     {
-        $fileNames = ['index.php', 'app_' . ($env = $this->debug ? 'debug' : 'prod') . '.php', 'app.php', 'server.php', 'server_' . $env . '.php'];
+        $fileNames = ['index.php', 'app_'.($env = $this->debug ? 'debug' : 'prod').'.php', 'app.php', 'server.php', 'server_'.$env.'.php'];
 
         if (!\is_dir($documentRoot)) {
             throw new \InvalidArgumentException(\sprintf('The document root directory "%s" does not exist.', $documentRoot));
         }
 
         foreach ($fileNames as $fileName) {
-            if (\file_exists($documentRoot . '/' . $fileName)) {
+            if (\file_exists($documentRoot.'/'.$fileName)) {
                 $_ENV['APP_FRONT_CONTROLLER'] = $fileName;
 
                 return;
@@ -392,7 +389,7 @@ EOF
         $process->setWorkingDirectory($this->documentRoot);
         $process->setTimeout(null);
 
-        if (\in_array('APP_ENV', \explode(',', \getenv('SYMFONY_DOTENV_VARS') ?: ''))) {
+        if (\in_array('APP_ENV', \explode(',', \getenv('SYMFONY_DOTENV_VARS') ?: ''), true)) {
             $process->setEnv(['APP_ENV' => false]);
         }
 

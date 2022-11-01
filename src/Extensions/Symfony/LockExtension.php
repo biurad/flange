@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -56,22 +53,14 @@ class LockExtension implements AliasedInterface, ConfigurationInterface, Extensi
             ->info('Lock configuration')
             ->canBeEnabled()
             ->beforeNormalization()
-                ->ifString()->then(function ($v) {
-                    return ['enabled' => true, 'resources' => $v];
-                })
+                ->ifString()->then(fn ($v) => ['enabled' => true, 'resources' => $v])
             ->end()
             ->beforeNormalization()
-                ->ifTrue(function ($v) {
-                    return \is_array($v) && !isset($v['enabled']);
-                })
-                ->then(function ($v) {
-                    return $v + ['enabled' => true];
-                })
+                ->ifTrue(fn ($v) => \is_array($v) && !isset($v['enabled']))
+                ->then(fn ($v) => $v + ['enabled' => true])
             ->end()
             ->beforeNormalization()
-                ->ifTrue(function ($v) {
-                    return \is_array($v) && !isset($v['resources']) && !isset($v['resource']);
-                })
+                ->ifTrue(fn ($v) => \is_array($v) && !isset($v['resources']) && !isset($v['resource']))
                 ->then(function ($v) {
                     $e = $v['enabled'];
                     unset($v['enabled']);
@@ -87,14 +76,10 @@ class LockExtension implements AliasedInterface, ConfigurationInterface, Extensi
                     ->useAttributeAsKey('name')
                     ->defaultValue(['default' => [\class_exists(SemaphoreStore::class) && SemaphoreStore::isSupported() ? 'semaphore' : 'flock']])
                     ->beforeNormalization()
-                        ->ifString()->then(function ($v) {
-                            return ['default' => $v];
-                        })
+                        ->ifString()->then(fn ($v) => ['default' => $v])
                     ->end()
                     ->beforeNormalization()
-                        ->ifTrue(function ($v) {
-                            return \is_array($v) && \array_is_list($v);
-                        })
+                        ->ifTrue(fn ($v) => \is_array($v) && \array_is_list($v))
                         ->then(function ($v) {
                             $resources = [];
 
@@ -110,9 +95,7 @@ class LockExtension implements AliasedInterface, ConfigurationInterface, Extensi
                     ->end()
                     ->arrayPrototype()
                         ->performNoDeepMerging()
-                        ->beforeNormalization()->ifString()->then(function ($v) {
-                            return [$v];
-                        })->end()
+                        ->beforeNormalization()->ifString()->then(fn ($v) => [$v])->end()
                         ->prototype('scalar')->end()
                     ->end()
                 ->end()
@@ -131,7 +114,7 @@ class LockExtension implements AliasedInterface, ConfigurationInterface, Extensi
             return;
         }
 
-        if (!class_exists(StoreFactory::class)) {
+        if (!\class_exists(StoreFactory::class)) {
             throw new \LogicException('Lock support cannot be enabled as the component is not installed. Try running "composer require symfony/lock".');
         }
 
@@ -144,7 +127,7 @@ class LockExtension implements AliasedInterface, ConfigurationInterface, Extensi
             $storeDefinitions = [];
 
             foreach ($resourceStores as $storeDsn) {
-                $storeDefinition = new Statement(StoreFactory::class . '::createStore', [$container->parameter($storeDsn)]);
+                $storeDefinition = new Statement(StoreFactory::class.'::createStore', [$container->parameter($storeDsn)]);
                 $storeDefinitions[] = $storeDefinition;
             }
 
@@ -154,11 +137,11 @@ class LockExtension implements AliasedInterface, ConfigurationInterface, Extensi
             }
 
             // Generate factories for each resource
-            $lock = $container->set('lock.' . $resourceName . '.factory', new Definition(LockFactory::class, [$storeDefinition]));
+            $lock = $container->set('lock.'.$resourceName.'.factory', new Definition(LockFactory::class, [$storeDefinition]));
 
             // provide alias for default resource
             if ('default' === $resourceName) {
-                $container->alias('lock.factory', 'lock.' . $resourceName . '.factory');
+                $container->alias('lock.factory', 'lock.'.$resourceName.'.factory');
                 $lock->typed(LockFactory::class);
             }
         }

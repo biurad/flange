@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -74,29 +71,25 @@ class ORMQueryBuilderLoader implements EntityLoaderInterface
 
         $qb = clone $this->queryBuilder;
         $alias = \current($qb->getRootAliases());
-        $parameter = 'ORMQueryBuilderLoader_getEntitiesByIds_' . $identifier;
+        $parameter = 'ORMQueryBuilderLoader_getEntitiesByIds_'.$identifier;
         $parameter = \str_replace('.', '_', $parameter);
-        $where = $qb->expr()->in($alias . '.' . $identifier, ':' . $parameter);
+        $where = $qb->expr()->in($alias.'.'.$identifier, ':'.$parameter);
 
         // Guess type
         $entity = \current($qb->getRootEntities());
         $metadata = $qb->getEntityManager()->getClassMetadata($entity);
 
-        if (\in_array($type = $metadata->getTypeOfField($identifier), ['integer', 'bigint', 'smallint'])) {
+        if (\in_array($type = $metadata->getTypeOfField($identifier), ['integer', 'bigint', 'smallint'], true)) {
             $parameterType = Connection::PARAM_INT_ARRAY;
 
             // Filter out non-integer values (e.g. ""). If we don't, some
             // databases such as PostgreSQL fail.
-            $values = \array_values(\array_filter($values, function ($v) {
-                return (string) $v === (string) (int) $v || \ctype_digit($v);
-            }));
-        } elseif (\in_array($type, ['ulid', 'uuid', 'guid'])) {
+            $values = \array_values(\array_filter($values, fn ($v) => (string) $v === (string) (int) $v || \ctype_digit($v)));
+        } elseif (\in_array($type, ['ulid', 'uuid', 'guid'], true)) {
             $parameterType = Connection::PARAM_STR_ARRAY;
 
             // Like above, but we just filter out empty strings.
-            $values = \array_values(\array_filter($values, function ($v) {
-                return '' !== (string) $v;
-            }));
+            $values = \array_values(\array_filter($values, fn ($v) => '' !== (string) $v));
 
             // Convert values into right type
             if (Type::hasType($type)) {

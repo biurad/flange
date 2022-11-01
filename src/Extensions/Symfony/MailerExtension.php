@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -23,6 +20,9 @@ use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\TaggedLocator;
 use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\ExtensionInterface;
+
+use function Rade\DI\Loader\service;
+
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Mailer\Bridge\Amazon\Transport\SesTransportFactory;
@@ -46,8 +46,6 @@ use Symfony\Component\Mailer\Transport\NullTransportFactory;
 use Symfony\Component\Mailer\Transport\SendmailTransportFactory;
 use Symfony\Component\Mailer\Transport\Smtp\EsmtpTransportFactory;
 use Symfony\Component\Mime\Header\Headers;
-
-use function Rade\DI\Loader\service;
 
 /**
  * Symfony component mailer extension.
@@ -75,9 +73,7 @@ class MailerExtension implements AliasedInterface, ConfigurationInterface, Exten
             ->info('Mailer configuration')
             ->canBeEnabled()
             ->validate()
-                ->ifTrue(function ($v) {
-                    return isset($v['dsn']) && \count($v['transports']);
-                })
+                ->ifTrue(fn ($v) => isset($v['dsn']) && \count($v['transports']))
                 ->thenInvalid('"dsn" and "transports" cannot be used together.')
             ->end()
             ->fixXmlConfig('transport')
@@ -97,9 +93,7 @@ class MailerExtension implements AliasedInterface, ConfigurationInterface, Exten
                             ->performNoDeepMerging()
                             ->beforeNormalization()
                             ->ifArray()
-                                ->then(function ($v) {
-                                    return \array_filter(\array_values($v));
-                                })
+                                ->then(fn ($v) => \array_filter(\array_values($v)))
                             ->end()
                             ->prototype('scalar')->end()
                         ->end()
@@ -111,12 +105,8 @@ class MailerExtension implements AliasedInterface, ConfigurationInterface, Exten
                     ->arrayPrototype()
                         ->normalizeKeys(false)
                         ->beforeNormalization()
-                            ->ifTrue(function ($v) {
-                                return !\is_array($v) || \array_keys($v) !== ['value'];
-                            })
-                            ->then(function ($v) {
-                                return ['value' => $v];
-                            })
+                            ->ifTrue(fn ($v) => !\is_array($v) || \array_keys($v) !== ['value'])
+                            ->then(fn ($v) => ['value' => $v])
                         ->end()
                         ->children()
                             ->variableNode('value')->end()
@@ -195,7 +185,7 @@ class MailerExtension implements AliasedInterface, ConfigurationInterface, Exten
                 foreach ($configs['headers'] as $name => $data) {
                     $value = $data['value'];
 
-                    if (\in_array(\strtolower($name), ['from', 'to', 'cc', 'bcc', 'reply-to'])) {
+                    if (\in_array(\strtolower($name), ['from', 'to', 'cc', 'bcc', 'reply-to'], true)) {
                         $value = (array) $value;
                     }
                     $headers->bind('addHeader', [$name, $value]);

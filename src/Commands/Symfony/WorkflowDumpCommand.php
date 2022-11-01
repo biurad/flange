@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -64,7 +61,7 @@ class WorkflowDumpCommand extends Command
                 new InputArgument('name', InputArgument::REQUIRED, 'A workflow name'),
                 new InputArgument('marking', InputArgument::IS_ARRAY, 'A marking (a list of places)'),
                 new InputOption('label', 'l', InputOption::VALUE_REQUIRED, 'Label a graph'),
-                new InputOption('dump-format', null, InputOption::VALUE_REQUIRED, 'The dump format [' . \implode('|', self::DUMP_FORMAT_OPTIONS) . ']', 'dot'),
+                new InputOption('dump-format', null, InputOption::VALUE_REQUIRED, 'The dump format ['.\implode('|', self::DUMP_FORMAT_OPTIONS).']', 'dot'),
             ])
             ->setHelp(
                 <<<'EOF'
@@ -88,11 +85,11 @@ EOF
 
         $workflow = null;
 
-        if (isset($this->workflows['workflow.' . $workflowName])) {
-            $workflow = $this->workflows['workflow.' . $workflowName];
+        if (isset($this->workflows['workflow.'.$workflowName])) {
+            $workflow = $this->workflows['workflow.'.$workflowName];
             $type = 'workflow';
-        } elseif (isset($this->workflows['state_machine.' . $workflowName])) {
-            $workflow = $this->workflows['state_machine.' . $workflowName];
+        } elseif (isset($this->workflows['state_machine.'.$workflowName])) {
+            $workflow = $this->workflows['state_machine.'.$workflowName];
             $type = 'state_machine';
         }
 

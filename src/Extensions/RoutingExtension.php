@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -20,6 +17,7 @@ namespace Flange\Extensions;
 use Biurad\Http\Middlewares\ErrorHandlerMiddleware;
 use Biurad\Http\Middlewares\PrepareResponseMiddleware;
 use Flange\AppBuilder;
+use Flange\Handler\RouteHandler;
 use Flight\Routing\Annotation\Listener;
 use Flight\Routing\Interfaces\RouteMatcherInterface;
 use Flight\Routing\Interfaces\UrlGeneratorInterface;
@@ -29,8 +27,8 @@ use Flight\Routing\RouteCollection;
 use Flight\Routing\Router;
 use Laminas\Stratigility\Middleware\OriginalMessages;
 use Psr\Http\Server\RequestHandlerInterface;
-use Rade\DI\Container;
 use Rade\DI\Builder\PhpLiteral;
+use Rade\DI\Container;
 use Rade\DI\ContainerBuilder;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
@@ -40,7 +38,6 @@ use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Extensions\DependenciesInterface;
 use Rade\DI\Extensions\ExtensionInterface;
-use Flange\Handler\RouteHandler;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
@@ -254,9 +251,9 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
             }
 
             if (\str_ends_with($routeFile = $container->parameter($routeFile), '.yaml')) {
-                $routes = \function_exists('yaml_parse_file') ? \yaml_parse_file($routeFile) : Yaml::parseFile($routeFile);
+                $routes = \function_exists('yaml_parse_file') ? yaml_parse_file($routeFile) : Yaml::parseFile($routeFile);
             } elseif (!\str_ends_with($routeFile, '.php')) {
-                throw new InvalidConfigurationException(\sprintf('Route file "%s" loading support only yaml or php.'));
+                throw new InvalidConfigurationException('Route file "%s" loading support only yaml or php.');
             } else {
                 $routes = require $routeFile;
             }
@@ -307,7 +304,7 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
                     $routeData = $route->getData();
                     $handler = $routeData['handler'] ?? null;
                     unset($routeData['handler']);
-                    $routes[] = new PhpLiteral(Route::class . '::__set_state(\'%?\');', [['handler' => $handler, 'data' => $routeData]]);
+                    $routes[] = new PhpLiteral(Route::class.'::__set_state(\'%?\');', [['handler' => $handler, 'data' => $routeData]]);
                     continue;
                 }
                 $routes[] = new PhpLiteral('$collection->prototype(\'%?\');', [\array_filter([
@@ -318,7 +315,7 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
                     'placeholders' => $route['placeholders'] ?? [],
                     'defaults' => $route['defaults'] ?? [],
                     'arguments' => $route['arguments'] ?? [],
-                    'piped' => \array_keys($route['middlewares'] ?? [])
+                    'piped' => \array_keys($route['middlewares'] ?? []),
                 ])]);
             }
         }
@@ -384,7 +381,7 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
                 $groupArgs = \array_merge($groupArgs, $groupArg);
             }
 
-            $router->bind('setCollection', new PhpLiteral($groupedCollection . '};', $groupArgs));
+            $router->bind('setCollection', new PhpLiteral($groupedCollection.'};', $groupArgs));
         }
 
         $this->middlewares = [];

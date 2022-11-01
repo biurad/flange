@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -56,9 +53,7 @@ class RateLimiterExtension implements AliasedInterface, ConfigurationInterface, 
             ->canBeEnabled()
             ->fixXmlConfig('limiter')
             ->beforeNormalization()
-                ->ifTrue(function ($v) {
-                    return \is_array($v) && !isset($v['limiters']) && !isset($v['limiter']);
-                })
+                ->ifTrue(fn ($v) => \is_array($v) && !isset($v['limiters']) && !isset($v['limiter']))
                 ->then(function (array $v) {
                     $newV = [
                         'enabled' => $v['enabled'] ?? true,
@@ -134,7 +129,7 @@ class RateLimiterExtension implements AliasedInterface, ConfigurationInterface, 
         foreach ($configs['limiters'] as $name => $limiterConfig) {
             // default configuration (when used by other DI extensions)
             $limiterConfig += ['lock_factory' => 'lock.factory', 'cache_pool' => 'cache.app'];
-            $limiter = $container->set('limiter.' . $name, new Definition(RateLimiterFactory::class))->public(false);
+            $limiter = $container->set('limiter.'.$name, new Definition(RateLimiterFactory::class))->public(false);
 
             if (null !== $limiterConfig['lock_factory']) {
                 if (!$container->hasExtension(LockExtension::class)) {

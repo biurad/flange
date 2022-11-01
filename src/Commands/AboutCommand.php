@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -17,8 +14,8 @@ declare(strict_types=1);
 
 namespace Flange\Commands;
 
-use Psr\Container\ContainerInterface;
 use Flange\Application;
+use Psr\Container\ContainerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\TableSeparator;
@@ -73,15 +70,15 @@ EOT
             new TableSeparator(),
             ['<info>Kernel</>'],
             new TableSeparator(),
-            ['Container', \get_class($container)],
+            ['Container', $container::class],
             ['Debug', $container instanceof Application ? ($container->isDebug() ? 'true' : 'false') : 'n/a'],
             new TableSeparator(),
             ['<info>PHP</>'],
             new TableSeparator(),
             ['Version', \PHP_VERSION],
-            ['Architecture', (\PHP_INT_SIZE * 8) . ' bits'],
+            ['Architecture', (\PHP_INT_SIZE * 8).' bits'],
             ['Intl locale', \class_exists(\Locale::class, false) && \Locale::getDefault() ? \Locale::getDefault() : 'n/a'],
-            ['Timezone', \date_default_timezone_get() . ' (<comment>' . (new \DateTime())->format(\DateTime::W3C) . '</>)'],
+            ['Timezone', \date_default_timezone_get().' (<comment>'.(new \DateTime())->format(\DateTime::W3C).'</>)'],
             ['OPcache', \extension_loaded('Zend OPcache') && \filter_var(\ini_get('opcache.enable'), \FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false'],
             ['APCu', \extension_loaded('apcu') && \filter_var(\ini_get('apc.enabled'), \FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false'],
             ['Xdebug', \extension_loaded('xdebug') ? 'true' : 'false'],

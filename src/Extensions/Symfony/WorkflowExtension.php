@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -23,14 +20,15 @@ use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\ExtensionInterface;
+
+use function Rade\DI\Loader\service;
+
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Security\Core\Security;
 use Symfony\Component\Workflow;
 use Symfony\Component\Workflow\Registry;
 use Symfony\Component\Workflow\WorkflowEvents;
-
-use function Rade\DI\Loader\service;
 
 /**
  * Symfony component workflow extension.
@@ -119,16 +117,12 @@ class WorkflowExtension implements AliasedInterface, ConfigurationInterface, Ext
                             ->arrayNode('supports')
                                 ->beforeNormalization()
                                     ->ifString()
-                                    ->then(function ($v) {
-                                        return [$v];
-                                    })
+                                    ->then(fn ($v) => [$v])
                                 ->end()
                                 ->prototype('scalar')
                                     ->cannotBeEmpty()
                                     ->validate()
-                                        ->ifTrue(function ($v) {
-                                            return !\class_exists($v) && !\interface_exists($v, false);
-                                        })
+                                        ->ifTrue(fn ($v) => !\class_exists($v) && !\interface_exists($v, false))
                                         ->thenInvalid('The supported class or interface "%s" does not exist.')
                                     ->end()
                                 ->end()
@@ -158,7 +152,7 @@ class WorkflowExtension implements AliasedInterface, ConfigurationInterface, Ext
                                                 return true;
                                             }
 
-                                            if (\class_exists(WorkflowEvents::class) && !\in_array($value, WorkflowEvents::ALIASES)) {
+                                            if (\class_exists(WorkflowEvents::class) && !\in_array($value, WorkflowEvents::ALIASES, true)) {
                                                 return true;
                                             }
                                         }
@@ -176,9 +170,7 @@ class WorkflowExtension implements AliasedInterface, ConfigurationInterface, Ext
                                     ->then(function ($places) {
                                         // It's an indexed array of shape  ['place1', 'place2']
                                         if (isset($places[0]) && \is_string($places[0])) {
-                                            return \array_map(function (string $place) {
-                                                return ['name' => $place];
-                                            }, $places);
+                                            return \array_map(fn (string $place) => ['name' => $place], $places);
                                         }
 
                                         // It's an indexed array, we let the validation occur
@@ -251,9 +243,7 @@ class WorkflowExtension implements AliasedInterface, ConfigurationInterface, Ext
                                         ->arrayNode('from')
                                             ->beforeNormalization()
                                                 ->ifString()
-                                                ->then(function ($v) {
-                                                    return [$v];
-                                                })
+                                                ->then(fn ($v) => [$v])
                                             ->end()
                                             ->requiresAtLeastOneElement()
                                             ->prototype('scalar')
@@ -263,9 +253,7 @@ class WorkflowExtension implements AliasedInterface, ConfigurationInterface, Ext
                                         ->arrayNode('to')
                                             ->beforeNormalization()
                                                 ->ifString()
-                                                ->then(function ($v) {
-                                                    return [$v];
-                                                })
+                                                ->then(fn ($v) => [$v])
                                             ->end()
                                             ->requiresAtLeastOneElement()
                                             ->prototype('scalar')
@@ -291,15 +279,11 @@ class WorkflowExtension implements AliasedInterface, ConfigurationInterface, Ext
                             ->end()
                         ->end()
                         ->validate()
-                            ->ifTrue(function ($v) {
-                                return $v['supports'] && isset($v['support_strategy']);
-                            })
+                            ->ifTrue(fn ($v) => $v['supports'] && isset($v['support_strategy']))
                             ->thenInvalid('"supports" and "support_strategy" cannot be used together.')
                         ->end()
                         ->validate()
-                            ->ifTrue(function ($v) {
-                                return !$v['supports'] && !isset($v['support_strategy']);
-                            })
+                            ->ifTrue(fn ($v) => !$v['supports'] && !isset($v['support_strategy']))
                             ->thenInvalid('"supports" or "support_strategy" should be configured.')
                         ->end()
                         ->beforeNormalization()

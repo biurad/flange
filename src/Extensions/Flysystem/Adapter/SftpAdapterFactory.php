@@ -1,9 +1,10 @@
-<?php
+<?php declare(strict_types=1);
 
 /*
- * This file is part of the flysystem-bundle project.
+ * This file is part of Biurad opensource projects.
  *
- * (c) Titouan Galopin <galopintitouan@gmail.com>
+ * @copyright 2019 Biurad Group (https://biurad.com/)
+ * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -42,7 +43,7 @@ class SftpAdapterFactory extends AbstractFactory implements RequiredPackagesInte
         ];
     }
 
-    protected function configureOptions(OptionsResolver $resolver)
+    protected function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setRequired('host');
         $resolver->setAllowedTypes('host', 'string');
@@ -77,6 +78,6 @@ class SftpAdapterFactory extends AbstractFactory implements RequiredPackagesInte
 
     protected function configureDefinition(Definition $definition, array $options): void
     {
-        $definition->args([new Statement(SftpConnectionProvider::class . '::fromArray', [$options]), $options['root']]);
+        $definition->args([new Statement(SftpConnectionProvider::class.'::fromArray', [$options]), $options['root']]);
     }
 }

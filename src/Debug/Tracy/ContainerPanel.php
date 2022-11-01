@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -47,7 +44,7 @@ class ContainerPanel implements Tracy\IBarPanel
         return Nette\Utils\Helpers::capture(function (): void {
             $elapsedTime = $this->elapsedTime;
 
-            require __DIR__ . '/templates/ContainerPanel.tab.phtml';
+            require __DIR__.'/templates/ContainerPanel.tab.phtml';
         });
     }
 
@@ -62,7 +59,7 @@ class ContainerPanel implements Tracy\IBarPanel
         $rc = new \ReflectionClass($this->container);
         $types = [];
         $wiring = $this->getContainerProperty('types', $rc);
-        $ids = \array_keys(($methodsMap = $this->getContainerProperty('methodsMap', $rc)) +  $this->container->getDefinitions());
+        $ids = \array_keys(($methodsMap = $this->getContainerProperty('methodsMap', $rc)) + $this->container->getDefinitions());
 
         foreach ($ids as $id) {
             foreach ($wiring as $type => $names) {
@@ -82,7 +79,7 @@ class ContainerPanel implements Tracy\IBarPanel
             $services = $this->getContainerProperty('services', $rc);
             $configs = $this->getContainerProperty('parameters', $rc);
 
-            require __DIR__ . '/templates/ContainerPanel.panel.phtml';
+            require __DIR__.'/templates/ContainerPanel.panel.phtml';
         });
     }
 

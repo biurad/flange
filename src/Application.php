@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -17,21 +14,22 @@ declare(strict_types=1);
 
 namespace Flange;
 
-use Biurad\Http\{Request, Response, Response\HtmlResponse};
 use Biurad\Http\Factory\Psr17Factory;
 use Biurad\Http\Interfaces\Psr17Interface;
-use Flight\Routing\{Exceptions\RouteNotFoundException, RouteCollection, Router, RouteUri};
+use Biurad\Http\{Request, Response, Response\HtmlResponse};
 use Fig\Http\Message\RequestMethodInterface;
 use Flight\Routing\Interfaces\{RouteMatcherInterface, UrlGeneratorInterface};
+use Flight\Routing\{Exceptions\RouteNotFoundException, RouteCollection, RouteUri, Router};
 use Laminas\{HttpHandlerRunner\Emitter\SapiStreamEmitter, Stratigility\Utils};
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Http\Message\{ResponseInterface, ServerRequestInterface};
 use Psr\Http\Server\{MiddlewareInterface, RequestHandlerInterface};
-use Psr\EventDispatcher\EventDispatcherInterface;
 use Rade\DI;
-use Symfony\Component\Console\Application as ConsoleApplication;
-use Symfony\Component\HttpFoundation\RequestStack;
 
 use function Rade\DI\Loader\service;
+
+use Symfony\Component\Console\Application as ConsoleApplication;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * The Rade framework core class.
@@ -175,9 +173,9 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
     /**
      * Handles the request and delivers the response.
      *
-     * @throws \Throwable
-     *
      * @return int Exit status 0 on success, any other number on failure (e.g. 1)
+     *
+     * @throws \Throwable
      */
     public function run(ServerRequestInterface $request = null, bool $catch = true): int
     {
@@ -309,11 +307,11 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
     {
         $debug = $this->parameters['debug'];
         $version = self::VERSION;
-        $docVersion = $version[0] . '.x.x';
+        $docVersion = $version[0].'.x.x';
 
         \ob_start();
 
-        include __DIR__ . '/Resources/welcome.phtml';
+        include __DIR__.'/Resources/welcome.phtml';
 
         return new HtmlResponse((string) \ob_get_clean(), 404);
     }

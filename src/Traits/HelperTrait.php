@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -88,7 +85,7 @@ trait HelperTrait
      * ]
      *
      * @param array<int,mixed>    $extensions
-     * @param array<string,mixed> $configs     the default configuration for all extensions
+     * @param array<string,mixed> $configs    the default configuration for all extensions
      * @param string|null         $outputDir  Enable Generating ConfigBuilders to help create valid config
      */
     public function loadExtensions(array $extensions, array $configs = [], string $outputDir = null): void
@@ -115,12 +112,12 @@ trait HelperTrait
             }
 
             // Check if file parsed is a directory (module need to be a directory)
-            if (!\is_dir($directoryPath = \rtrim($moduleDir, '\/') . '/' . $prefix . $directory . '/')) {
+            if (!\is_dir($directoryPath = \rtrim($moduleDir, '\/').'/'.$prefix.$directory.'/')) {
                 continue;
             }
 
             // Load module configuration file
-            if (!\file_exists($configFile = $directoryPath . $configName . '.json')) {
+            if (!\file_exists($configFile = $directoryPath.$configName.'.json')) {
                 continue;
             }
 
@@ -148,9 +145,9 @@ trait HelperTrait
      *
      * @param mixed $resource the resource can be anything supported by a config loader
      *
-     * @throws \Exception If something went wrong
-     *
      * @return mixed
+     *
+     * @throws \Exception If something went wrong
      */
     public function load($resource, string $type = null)
     {
@@ -180,11 +177,11 @@ trait HelperTrait
      *
      * We recommend using composer v2, as this method depends on it or use $baseDir parameter.
      *
+     * @return string The absolute path of the resource
+     *
      * @throws \InvalidArgumentException    if the file cannot be found or the name is not valid
      * @throws \RuntimeException            if the name contains invalid/unsafe characters
      * @throws ContainerResolutionException if the service provider is not included in path
-     *
-     * @return string The absolute path of the resource
      */
     public function getLocation(string $path, string $baseDir = 'src')
     {
@@ -196,11 +193,11 @@ trait HelperTrait
             [$bundleName, $path] = \explode('/', \substr($path, 1), 2);
 
             if (isset($this->loadedExtensionPaths[$bundleName])) {
-                return $this->loadedExtensionPaths[$bundleName] . '/' . $path;
+                return $this->loadedExtensionPaths[$bundleName].'/'.$path;
             }
 
             if (null !== $extension = $this->getExtension($bundleName)) {
-                $bundleName = \get_class($extension);
+                $bundleName = $extension::class;
             }
 
             try {
@@ -217,7 +214,7 @@ trait HelperTrait
                     $directory = \substr_replace($directory, '', $pos, 3);
                 }
 
-                return ($this->loadedExtensionPaths[$bundleName] = \substr($directory, 0, $pos + \strlen($baseDir))) . '/' . $path;
+                return ($this->loadedExtensionPaths[$bundleName] = \substr($directory, 0, $pos + \strlen($baseDir))).'/'.$path;
             }
 
             if (\class_exists(InstalledVersions::class)) {
@@ -231,10 +228,10 @@ trait HelperTrait
                     }
 
                     $parts = \explode('/', \substr($directory, $pos));
-                    $directory = InstalledVersions::getInstallPath($parts[1] . '/' . $parts[2]);
+                    $directory = InstalledVersions::getInstallPath($parts[1].'/'.$parts[2]);
 
                     if (null !== $directory) {
-                        return ($this->loadedExtensionPaths[$bundleName] = FileSystem::normalizePath($directory)) . '/' . $path;
+                        return ($this->loadedExtensionPaths[$bundleName] = FileSystem::normalizePath($directory)).'/'.$path;
                     }
                 }
             }

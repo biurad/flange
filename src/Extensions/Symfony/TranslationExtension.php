@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -26,6 +23,10 @@ use Rade\DI\Definitions\TaggedLocator;
 use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Extensions\ExtensionInterface;
+
+use function Rade\DI\Loader\param;
+use function Rade\DI\Loader\service;
+
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Config\Resource\FileExistenceResource;
@@ -70,9 +71,6 @@ use Symfony\Component\Translation\Translator;
 use Symfony\Component\Translation\Writer\TranslationWriter;
 use Symfony\Component\Validator\Validation;
 
-use function Rade\DI\Loader\param;
-use function Rade\DI\Loader\service;
-
 /**
  * Symfony component translation extension.
  *
@@ -104,9 +102,7 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
             ->children()
                 ->arrayNode('fallbacks')
                     ->info('Defaults to the value of "default_locale".')
-                    ->beforeNormalization()->ifString()->then(function ($v) {
-                        return [$v];
-                    })->end()
+                    ->beforeNormalization()->ifString()->then(fn ($v) => [$v])->end()
                     ->prototype('scalar')->end()
                     ->defaultValue([])
                 ->end()
@@ -233,31 +229,31 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
 
         if ($container->hasExtension(ValidatorExtension::class)) {
             $r = new \ReflectionClass(Validation::class);
-            $dirs[] = $transPaths[] = \dirname($r->getFileName()) . '/Resources/translations';
+            $dirs[] = $transPaths[] = \dirname($r->getFileName()).'/Resources/translations';
             unset($r);
         }
 
         if ($container->hasExtension(FormExtension::class)) {
             $r = new \ReflectionClass(Form::class);
-            $dirs[] = $transPaths[] = \dirname($r->getFileName()) . '/Resources/translations';
+            $dirs[] = $transPaths[] = \dirname($r->getFileName()).'/Resources/translations';
             unset($r);
         }
 
         if (\class_exists(Security::class)) {
             $r = new \ReflectionClass(Security::class);
-            $dirs[] = $transPaths[] = \dirname($r->getFileName()) . '/Resources/translations';
+            $dirs[] = $transPaths[] = \dirname($r->getFileName()).'/Resources/translations';
             unset($r);
         }
 
         if ($container instanceof KernelInterface) {
             foreach ($container->getExtensions() as $extension) {
                 try {
-                    $configDir = $container->getLocation('@' . \get_class($extension) . '/');
+                    $configDir = $container->getLocation('@'.$extension::class.'/');
                 } catch (\InvalidArgumentException $e) {
                     continue;
                 }
 
-                if (\file_exists($dir = $configDir . 'Resources/translations') || \file_exists($dir = $configDir . 'translations')) {
+                if (\file_exists($dir = $configDir.'Resources/translations') || \file_exists($dir = $configDir.'translations')) {
                     $dirs[] = $dir;
                 } else {
                     $nonExistingDirs[] = $dir;
@@ -293,9 +289,7 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
                 $finder = Finder::create()
                     ->followLinks()
                     ->files()
-                    ->filter(function (\SplFileInfo $file) {
-                        return 2 <= \substr_count($file->getBasename(), '.') && \preg_match('/\.\w+$/', $file->getBasename());
-                    })
+                    ->filter(fn (\SplFileInfo $file) => 2 <= \substr_count($file->getBasename(), '.') && \preg_match('/\.\w+$/', $file->getBasename()))
                     ->in($dir)
                     ->sortByName();
 
@@ -313,9 +307,7 @@ class TranslationExtension implements AliasedInterface, BootExtensionInterface, 
             $projectDir = $container->parameters['project_dir'];
             $scannedDirectories = \array_merge($dirs, \array_unique($nonExistingDirs));
             $translator->arg(4, [
-                'scanned_directories' => \array_map(static function (string $dir) use ($projectDir): string {
-                    return \str_starts_with($dir, $projectDir . '/') ? \substr($dir, 1 + \strlen($projectDir)) : $dir;
-                }, $scannedDirectories),
+                'scanned_directories' => \array_map(static fn (string $dir): string => \str_starts_with($dir, $projectDir.'/') ? \substr($dir, 1 + \strlen($projectDir)) : $dir, $scannedDirectories),
             ]);
         }
 

@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -90,17 +87,16 @@ class PropertyAccessExtension implements AliasedInterface, ConfigurationInterfac
         $throw |= $configs['throw_exception_on_invalid_index'] ? PropertyAccessor::THROW_ON_INVALID_INDEX : 0;
         $throw |= $configs['throw_exception_on_invalid_property_path'] ? PropertyAccessor::THROW_ON_INVALID_PROPERTY_PATH : 0;
 
-
         if (!empty($container->getExtensionConfig(CacheExtension::class, $container->hasExtension(FrameworkExtension::class) ? 'symfony' : null))) {
-            $container->set($cacheId = 'cache.property_access', new Definition(PropertyAccessor::class . '::createCache'))->tag('cache.pool')->public(false);
+            $container->set($cacheId = 'cache.property_access', new Definition(PropertyAccessor::class.'::createCache'))->tag('cache.pool')->public(false);
         }
 
         $container->set('property_accessor', new Definition(PropertyAccessor::class, [
             $magicMethods,
             $throw,
             new Reference($cacheId ?? '?cache.system'),
-            new Reference('?' . PropertyReadInfoExtractorInterface::class),
-            new Reference('?' . PropertyWriteInfoExtractorInterface::class),
+            new Reference('?'.PropertyReadInfoExtractorInterface::class),
+            new Reference('?'.PropertyWriteInfoExtractorInterface::class),
         ]))->typed();
     }
 }

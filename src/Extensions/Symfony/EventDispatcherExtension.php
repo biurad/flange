@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -58,7 +55,7 @@ class EventDispatcherExtension implements AliasedInterface, BootExtensionInterfa
         }
 
         $container->removeDefinition($id);
-        $container->set($inner = $id . '.inner', $globalDispatcher);
+        $container->set($inner = $id.'.inner', $globalDispatcher);
         $container->tag($inner, 'container.decorated_services');
         $container->removeType('Psr\EventDispatcher\EventDispatcherInterface');
         $container->set('events.dispatcher', new Definition(EventDispatcher::class))->typed();
@@ -88,12 +85,10 @@ class EventDispatcherExtension implements AliasedInterface, BootExtensionInterfa
             $event['event'] = $aliases[$event['event']] ?? $event['event'];
 
             if (!isset($event['method'])) {
-                $event['method'] = 'on' . \preg_replace_callback([
+                $event['method'] = 'on'.\preg_replace_callback([
                     '/(?<=\b|_)[a-z]/i',
                     '/[^a-z0-9]/i',
-                ], function ($matches) {
-                    return \strtoupper($matches[0]);
-                }, $event['event']);
+                ], fn ($matches) => \strtoupper($matches[0]), $event['event']);
                 $event['method'] = \preg_replace('/[^a-z0-9]/i', '', $event['method']);
 
                 if (null !== ($class = $container->definition($id)->getEntity()) && ($r = new \ReflectionClass($class, false)) && !$r->hasMethod($event['method']) && $r->hasMethod('__invoke')) {

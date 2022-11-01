@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -27,6 +24,9 @@ use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Extensions\ExtensionInterface;
 use Rade\DI\Extensions\RequiredPackagesInterface;
+
+use function Rade\DI\Loader\service;
+
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\PropertyAccess\PropertyAccess;
@@ -60,8 +60,6 @@ use Symfony\Component\Serializer\Normalizer\PropertyNormalizer;
 use Symfony\Component\Serializer\Normalizer\UidNormalizer;
 use Symfony\Component\Serializer\Normalizer\UnwrappingDenormalizer;
 use Symfony\Component\Serializer\Serializer;
-
-use function Rade\DI\Loader\service;
 
 /**
  * Symfony component serializer extension.
@@ -209,24 +207,24 @@ class SerializerExtension implements AliasedInterface, BootExtensionInterface, C
         if ($container instanceof KernelInterface) {
             foreach ($container->getExtensions() as $extension) {
                 try {
-                    $configDir = $container->getLocation('@' . \get_class($extension) . '/');
-                    $configDir = \is_dir($configDir . 'Resources/config') ? $configDir . 'Resources/config' : $configDir . '/config';
+                    $configDir = $container->getLocation('@'.$extension::class.'/');
+                    $configDir = \is_dir($configDir.'Resources/config') ? $configDir.'Resources/config' : $configDir.'/config';
                 } catch (\InvalidArgumentException $e) {
                     continue;
                 }
 
-                if (\file_exists($file = $configDir . '/serialization.xml')) {
+                if (\file_exists($file = $configDir.'/serialization.xml')) {
                     $fileRecorder('xml', $file);
                 }
 
                 if (
-                    \file_exists($file = $configDir . '/serialization.yaml') ||
-                    \file_exists($file = $configDir . '/serialization.yml')
+                    \file_exists($file = $configDir.'/serialization.yaml') ||
+                    \file_exists($file = $configDir.'/serialization.yml')
                 ) {
                     $fileRecorder('yml', $file);
                 }
 
-                if (\file_exists($dir = $configDir . '/serialization')) {
+                if (\file_exists($dir = $configDir.'/serialization')) {
                     $this->registerMappingFilesFromDir($dir, $fileRecorder);
                 }
             }
@@ -274,7 +272,7 @@ class SerializerExtension implements AliasedInterface, BootExtensionInterface, C
             throw new \RuntimeException('You must tag at least one service as "serializer.encoder" to use the "serializer" service.');
         }
 
-        if (($defaultContext = $container->parameters['serializer.default_context'] ?? null)) {
+        if ($defaultContext = $container->parameters['serializer.default_context'] ?? null) {
             foreach (\array_merge($container->findBy('serializer.normalizer'), $container->findBy('serializer.encoder')) as $service) {
                 $definition = $container->definition($service);
                 $initialContext = [];

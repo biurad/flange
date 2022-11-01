@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -17,10 +14,10 @@ declare(strict_types=1);
 
 namespace Flange\Database\Cycle\Generator;
 
-use Cycle\Schema\GeneratorInterface;
-use Cycle\Schema\Registry;
 use Cycle\Database\Schema\AbstractTable;
 use Cycle\Database\Schema\Comparator;
+use Cycle\Schema\GeneratorInterface;
+use Cycle\Schema\Registry;
 use Symfony\Component\Console\Output\OutputInterface;
 
 final class ShowChanges implements GeneratorInterface
@@ -37,7 +34,7 @@ final class ShowChanges implements GeneratorInterface
 
     public function run(Registry $registry): Registry
     {
-        $this->output->writeln('<info>Detecting schema changes:</info>' . "\n");
+        $this->output->writeln('<info>Detecting schema changes:</info>'."\n");
         $this->changes = [];
 
         foreach ($registry->getIterator() as $e) {
@@ -45,7 +42,7 @@ final class ShowChanges implements GeneratorInterface
                 $table = $registry->getTableSchema($e);
 
                 if ($table->getComparator()->hasChanges()) {
-                    $key = $registry->getDatabase($e) . ':' . $registry->getTable($e);
+                    $key = $registry->getDatabase($e).':'.$registry->getTable($e);
                     $this->changes[$key] = [
                         'database' => $registry->getDatabase($e),
                         'table' => $registry->getTable($e),

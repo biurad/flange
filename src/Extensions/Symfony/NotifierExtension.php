@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of DivineNii opensource projects.
+ * This file is part of Biurad opensource projects.
  *
- * PHP version 7.4 and above required
- *
- * @author    Divine Niiquaye Ibok <divineibok@gmail.com>
- * @copyright 2019 DivineNii (https://divinenii.com/)
+ * @copyright 2019 Biurad Group (https://biurad.com/)
  * @license   https://opensource.org/licenses/BSD-3-Clause License
  *
  * For the full copyright and license information, please view the LICENSE
@@ -23,6 +20,9 @@ use Rade\DI\Definitions\Statement;
 use Rade\DI\Definitions\TaggedLocator;
 use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\ExtensionInterface;
+
+use function Rade\DI\Loader\service;
+
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Notifier\Bridge\AllMySms\AllMySmsTransportFactory;
@@ -89,8 +89,6 @@ use Symfony\Component\Notifier\Recipient\Recipient;
 use Symfony\Component\Notifier\Texter;
 use Symfony\Component\Notifier\Transport;
 use Symfony\Component\Notifier\Transport\NullTransportFactory;
-
-use function Rade\DI\Loader\service;
 
 /**
  * Symfony Notifier Extension.
@@ -168,7 +166,7 @@ class NotifierExtension implements AliasedInterface, ConfigurationInterface, Ext
             return;
         }
 
-        if (!class_exists(Notifier::class)) {
+        if (!\class_exists(Notifier::class)) {
             throw new \LogicException('Notifier support cannot be enabled as the component is not installed. Try running "composer require symfony/notifier".');
         }
 
