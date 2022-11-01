@@ -15,12 +15,12 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\Handler;
+namespace Flange\Handler;
 
 use Biurad\Http\Request;
+use Flange\Event\ControllerEvent;
 use Flight\Routing\Handlers\RouteHandler as BaseRouteHandler;
 use Psr\Http\Message\ServerRequestInterface;
-use Rade\Event\ControllerEvent;
 
 /**
  * Default route's handler for rade framework.
@@ -29,7 +29,7 @@ use Rade\Event\ControllerEvent;
  */
 class RouteHandler extends BaseRouteHandler
 {
-    public function __construct(\Rade\Application $container)
+    public function __construct(\Flange\Application $container)
     {
         if ($container->has('events.dispatcher')) {
             $resolver = static function (mixed $handler, array $parameters) use ($container) {

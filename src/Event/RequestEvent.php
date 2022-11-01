@@ -15,7 +15,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\Event;
+namespace Flange\Event;
 
 use Psr\Http\Message\ResponseInterface;
 

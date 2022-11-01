@@ -15,7 +15,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\Debug\Tracy;
+namespace Flange\Debug\Tracy;
 
 use Nette;
 use Rade\DI\Container;

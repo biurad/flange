@@ -15,11 +15,11 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\Tests;
+namespace Flange\Tests;
 
 use Flight\Routing\RouteCollection;
 use Psr\Http\Message\ServerRequestInterface;
-use Rade\DI\Extensions\ConfigExtension;
+use Flange\Extensions\ConfigExtension;
 
 /**
  * Application test cases.

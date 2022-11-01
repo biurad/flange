@@ -15,14 +15,14 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\Database\Doctrine\Form\Type;
+namespace Flange\Database\Doctrine\Form\Type;
 
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Persistence\ObjectManager;
-use Rade\Database\Doctrine\Form\ChoiceList\DoctrineChoiceLoader;
-use Rade\Database\Doctrine\Form\ChoiceList\EntityLoaderInterface;
-use Rade\Database\Doctrine\Form\ChoiceList\IdReader;
-use Rade\Database\Doctrine\Form\DataTransformer\CollectionToArrayTransformer;
+use Flange\Database\Doctrine\Form\ChoiceList\DoctrineChoiceLoader;
+use Flange\Database\Doctrine\Form\ChoiceList\EntityLoaderInterface;
+use Flange\Database\Doctrine\Form\ChoiceList\IdReader;
+use Flange\Database\Doctrine\Form\DataTransformer\CollectionToArrayTransformer;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\ChoiceList\ChoiceList;
 use Symfony\Component\Form\ChoiceList\Factory\CachingFactoryDecorator;

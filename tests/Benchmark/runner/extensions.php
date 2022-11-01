@@ -16,6 +16,6 @@ declare(strict_types=1);
  */
 
 return [
-    [\Rade\DI\Extensions\CoreExtension::class, [__DIR__]],
-    \Rade\DI\Extensions\Symfony\FrameworkExtension::class,
+    [Flange\Extensions\CoreExtension::class, [__DIR__]],
+    Flange\Extensions\Symfony\FrameworkExtension::class,
 ];

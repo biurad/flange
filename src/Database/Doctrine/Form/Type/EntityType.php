@@ -15,12 +15,12 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\Database\Doctrine\Form\Type;
+namespace Flange\Database\Doctrine\Form\Type;
 
 use Doctrine\ORM\Query\Parameter;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ObjectManager;
-use Rade\Database\Doctrine\Form\ChoiceList\ORMQueryBuilderLoader;
+use Flange\Database\Doctrine\Form\ChoiceList\ORMQueryBuilderLoader;
 use Symfony\Component\Form\Exception\UnexpectedTypeException;
 use Symfony\Component\OptionsResolver\Options;
 use Symfony\Component\OptionsResolver\OptionsResolver;

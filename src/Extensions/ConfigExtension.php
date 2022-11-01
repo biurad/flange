@@ -15,13 +15,15 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\DI\Extensions;
+namespace Flange\Extensions;
 
-use Rade\AppBuilder;
+use Flange\AppBuilder;
 use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Parameter;
 use Rade\DI\Definitions\Statement;
+use Rade\DI\Extensions\AliasedInterface;
+use Rade\DI\Extensions\ExtensionInterface;
 use Rade\DI\Loader\{ClosureLoader, DirectoryLoader, GlobFileLoader, PhpFileLoader, YamlFileLoader};
 use Symfony\Component\Config\ConfigCacheFactory;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
@@ -114,7 +116,7 @@ class ConfigExtension implements AliasedInterface, ConfigurationInterface, Exten
         $container->set('config.loader_resolver', new Definition(LoaderResolver::class, [$configLoaders]));
         $container->autowire('config_cache_factory', new Definition(ConfigCacheFactory::class, [new Parameter('debug')]));
 
-        if ($configs['auto_configure'] && $container instanceof \Rade\KernelInterface) {
+        if ($configs['auto_configure'] && $container instanceof \Flange\KernelInterface) {
             foreach ($configs['paths'] as $path) {
                 $container->load($path, 'directory');
             }

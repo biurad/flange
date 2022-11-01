@@ -15,11 +15,11 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\DI\Extensions\Flysystem\Adapter;
+namespace Flange\Extensions\Flysystem\Adapter;
 
+use Flange\Extensions\Flysystem\AdapterFactoryInterface;
 use Rade\DI\Definition;
 use Rade\DI\Exceptions\MissingPackageException;
-use Rade\DI\Extensions\Flysystem\AdapterFactoryInterface;
 use Rade\DI\Extensions\RequiredPackagesInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 

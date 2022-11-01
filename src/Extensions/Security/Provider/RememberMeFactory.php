@@ -15,17 +15,17 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\DI\Extensions\Security\Provider;
+namespace Flange\Extensions\Security\Provider;
 
 use Biurad\Security\Authenticator\RememberMeAuthenticator;
 use Biurad\Security\Handler\RememberMeHandler;
+use Flange\Extensions\Symfony\CacheExtension;
+use Flange\Extensions\Symfony\FrameworkExtension;
+use Flange\Extensions\Symfony\PropertyAccessExtension;
 use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
-use Rade\DI\Extensions\Symfony\CacheExtension;
-use Rade\DI\Extensions\Symfony\FrameworkExtension;
-use Rade\DI\Extensions\Symfony\PropertyAccessExtension;
 use Symfony\Component\Config\Definition\Builder\NodeDefinition;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\Security\Core\Authentication\RememberMe\CacheTokenVerifier;

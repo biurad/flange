@@ -15,12 +15,12 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\Tests;
+namespace Flange\Tests;
 
 use Biurad\Http\Factory\Psr17Factory;
 use Biurad\Http\Interfaces\Psr17Interface;
 use PHPUnit\Framework\TestCase;
-use Rade\Application;
+use Flange\Application;
 
 /**
  * Application Base TestCase.

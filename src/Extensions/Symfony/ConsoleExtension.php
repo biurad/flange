@@ -15,9 +15,10 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\DI\Extensions\Symfony;
+namespace Flange\Extensions\Symfony;
 
-use Rade\Application as RadeApplication;
+use Flange\Application as Flange;
+use Flange\KernelInterface;
 use Rade\Commands\AboutCommand;
 use Rade\Commands\ServerCommand;
 use Rade\DI\Container;
@@ -27,7 +28,6 @@ use Rade\DI\Definitions\Statement;
 use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Extensions\ExtensionInterface;
-use Rade\KernelInterface;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\CommandLoader\FactoryCommandLoader;
@@ -63,7 +63,7 @@ class ConsoleExtension implements AliasedInterface, BootExtensionInterface, Exte
         $container->set('console', new Definition(Application::class))
             ->args([
                 $container->parameters['console.name'] ?? 'PHP Rade Framework',
-                $container->parameters['console.version'] ?? RadeApplication::VERSION,
+                $container->parameters['console.version'] ?? Flange::VERSION,
             ])
             ->typed(Application::class);
     }

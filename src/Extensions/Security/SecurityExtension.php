@@ -15,7 +15,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\DI\Extensions\Security;
+namespace Flange\Extensions\Security;
 
 use Biurad\Security\AccessMap;
 use Biurad\Security\Authenticator;
@@ -25,6 +25,7 @@ use Biurad\Security\Handler\LogoutHandler;
 use Biurad\Security\RateLimiter\AbstractRequestRateLimiter;
 use Biurad\Security\RateLimiter\DefaultLoginRateLimiter;
 use Biurad\Security\Token\CacheableTokenStorage;
+use Flange\Extensions\Symfony;
 use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
@@ -33,7 +34,6 @@ use Rade\DI\Definitions\TaggedLocator;
 use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Extensions\ExtensionInterface;
-use Rade\DI\Extensions\Symfony;
 use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;

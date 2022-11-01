@@ -15,11 +15,11 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\Event;
+namespace Flange\Event;
 
+use Flange\Application;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use Rade\Application;
 
 /**
  * Allows to filter a Response object.

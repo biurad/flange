@@ -15,15 +15,18 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\DI\Extensions\Doctrine;
+namespace Flange\Extensions\Doctrine;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Tools\Console\ConnectionProvider\SingleConnectionProvider;
 use Doctrine\DBAL\Tools\Console\ConsoleRunner;
 use Doctrine\DBAL\Types\Type;
 use Doctrine\Persistence\ObjectManager;
-use Rade\Database\Doctrine\Form\DoctrineOrmTypeGuesser;
-use Rade\Database\Doctrine\Form\Type\EntityType;
+use Flange\Database\Doctrine\Form\DoctrineOrmTypeGuesser;
+use Flange\Database\Doctrine\Form\Type\EntityType;
+use Flange\Extensions\Symfony\FormExtension;
+use Flange\Extensions\Symfony\FrameworkExtension;
+use Flange\KernelInterface;
 use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Parameter;
@@ -32,9 +35,6 @@ use Rade\DI\Definitions\Statement;
 use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Extensions\ExtensionInterface;
-use Rade\DI\Extensions\Symfony\FormExtension;
-use Rade\DI\Extensions\Symfony\FrameworkExtension;
-use Rade\KernelInterface;
 use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;

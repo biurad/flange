@@ -15,13 +15,14 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade;
+namespace Flange;
 
 use Fig\Http\Message\RequestMethodInterface;
 use Flight\Routing\Interfaces\RouteMatcherInterface;
 use Flight\Routing\Interfaces\UrlGeneratorInterface;
 use Flight\Routing\RouteCollection;
 use Flight\Routing\Router;
+use Rade\DI;
 use Rade\DI\Exceptions\ServiceCreationException;
 use Symfony\Component\Config\ConfigCache;
 

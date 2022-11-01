@@ -15,7 +15,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\DI\Extensions\Symfony\Traits;
+namespace Flange\Extensions\Symfony\Traits;
 
 use Rade\DI\Container;
 use Rade\DI\ContainerBuilder;

@@ -15,7 +15,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\DI\Extensions;
+namespace Flange\Extensions;
 
 use Biurad\Annotations\AnnotationLoader;
 use Doctrine\Common\Annotations\AnnotationReader;
@@ -26,6 +26,9 @@ use Rade\DI\Definition;
 use Rade\DI\Definitions\Parameter;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
+use Rade\DI\Extensions\AliasedInterface;
+use Rade\DI\Extensions\BootExtensionInterface;
+use Rade\DI\Extensions\ExtensionInterface;
 use Spiral\Attributes\Composite\MergeReader;
 use Spiral\Attributes\Composite\SelectiveReader;
 use Spiral\Attributes\Internal\{NativeAttributeReader, DoctrineAnnotationReader};

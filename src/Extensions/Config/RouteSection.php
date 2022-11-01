@@ -15,7 +15,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\DI\Extensions\Config;
+namespace Flange\Extensions\Config;
 
 use Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition;
 

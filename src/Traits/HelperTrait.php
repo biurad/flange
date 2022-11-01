@@ -15,7 +15,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\Traits;
+namespace Flange\Traits;
 
 use Composer\InstalledVersions;
 use Laminas\Escaper\Escaper;
@@ -125,7 +125,7 @@ trait HelperTrait
             }
 
             // Load module
-            $moduleLoad = new \Rade\Module($directoryPath, \json_decode(\file_get_contents($configFile), true) ?? []);
+            $moduleLoad = new \Flange\Module($directoryPath, \json_decode(\file_get_contents($configFile), true) ?? []);
 
             if (!\array_key_exists($directory, $this->loadedExtensionPaths)) {
                 $this->loadedExtensionPaths[$directory] = $directoryPath;

@@ -15,7 +15,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\Commands\CycleORM;
+namespace Flange\Commands\CycleORM;
 
 use Cycle\Database\DatabaseProviderInterface;
 use Cycle\Migrations\Migrator;
@@ -25,7 +25,7 @@ use Cycle\Schema\Generator\Migrations\GenerateMigrations;
 use Cycle\Schema\Generator\SyncTables;
 use Cycle\Schema\GeneratorInterface;
 use Cycle\Schema\Registry;
-use Rade\Database\Cycle\Generator\ShowChanges;
+use Flange\Database\Cycle\Generator\ShowChanges;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;

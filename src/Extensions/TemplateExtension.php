@@ -15,7 +15,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\DI\Extensions;
+namespace Flange\Extensions;
 
 use Biurad\UI\Storage\ArrayStorage;
 use Biurad\UI\Storage\FilesystemStorage;
@@ -25,6 +25,8 @@ use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Exceptions\ServiceCreationException;
+use Rade\DI\Extensions\AliasedInterface;
+use Rade\DI\Extensions\ExtensionInterface;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 

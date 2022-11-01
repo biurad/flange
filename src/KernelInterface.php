@@ -15,7 +15,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade;
+namespace Flange;
 
 /**
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>

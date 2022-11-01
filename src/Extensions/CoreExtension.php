@@ -15,11 +15,14 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\DI\Extensions;
+namespace Flange\Extensions;
 
 use Rade\DI\Container;
 use Rade\DI\Definition;
+use Rade\DI\Extensions\AliasedInterface;
+use Rade\DI\Extensions\DependenciesInterface;
 use Rade\Handler\EventHandler;
+use Rade\DI\Extensions\ExtensionInterface;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Console\Event\ConsoleEvent;

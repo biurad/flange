@@ -15,11 +15,13 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\DI\Extensions;
+namespace Flange\Extensions;
 
 use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Statement;
+use Rade\DI\Extensions\AliasedInterface;
+use Rade\DI\Extensions\ExtensionInterface;
 use Rade\GraphQL\Schema;
 use Rade\GraphQL\Types;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;

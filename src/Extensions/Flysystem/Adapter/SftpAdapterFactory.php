@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Rade\DI\Extensions\Flysystem\Adapter;
+namespace Flange\Extensions\Flysystem\Adapter;
 
 use League\Flysystem\PhpseclibV2\SftpAdapter;
 use League\Flysystem\PhpseclibV2\SftpConnectionProvider;

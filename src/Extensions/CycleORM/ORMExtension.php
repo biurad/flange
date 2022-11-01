@@ -15,7 +15,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\DI\Extensions\CycleORM;
+namespace Flange\Extensions\CycleORM;
 
 use Cycle\Database\DatabaseProviderInterface;
 use Cycle\ORM\EntityManager;

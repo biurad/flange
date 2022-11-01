@@ -15,7 +15,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade;
+namespace Flange;
 
 use Biurad\Http\{Request, Response, Response\HtmlResponse};
 use Biurad\Http\Factory\Psr17Factory;
@@ -23,10 +23,11 @@ use Biurad\Http\Interfaces\Psr17Interface;
 use Flight\Routing\{Exceptions\RouteNotFoundException, RouteCollection, Router, RouteUri};
 use Fig\Http\Message\RequestMethodInterface;
 use Flight\Routing\Interfaces\{RouteMatcherInterface, UrlGeneratorInterface};
+use Laminas\{HttpHandlerRunner\Emitter\SapiStreamEmitter, Stratigility\Utils};
 use Psr\Http\Message\{ResponseInterface, ServerRequestInterface};
 use Psr\Http\Server\{MiddlewareInterface, RequestHandlerInterface};
-use Laminas\{HttpHandlerRunner\Emitter\SapiStreamEmitter, Stratigility\Utils};
 use Psr\EventDispatcher\EventDispatcherInterface;
+use Rade\DI;
 use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\HttpFoundation\RequestStack;
 

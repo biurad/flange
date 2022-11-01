@@ -15,7 +15,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\Database\Doctrine\Form;
+namespace Flange\Database\Doctrine\Form;
 
 use Doctrine\Persistence\ObjectManager;
 use Symfony\Component\Form\AbstractExtension;

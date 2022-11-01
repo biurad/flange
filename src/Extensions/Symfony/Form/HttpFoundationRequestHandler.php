@@ -15,7 +15,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\DI\Extensions\Symfony\Form;
+namespace Flange\Extensions\Symfony\Form;
 
 use Biurad\Http\Request;
 use Biurad\Http\UploadedFile;

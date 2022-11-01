@@ -15,7 +15,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\Debug;
+namespace Flange\Debug;
 
 use Symfony\Component\Config\Resource\SelfCheckingResourceInterface;
 

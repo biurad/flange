@@ -15,7 +15,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\DI\Extensions\Flysystem\Adapter;
+namespace Flange\Extensions\Flysystem\Adapter;
 
 use League\Flysystem\GoogleCloudStorage\GoogleCloudStorageAdapter;
 use Rade\DI\Definition;

@@ -15,10 +15,10 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\Commands;
+namespace Flange\Commands;
 
 use Psr\Container\ContainerInterface;
-use Rade\Application;
+use Flange\Application;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\TableSeparator;

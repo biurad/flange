@@ -15,7 +15,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\DI\Extensions\Symfony;
+namespace Flange\Extensions\Symfony;
 
 use Nette\Utils\Arrays;
 use Psr\Log\LoggerInterface;
@@ -184,7 +184,7 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
 
         $container->multiple([
             'cache.default_matcher' => service(DefaultMarshaller::class, [1 => '%debug%'])->typed(MarshallerInterface::class),
-            'cache.adapter.system' => service(AbstractAdapter::class . '::createSystemCache', ['', 0, \Rade\Application::VERSION, '%project.cache_dir%' . '/pools/system'])->abstract()->public(false)->tag('cache.pool'),
+            'cache.adapter.system' => service(AbstractAdapter::class . '::createSystemCache', ['', 0, \Flange\Application::VERSION, '%project.cache_dir%' . '/pools/system'])->abstract()->public(false)->tag('cache.pool'),
             'cache.adapter.filesystem' => service(FilesystemAdapter::class, [2 => '%project.cache_dir%' . '/pools/app'])->abstract()->public(false)->tag('cache.pool'),
             'cache.adapter.pdo' => service(PdoAdapter::class)->public(false)->abstract()->tag('cache.pool', ['provider' => 'cache.default_pdo_provider']),
             'cache.adapter.array' => service(ArrayAdapter::class)->public(false)->abstract()->tag('cache.pool'),
@@ -328,7 +328,7 @@ class CacheExtension implements AliasedInterface, BootExtensionInterface, Config
             }
 
             if (!isset($tags['version'])) {
-                $tags['version'] = \Rade\Application::VERSION;
+                $tags['version'] = \Flange\Application::VERSION;
             }
 
             unset($tags['name']);

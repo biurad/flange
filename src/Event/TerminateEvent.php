@@ -15,10 +15,10 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\Event;
+namespace Flange\Event;
 
 use Psr\Http\Message\ServerRequestInterface as Request;
-use Rade\Application;
+use Flange\Application;
 
 /**
  * Allows to execute logic after a response was sent.

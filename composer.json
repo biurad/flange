@@ -3,7 +3,7 @@
     "description": "A fast micro, compilable, and scalable PHP framework",
     "keywords": [
         "framework",
-        "rade",
+        "flange",
         "divinenii",
         "php-framework",
         "php framework",
@@ -86,13 +86,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Rade\\": "src/",
-            "Rade\\DI\\Extensions\\": "src/Extensions"
+            "Flange\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Rade\\Tests\\": "tests/"
+            "Flange\\Tests\\": "tests/"
         }
     },
     "extra": {

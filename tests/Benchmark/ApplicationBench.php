@@ -23,7 +23,7 @@ use Symfony\Component\Process\Process;
 /**
  * @AfterClassMethods({"tearDown"})
  * @Iterations(5)
- * @Revs(500)
+ * @Revs(100)
  */
 class ApplicationBench
 {

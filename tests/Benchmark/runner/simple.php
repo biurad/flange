@@ -18,7 +18,7 @@ declare(strict_types=1);
 require __DIR__ . '/../../../vendor/autoload.php';
 
 // create a simple rade application
-$app = new \Rade\Application(null, null, false);
+$app = new Flange\Application(null, null, false);
 $app->match('/hello', to: fn (): string => 'Hello World');
 
 $app->run();

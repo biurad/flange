@@ -23,7 +23,7 @@ function helloWorldFunc(): string
 }
 
 // create a real rade application
-$app = \Rade\AppBuilder::build(static function (\Rade\AppBuilder $creator): void {
+$app = Flange\AppBuilder::build(static function (Flange\AppBuilder $creator): void {
     // Add resource to re-compile if changes are made to this file.
     $creator->addResource(new \Symfony\Component\Config\Resource\FileResource(__FILE__));
 

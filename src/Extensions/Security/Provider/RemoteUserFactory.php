@@ -15,7 +15,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\DI\Extensions\Security\Provider;
+namespace Flange\Extensions\Security\Provider;
 
 use Biurad\Security\Authenticator\RemoteUserAuthenticator;
 use Rade\DI\Container;

@@ -15,8 +15,9 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\DI\Extensions\Symfony;
+namespace Flange\Extensions\Symfony;
 
+use Flange\KernelInterface;
 use Rade\DI\Container;
 use Rade\DI\ContainerBuilder;
 use Rade\DI\Definition;
@@ -28,7 +29,6 @@ use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Extensions\ExtensionInterface;
 use Rade\DI\Services\ServiceLocator;
-use Rade\KernelInterface;
 use Symfony\Component\Cache\Adapter\PhpArrayAdapter;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;

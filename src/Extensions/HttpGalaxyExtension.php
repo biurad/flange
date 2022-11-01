@@ -15,7 +15,7 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\DI\Extensions;
+namespace Flange\Extensions;
 
 use Biurad\Http\Factory\CookieFactory;
 use Biurad\Http\Factory\Psr17Factory;
@@ -26,8 +26,10 @@ use Biurad\Http\Middlewares\HttpCorsMiddleware;
 use Biurad\Http\Middlewares\HttpHeadersMiddleware;
 use Biurad\Http\Middlewares\HttpPolicyMiddleware;
 use Biurad\Http\Middlewares\SessionMiddleware;
+use Flange\KernelInterface;
 use Rade\DI\Container;
-use Rade\KernelInterface;
+use Rade\DI\Extensions\AliasedInterface;
+use Rade\DI\Extensions\ExtensionInterface;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\HttpFoundation\Cookie;

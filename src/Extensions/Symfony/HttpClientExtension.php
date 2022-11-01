@@ -15,15 +15,15 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\DI\Extensions\Symfony;
+namespace Flange\Extensions\Symfony;
 
+use Flange\Extensions\Config\HttpClientRetrySection;
 use Psr\Http\Client\ClientInterface;
 use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Extensions\AliasedInterface;
-use Rade\DI\Extensions\Config\HttpClientRetrySection;
 use Rade\DI\Extensions\ExtensionInterface;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;

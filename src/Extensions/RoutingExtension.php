@@ -15,10 +15,11 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace Rade\DI\Extensions;
+namespace Flange\Extensions;
 
 use Biurad\Http\Middlewares\ErrorHandlerMiddleware;
 use Biurad\Http\Middlewares\PrepareResponseMiddleware;
+use Flange\AppBuilder;
 use Flight\Routing\Annotation\Listener;
 use Flight\Routing\Interfaces\RouteMatcherInterface;
 use Flight\Routing\Interfaces\UrlGeneratorInterface;
@@ -28,7 +29,6 @@ use Flight\Routing\RouteCollection;
 use Flight\Routing\Router;
 use Laminas\Stratigility\Middleware\OriginalMessages;
 use Psr\Http\Server\RequestHandlerInterface;
-use Rade\AppBuilder;
 use Rade\DI\Container;
 use Rade\DI\Builder\PhpLiteral;
 use Rade\DI\ContainerBuilder;
@@ -36,7 +36,11 @@ use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Exceptions\ServiceCreationException;
-use Rade\Handler\RouteHandler;
+use Rade\DI\Extensions\AliasedInterface;
+use Rade\DI\Extensions\BootExtensionInterface;
+use Rade\DI\Extensions\DependenciesInterface;
+use Rade\DI\Extensions\ExtensionInterface;
+use Flange\Handler\RouteHandler;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
