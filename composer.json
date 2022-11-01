@@ -1,5 +1,5 @@
 {
-    "name": "divineniiquaye/php-rade",
+    "name": "biurad/flange",
     "description": "A fast micro, compilable, and scalable PHP framework",
     "keywords": [
         "framework",
@@ -23,10 +23,10 @@
         }
     ],
     "support": {
-        "docs": "https://docs.divienii.com/php-rade",
-        "issues": "https://github.com/divineniiquaye/php-rade/issues",
-        "rss": "https://github.com/divineniiquaye/php-rade/releases.atom",
-        "source": "https://github.com/divineniiquaye/php-rade"
+        "docs": "https://docs.biurad.com/flange",
+        "issues": "https://github.com/biurad/flange/issues",
+        "rss": "https://github.com/biurad/flange/releases.atom",
+        "source": "https://github.com/biurad/flange"
     },
     "require": {
         "php": "^8.0",
