@@ -16,7 +16,7 @@
          stopOnError="false"
 >
     <testsuites>
-        <testsuite name="Rade Framework">
+        <testsuite name="Flange Framework">
             <directory>./tests/</directory>
         </testsuite>
     </testsuites>
