@@ -94,7 +94,6 @@ class EventDispatcherExtension implements AliasedInterface, BootExtensionInterfa
             $container->set('doctrine.event_manager', new Definition(EventManager::class))->typed();
             $container->parameters[__CLASS__] = $configs['doctrine'];
         }
-
     }
 
     /**
@@ -111,7 +110,7 @@ class EventDispatcherExtension implements AliasedInterface, BootExtensionInterfa
                 $eventSubscribers = \array_merge($container->tagged('event_subscriber'), $container->findBy(EventSubscriberInterface::class));
             }
 
-            $this->doEventsRegister($container, $dispatcher, 'event_listener',['event_subscriber', $eventSubscribers ?? []]);
+            $this->doEventsRegister($container, $dispatcher, 'event_listener', ['event_subscriber', $eventSubscribers ?? []]);
         }
 
         if (isset($container->parameters[__CLASS__])) {

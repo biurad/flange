@@ -3,7 +3,7 @@
          name="PHP_CodeSniffer"
          xsi:noNamespaceSchemaLocation="vendor/squizlabs/php_codesniffer/phpcs.xsd"
 >
-    <description>The coding standard for Rade.</description>
+    <description>The coding standard for Flange.</description>
 
     <arg name="basepath" value="."/>
     <arg name="extensions" value="php"/>
@@ -22,5 +22,9 @@
     <rule ref="PSR12">
         <exclude name="PSR2.Classes.PropertyDeclaration.Multiple"/>
         <exclude name="PSR12.Namespaces.CompoundNamespaceDepth.TooDeep"/>
+        <exclude name="PSR12.Files.FileHeader.SpacingAfterBlock"/>
+        <exclude name="PSR12.Files.OpenTag.NotAlone"/>
+        <exclude name="PSR12.Operators.OperatorSpacing.NoSpaceBefore"/>
+        <exclude name="PSR12.Operators.OperatorSpacing.NoSpaceAfter"/>
     </rule>
 </ruleset>
