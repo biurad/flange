@@ -45,7 +45,6 @@ class FrameworkExtension implements AliasedInterface, DependenciesInterface, Ext
     public function dependencies(): array
     {
         return [
-            EventDispatcherExtension::class,
             CacheExtension::class,
             HttpClientExtension::class,
             AssetExtension::class,

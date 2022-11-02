@@ -19,9 +19,6 @@ use Rade\DI\Definition;
 use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\DependenciesInterface;
 use Rade\DI\Extensions\ExtensionInterface;
-use Rade\Handler\EventHandler;
-use Symfony\Component\Config\Definition\Builder\TreeBuilder;
-use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Console\Event\ConsoleEvent;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -30,7 +27,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
  *
  * @author Divine Niiquaye Ibok <divineibok@gmail.com>
  */
-class CoreExtension implements AliasedInterface, ConfigurationInterface, DependenciesInterface, ExtensionInterface
+class CoreExtension implements AliasedInterface, DependenciesInterface, ExtensionInterface
 {
     private string $rootDir;
 
@@ -45,22 +42,6 @@ class CoreExtension implements AliasedInterface, ConfigurationInterface, Depende
     public function getAlias(): string
     {
         return 'core';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getConfigTreeBuilder(): TreeBuilder
-    {
-        $treeBuilder = new TreeBuilder(__CLASS__);
-
-        $treeBuilder->getRootNode()
-            ->children()
-                ->scalarNode('events_dispatcher')->end()
-            ->end()
-        ;
-
-        return $treeBuilder;
     }
 
     /**
@@ -82,16 +63,6 @@ class CoreExtension implements AliasedInterface, ConfigurationInterface, Depende
      */
     public function register(Container $container, array $configs = []): void
     {
-        if (!$container->has('events.dispatcher')) {
-            $eventsDispatcher = $configs['events_dispatcher'] ?? EventHandler::class;
-
-            if ($container->has($eventsDispatcher)) {
-                $container->alias('events.dispatcher', $eventsDispatcher);
-            } else {
-                $container->autowire('events.dispatcher', new Definition($eventsDispatcher));
-            }
-        }
-
         if (!$container->has('request_stack')) {
             $container->autowire('request_stack', new Definition(RequestStack::class));
         }
