@@ -13,10 +13,10 @@
 namespace Flange\Extensions\Symfony;
 
 use Flange\Application as Flange;
+use Flange\Commands\AboutCommand;
+use Flange\Commands\ServerCommand;
 use Flange\Extensions\EventDispatcherExtension;
 use Flange\KernelInterface;
-use Rade\Commands\AboutCommand;
-use Rade\Commands\ServerCommand;
 use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;

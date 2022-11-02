@@ -44,7 +44,7 @@ final class AboutCommand extends Command
     {
         $this->setHelp(
             <<<'EOT'
-The <info>%command.name%</info> command displays information about the current PHP Rade project.
+The <info>%command.name%</info> command displays information about the current PHP Flange project.
 
 The <info>PHP</info> section displays important configuration that could affect your application. The values might
 be different between web and CLI.
@@ -61,7 +61,7 @@ EOT
         $container = $this->container;
 
         $rows = [
-            ['<info>PHP Rade Framework</>'],
+            ['<info>PHP Flange Framework</>'],
             new TableSeparator(),
             ['Version', Application::VERSION],
             ['Long-Term Support', 4 === Application::VERSION[2] ? 'Yes' : 'No'],
