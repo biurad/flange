@@ -13,12 +13,10 @@
 namespace Flange\Extensions;
 
 use Rade\DI\Container;
-use Rade\DI\Definition;
 use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\DependenciesInterface;
 use Rade\DI\Extensions\ExtensionInterface;
 use Symfony\Component\Console\Event\ConsoleEvent;
-use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Rade Core Extension.
@@ -61,8 +59,5 @@ class CoreExtension implements AliasedInterface, DependenciesInterface, Extensio
      */
     public function register(Container $container, array $configs = []): void
     {
-        if (!$container->has('request_stack')) {
-            $container->autowire('request_stack', new Definition(RequestStack::class));
-        }
     }
 }

@@ -28,6 +28,7 @@ use Rade\DI\Extensions\ExtensionInterface;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\HttpFoundation\Cookie;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpFoundation\Session\Storage\Handler\AbstractSessionHandler;
 use Symfony\Component\HttpFoundation\Session\Storage\Handler\NativeFileSessionHandler;
@@ -261,6 +262,10 @@ class HttpGalaxyExtension implements AliasedInterface, ConfigurationInterface, E
 
         if (!$container->has('psr17.factory')) {
             $definitions['psr17.factory'] = service($configs['psr17_factory'] ?? Psr17Factory::class)->typed();
+        }
+
+        if (!$container->has('request_stack')) {
+            $container->autowire('request_stack', service(RequestStack::class));
         }
 
         if ($configs['cookie']['enabled']) {
