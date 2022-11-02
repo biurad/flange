@@ -17,6 +17,8 @@
 
 This library is shipped with lots of features that suites developers needs in developing web applications. Flange is truly scalable, has less dependencies and has high performance.
 
+>Flange v2.0 is in early stage development and is not recommended for production use.
+
 ## 📦 Installation & Basic Usage
 
 This project requires [PHP][1] 8.0 or higher. The recommended way to install, is via [Composer][6]. Simply run:
