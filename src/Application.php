@@ -282,7 +282,7 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
                 $e = $this->handleRouterException($e, $request);
 
                 if ($e instanceof ResponseInterface) {
-                    return $e;
+                    return $e->withHeader('Transfer-Encoding', 'gzip, deflate');
                 }
             }
 
@@ -294,7 +294,7 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
             $response = $response->withStatus(Utils::getStatusCode($e, $response));
         }
 
-        return $response;
+        return $response->withHeader('Transfer-Encoding', 'gzip, deflate');
     }
 
     /**
