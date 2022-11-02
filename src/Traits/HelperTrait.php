@@ -93,7 +93,8 @@ trait HelperTrait
         if (null !== $outputDir) {
             $builder->setConfigBuilderGenerator($outputDir);
         }
-        $builder->load($extensions + $this->moduleExtensions);
+
+        $builder->load(\array_merge($extensions, $this->moduleExtensions));
     }
 
     /**
@@ -241,7 +242,7 @@ trait HelperTrait
     /**
      * Load up a module(s) (A.K.A plugin).
      *
-     * @return \Rade\Module|array<string,\Rade\Module>
+     * @return \Flange\Module|array<string,\Flange\Module>
      */
     public function getModule(string $directory = null)
     {
