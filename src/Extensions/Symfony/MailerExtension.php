@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 /*
  * This file is part of Biurad opensource projects.
@@ -14,15 +12,13 @@ declare(strict_types=1);
 
 namespace Flange\Extensions\Symfony;
 
+use Flange\Extensions\EventDispatcherExtension;
 use Rade\DI\Container;
 use Rade\DI\Definition;
 use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\TaggedLocator;
 use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\ExtensionInterface;
-
-use function Rade\DI\Loader\service;
-
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Mailer\Bridge\Amazon\Transport\SesTransportFactory;
@@ -46,6 +42,8 @@ use Symfony\Component\Mailer\Transport\NullTransportFactory;
 use Symfony\Component\Mailer\Transport\SendmailTransportFactory;
 use Symfony\Component\Mailer\Transport\Smtp\EsmtpTransportFactory;
 use Symfony\Component\Mime\Header\Headers;
+
+use function Rade\DI\Loader\service;
 
 /**
  * Symfony component mailer extension.

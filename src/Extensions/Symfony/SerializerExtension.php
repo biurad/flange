@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 /*
  * This file is part of Biurad opensource projects.
@@ -24,9 +22,6 @@ use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Extensions\ExtensionInterface;
 use Rade\DI\Extensions\RequiredPackagesInterface;
-
-use function Rade\DI\Loader\service;
-
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\PropertyAccess\PropertyAccess;
@@ -60,6 +55,8 @@ use Symfony\Component\Serializer\Normalizer\PropertyNormalizer;
 use Symfony\Component\Serializer\Normalizer\UidNormalizer;
 use Symfony\Component\Serializer\Normalizer\UnwrappingDenormalizer;
 use Symfony\Component\Serializer\Serializer;
+
+use function Rade\DI\Loader\service;
 
 /**
  * Symfony component serializer extension.

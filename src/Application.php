@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 /*
  * This file is part of Biurad opensource projects.
@@ -25,11 +23,10 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Http\Message\{ResponseInterface, ServerRequestInterface};
 use Psr\Http\Server\{MiddlewareInterface, RequestHandlerInterface};
 use Rade\DI;
-
-use function Rade\DI\Loader\service;
-
 use Symfony\Component\Console\Application as ConsoleApplication;
 use Symfony\Component\HttpFoundation\RequestStack;
+
+use function Rade\DI\Loader\service;
 
 /**
  * The Rade framework core class.

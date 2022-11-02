@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 /*
  * This file is part of Biurad opensource projects.
@@ -23,10 +21,6 @@ use Rade\DI\Definitions\TaggedLocator;
 use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Extensions\ExtensionInterface;
-
-use function Rade\DI\Loader\param;
-use function Rade\DI\Loader\service;
-
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Config\Resource\FileExistenceResource;
@@ -70,6 +64,8 @@ use Symfony\Component\Translation\Reader\TranslationReader;
 use Symfony\Component\Translation\Translator;
 use Symfony\Component\Translation\Writer\TranslationWriter;
 use Symfony\Component\Validator\Validation;
+
+use function Rade\DI\Loader\{param, service};
 
 /**
  * Symfony component translation extension.

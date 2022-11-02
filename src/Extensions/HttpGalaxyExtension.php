@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 /*
  * This file is part of Biurad opensource projects.
@@ -27,9 +25,6 @@ use Flange\KernelInterface;
 use Rade\DI\Container;
 use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\ExtensionInterface;
-
-use function Rade\DI\Loader\{reference, service, wrap};
-
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\HttpFoundation\Cookie;
@@ -44,6 +39,8 @@ use Symfony\Component\HttpFoundation\Session\Storage\NativeSessionStorage;
 use Symfony\Component\Security\Csrf\CsrfTokenManager;
 use Symfony\Component\Security\Csrf\TokenStorage\NativeSessionTokenStorage;
 use Symfony\Component\Security\Csrf\TokenStorage\SessionTokenStorage;
+
+use function Rade\DI\Loader\{reference, service, wrap};
 
 /**
  * Biurad Http Galaxy Provider.

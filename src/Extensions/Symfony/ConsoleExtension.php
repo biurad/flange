@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 /*
  * This file is part of Biurad opensource projects.
@@ -15,6 +13,7 @@ declare(strict_types=1);
 namespace Flange\Extensions\Symfony;
 
 use Flange\Application as Flange;
+use Flange\Extensions\EventDispatcherExtension;
 use Flange\KernelInterface;
 use Rade\Commands\AboutCommand;
 use Rade\Commands\ServerCommand;
@@ -25,12 +24,11 @@ use Rade\DI\Definitions\Statement;
 use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Extensions\ExtensionInterface;
-
-use function Rade\DI\Loader\param;
-
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\CommandLoader\FactoryCommandLoader;
+
+use function Rade\DI\Loader\param;
 
 /**
  * Registers symfony console extension.
@@ -58,12 +56,16 @@ class ConsoleExtension implements AliasedInterface, BootExtensionInterface, Exte
 
         $container->set('console.command.about', new Definition(AboutCommand::class))->public(false)->tag('console.command');
         $container->set('console.command.server', new Definition(ServerCommand::class, [param('project_dir'), param('debug')]))->public(false)->tag('console.command');
-        $container->set('console', new Definition(Application::class))
+        $console = $container->set('console', new Definition(Application::class))
             ->args([
-                $container->parameters['console.name'] ?? 'PHP Rade Framework',
+                $container->parameters['console.name'] ?? 'PHP Flange Framework',
                 $container->parameters['console.version'] ?? Flange::VERSION,
             ])
             ->typed(Application::class);
+
+        if ($container->hasExtension(EventDispatcherExtension::class)) {
+            $console->bind('addDispatcher', new Reference('events.dispatcher'));
+        }
     }
 
     /**

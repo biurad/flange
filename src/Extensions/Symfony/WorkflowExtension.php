@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 /*
  * This file is part of Biurad opensource projects.
@@ -20,15 +18,14 @@ use Rade\DI\Definitions\Reference;
 use Rade\DI\Definitions\Statement;
 use Rade\DI\Extensions\AliasedInterface;
 use Rade\DI\Extensions\ExtensionInterface;
-
-use function Rade\DI\Loader\service;
-
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Security\Core\Security;
 use Symfony\Component\Workflow;
 use Symfony\Component\Workflow\Registry;
 use Symfony\Component\Workflow\WorkflowEvents;
+
+use function Rade\DI\Loader\service;
 
 /**
  * Symfony component workflow extension.

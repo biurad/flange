@@ -1,6 +1,4 @@
-<?php
-
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 /*
  * This file is part of Biurad opensource projects.
@@ -25,9 +23,6 @@ use Rade\DI\Extensions\BootExtensionInterface;
 use Rade\DI\Extensions\ExtensionInterface;
 use Rade\DI\Extensions\RequiredPackagesInterface;
 use Rade\DI\Extensions\Symfony\Form\HttpFoundationRequestHandler;
-
-use function Rade\DI\Loader\service;
-
 use Rade\DI\Services\ServiceLocator;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
@@ -58,6 +53,8 @@ use Symfony\Component\Form\ResolvedFormTypeFactoryInterface;
 use Symfony\Component\Form\Util\ServerParams;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
+
+use function Rade\DI\Loader\service;
 
 /**
  * Symfony component form extension.
