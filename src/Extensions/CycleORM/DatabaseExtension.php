@@ -44,7 +44,7 @@ class DatabaseExtension implements AliasedInterface, ConfigurationInterface, Ext
      */
     public function getAlias(): string
     {
-        return 'database';
+        return 'cycle_dbal';
     }
 
     /**

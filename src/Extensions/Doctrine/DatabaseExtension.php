@@ -60,7 +60,7 @@ class DatabaseExtension implements AliasedInterface, ConfigurationInterface, Boo
      */
     public function getAlias(): string
     {
-        return 'database';
+        return 'doctrine_dbal';
     }
 
     /**
