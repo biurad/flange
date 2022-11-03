@@ -23,7 +23,7 @@ use Symfony\Contracts\EventDispatcher\Event;
  */
 class KernelEvent extends Event
 {
-    public function __construct(private Application $app, private Request $request)
+    public function __construct(private Application $kernel, private Request $request)
     {
     }
 
