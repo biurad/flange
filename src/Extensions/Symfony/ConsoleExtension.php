@@ -64,7 +64,7 @@ class ConsoleExtension implements AliasedInterface, BootExtensionInterface, Exte
             ->typed(Application::class);
 
         if ($container->hasExtension(EventDispatcherExtension::class)) {
-            $console->bind('addDispatcher', new Reference('events.dispatcher'));
+            $console->bind('setDispatcher', new Reference('events.dispatcher'));
         }
     }
 
