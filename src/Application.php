@@ -52,7 +52,7 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
                 'request_stack' => service($this->services['request_stack'] = new RequestStack())->typed(RequestStack::class)->setContainer($this, 'request_stack'),
                 'http.router' => service($this->services['http.router'] = new Router())->typed(Router::class, RouteMatcherInterface::class, UrlGeneratorInterface::class)->setContainer($this, 'http.router'),
                 'psr17.factory' => service($this->services['psr17.factory'] = $psr17Factory ?? new Psr17Factory())->typed()->setContainer($this, 'psr17.factory'),
-                RequestHandlerInterface::class => service($this->services[RequestHandlerInterface::class] = new Handler\RouteHandler($this))->setContainer($this, RequestHandlerInterface::class),
+                RequestHandlerInterface::class => service(Handler\RouteHandler::class)->setContainer($this, RequestHandlerInterface::class),
             ];
 
             if (null !== $dispatcher) {
