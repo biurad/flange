@@ -14,24 +14,27 @@
         "psr-11",
         "psr-7"
     ],
-    "homepage": "https://www.divienii.com",
+    "homepage": "https://biurad.com",
     "license": "BSD-3-Clause",
     "authors": [
         {
-            "name": "Divine Niiquaye Ibok",
-            "email": "divineibok@gmail.com"
+          "name": "Divine Niiquaye Ibok",
+          "email": "divineibok@gmail.com"
+        },
+        {
+          "name": "GitHub Contributors",
+          "homepage": "https://github.com/biurad/flange/contributors"
         }
     ],
     "support": {
-        "docs": "https://docs.biurad.com/flange",
-        "issues": "https://github.com/biurad/flange/issues",
-        "rss": "https://github.com/biurad/flange/releases.atom",
-        "source": "https://github.com/biurad/flange"
+        "docs": "https://docs.biurad.com/php/flange"
     },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
     "require": {
         "php": "^8.0",
         "biurad/http-galaxy": "1.*",
-        "divineniiquaye/flight-routing": "1.6.* || 2.*",
+        "divineniiquaye/flight-routing": "2.*",
         "divineniiquaye/rade-di": "dev-rade-best",
         "symfony/config": "^6.0",
         "symfony/console": "^6.0",
@@ -67,7 +70,6 @@
         "symfony/workflow": "^6.0",
         "symfony/yaml": "^6.0",
         "tracy/tracy": "^2.8",
-        "vimeo/psalm": "^4.10",
         "webonyx/graphql-php": "^14.11",
         "cycle/orm": "^2.0",
         "cycle/annotated": "^3.1",
@@ -82,6 +84,7 @@
         "biurad/cache": "A powerful cache library for advanced caching using PSR-6 or PSR-16",
         "league/flysystem": "A FileManager for handling filesystem on local disk and cloud storage",
         "biurad/templating": "A library that provides all the tools needed in working with any kind of template system",
+        "nikic/php-parser": "A library for building up cache support to performance",
         "tracy/tracy": "A library that makes PHP exceptions look friendly, and provides debugging support"
     },
     "autoload": {
@@ -102,20 +105,11 @@
     "scripts": {
         "phpcs": "phpcs -q",
         "phpstan": "phpstan analyse",
-        "psalm": "psalm --show-info=true",
         "phpunit": "phpunit --no-coverage",
         "test": [
             "@phpcs",
             "@phpstan",
-            "@psalm",
             "@phpunit"
         ]
-    },
-    "config": {
-        "allow-plugins": {
-            "composer/package-versions-deprecated": false
-        }
-    },
-    "minimum-stability": "dev",
-    "prefer-stable": true
+    }
 }
