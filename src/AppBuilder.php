@@ -77,13 +77,7 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
      */
     public function match(string $pattern, array $methods = ['GET'], mixed $to = null)
     {
-        $routes = $this->parameters['routes'] ??= new RouteCollection();
-
-        if (!\class_exists($r = 'Flight\Routing\Route')) {
-            return $routes->add($pattern, $methods, $to);
-        }
-
-        return $routes->add(new $r($pattern, $methods, $to), false)->getRoute();
+        return ($this->parameters['routes'] ??= new RouteCollection())->add($pattern, $methods, $to);
     }
 
     /**
@@ -134,9 +128,8 @@ class AppBuilder extends DI\ContainerBuilder implements RouterInterface, KernelI
         if (\is_callable($collection)) {
             throw new ServiceCreationException('Route grouping using callable is supported since application is compilable.');
         }
-        $routes = $this->parameters['routes'] ??= new RouteCollection();
 
-        return $routes->group($prefix, $collection);
+        return ($this->parameters['routes'] ??= new RouteCollection())->group($prefix, $collection);
     }
 
     /**

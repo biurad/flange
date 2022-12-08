@@ -112,11 +112,7 @@ class Application extends DI\Container implements RouterInterface, KernelInterfa
      */
     public function match(string $pattern, array $methods = ['GET'], mixed $to = null)
     {
-        if (!\class_exists($r = 'Flight\Routing\Route')) {
-            return $this->getRouter()->getCollection()->add($pattern, $methods, $to);
-        }
-
-        return $this->getRouter()->getCollection()->add(new $r($pattern, $methods, $to), false)->getRoute();
+        return $this->getRouter()->getCollection()->add($pattern, $methods, $to);
     }
 
     /**

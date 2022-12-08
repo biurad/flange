@@ -20,7 +20,6 @@ use Flight\Routing\Annotation\Listener;
 use Flight\Routing\Interfaces\RouteMatcherInterface;
 use Flight\Routing\Interfaces\UrlGeneratorInterface;
 use Flight\Routing\Middlewares\PathMiddleware;
-use Flight\Routing\Route;
 use Flight\Routing\RouteCollection;
 use Flight\Routing\Router;
 use Laminas\Stratigility\Middleware\OriginalMessages;
@@ -298,13 +297,6 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
 
         if (null !== $collection) {
             foreach ($collection->getRoutes() as $route) {
-                if (\is_object($route)) {
-                    $routeData = $route->getData();
-                    $handler = $routeData['handler'] ?? null;
-                    unset($routeData['handler']);
-                    $routes[] = new PhpLiteral(Route::class.'::__set_state(\'%?\');', [['handler' => $handler, 'data' => $routeData]]);
-                    continue;
-                }
                 $routes[] = new PhpLiteral('$collection->prototype(\'%?\');', [\array_filter([
                     'add' => [$route['path'], \array_keys($route['methods'] ?? Router::DEFAULT_METHODS), $route['handler'] ?? null],
                     'bind' => $route['name'] ?? null,
@@ -364,14 +356,9 @@ class RoutingExtension implements AliasedInterface, BootExtensionInterface, Conf
                 $groupArgs[] = $this->defaults;
             }
 
-            if (\class_exists('Flight\Routing\Route')) {
-                $groupedCollection .= '$collection->routes(\'%?\', false);';
-                $groupArgs[] = $routes;
-            } else {
-                foreach ($routes as $r) {
-                    $groupedCollection .= "'%?';";
-                    $groupArgs[] = $r;
-                }
+            foreach ($routes as $r) {
+                $groupedCollection .= "'%?';";
+                $groupArgs[] = $r;
             }
 
             foreach ($groups as [$group, $groupArg]) {
