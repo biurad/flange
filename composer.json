@@ -58,6 +58,7 @@
         "symfony/cache": "^6.0",
         "symfony/form": "^6.0",
         "symfony/http-client": "^6.0",
+        "symfony/lock": "6.0",
         "symfony/mailer": "^6.0",
         "symfony/notifier": "^6.0",
         "symfony/rate-limiter": "^6.0",
