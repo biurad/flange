@@ -23,7 +23,7 @@ use Cycle\Schema\Compiler;
 use Cycle\Schema\Generator;
 use Cycle\Schema\GeneratorInterface;
 use Cycle\Schema\Registry;
-use Rade\Commands\CycleORM\DatabaseOrmCommand;
+use Flange\Commands\CycleORM\DatabaseOrmCommand;
 use Rade\DI\Builder\PhpLiteral;
 use Rade\DI\Container;
 use Rade\DI\ContainerBuilder;

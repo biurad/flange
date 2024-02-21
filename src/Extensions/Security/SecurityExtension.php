@@ -64,7 +64,7 @@ use Symfony\Component\Security\Core\Validator\Constraints\UserPasswordValidator;
  */
 class SecurityExtension implements AliasedInterface, BootExtensionInterface, ConfigurationInterface, ExtensionInterface
 {
-    /** @var array<int,SecurityProvider\ProviderFactoryInterface> */
+    /** @var array<int,Provider\ProviderFactoryInterface> */
     private array $factoryProviders = [], $userProviders = [];
 
     /**
