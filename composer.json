@@ -18,12 +18,12 @@
     "license": "BSD-3-Clause",
     "authors": [
         {
-          "name": "Divine Niiquaye Ibok",
-          "email": "divineibok@gmail.com"
+            "name": "Divine Niiquaye Ibok",
+            "email": "divineibok@gmail.com"
         },
         {
-          "name": "GitHub Contributors",
-          "homepage": "https://github.com/biurad/flange/contributors"
+            "name": "GitHub Contributors",
+            "homepage": "https://github.com/biurad/flange/contributors"
         }
     ],
     "support": {
@@ -46,7 +46,7 @@
         "biurad/annotations": "1.*",
         "biurad/security": "1.*",
         "biurad/templating": "1.*",
-        "doctrine/annotations": "^1.12",
+        "doctrine/annotations": "^2.0",
         "latte/latte": "^2.10",
         "league/flysystem": "^2.0 || ^3.0",
         "monolog/monolog": "^2",
@@ -76,9 +76,10 @@
         "cycle/annotated": "^3.1",
         "cycle/migrations": "^3.0",
         "cycle/schema-migrations-generator": "^2.0",
-        "doctrine/dbal": "^3.1",
-        "doctrine/persistence": "^2.2",
-        "doctrine/sql-formatter": "^1.0.1"
+        "doctrine/dbal": "^4.0",
+        "doctrine/orm": "^3.0",
+        "doctrine/persistence": "^3.2",
+        "doctrine/sql-formatter": "^1.1.3"
     },
     "suggest": {
         "biurad/annotations": "A powerful annotations and attributes support for PHP 7.2+",
